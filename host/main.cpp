@@ -1,59 +1,46 @@
 #include "pt5.hpp"
+#include "util.hpp"
 
 #include <vector>
 #include <string>
 #include <iostream>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-#include "vector_math.h"
-
-
-void writeImage(const std::string& filename, int w, int h, const std::vector<float>& data){
-	std::vector<uint32_t> pixelsi(w*h);
-	for(int y=0; y<h; y++){
-		for(int x=0; x<w; x++){
-
-			int i = w*y + x;
-
-			uint32_t r(data[4*i  ]*255.99);
-			uint32_t g(data[4*i+1]*255.99);
-			uint32_t b(data[4*i+2]*255.99);
-			uint32_t a(data[4*i+3]*255.99);
-
-			pixelsi[i] = (r<<0) | (g<<8) | (b<<16) | (a<<24);
-		}
-	}
-
-	stbi_write_png(filename.c_str(), w, h, 4, pixelsi.data(), w*sizeof(uint32_t));
-}
 
 int main(){
 
-	pt5::nothing();
+	const int width = 1200;
+	const int height = 800;
 
-	int width = 1200;
-	int height = 800;
+	pt5::PathTracerState state;
+	pt5::initPathTracer(state);
+	pt5::buildSBT(state);
+	pt5::initLaunchParams(state, width, height);
 
-	std::vector<float> pixelsf(4*width*height);
-	for(int y=0; y<height; y++){
-		for(int x=0; x<width; x++){
 
-			const int i = width*y + x;
+	OPTIX_CHECK(optixLaunch(
+		state.pipeline,
+		state.stream,
+		state.launchParamsBuffer.d_pointer(),
+		state.launchParamsBuffer.sizeInBytes,
+		&state.sbt,
+		width, height, 1));
 
-			float r = float(x%256)/256;
-			float g = float(y%256)/256;
-			float b = 0.5;
-
-			pixelsf[4*i  ] = r;
-			pixelsf[4*i+1] = g;
-			pixelsf[4*i+2] = b;
-			pixelsf[4*i+3] = 1;
-		}
+	cudaDeviceSynchronize();
+	cudaError_t e = cudaGetLastError();
+	if(e != CUDA_SUCCESS){
+		fprintf( stderr, "error (%s: line %d): %s\n", __FILE__, __LINE__, cudaGetErrorString( e ) );
+		exit( 2 );
 	}
 
-	writeImage("out.png", width, height, pixelsf);
+	std::cout <<"rendered" <<std::endl;
 
+
+	std::vector<float>pixels = pt5::getPixels(state);
+	pt5::writeImage("out.png", width, height, pixels);
+	std::cout <<"image saved" <<std::endl;
+
+
+	pt5::destroyPathTracer(state);
 
 	return 0;
 }

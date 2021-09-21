@@ -26,7 +26,7 @@ include_directories(${OptiX_INCLUDE})
 
 # add
 include_directories(${PROJECT_SOURCE_DIR}/extern)
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/libpt5/include)
 
 add_subdirectory(libpt5)
 add_subdirectory(host)
