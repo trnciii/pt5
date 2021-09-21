@@ -43,7 +43,7 @@ void context_log_callback(unsigned int level, const char *tag, const char *messa
 
 
 
-void createContext(PathTracerState& state){
+void PathTracerState::createContext(){
 	CUcontext cudaContext;
 
 	CUDA_CHECK(cudaFree(0));
@@ -51,46 +51,46 @@ void createContext(PathTracerState& state){
 
 	const int deviceID = 0;
 	CUDA_CHECK(cudaSetDevice(deviceID));
-	CUDA_CHECK(cudaStreamCreate(&state.stream));
+	CUDA_CHECK(cudaStreamCreate(&stream));
 
 	CUresult res = cuCtxGetCurrent(&cudaContext);
 	if(res != CUDA_SUCCESS)
 		fprintf(stderr, "Error querying current context: %d\n", res);
 
-	OPTIX_CHECK(optixDeviceContextCreate(cudaContext, 0, &state.context));
-	OPTIX_CHECK(optixDeviceContextSetLogCallback(state.context, context_log_callback, nullptr, 4));
+	OPTIX_CHECK(optixDeviceContextCreate(cudaContext, 0, &context));
+	OPTIX_CHECK(optixDeviceContextSetLogCallback(context, context_log_callback, nullptr, 4));
 
 	std::cout <<"created context" <<std::endl;
 }
 
 
-void createModule(PathTracerState& state){
+void PathTracerState::createModule(){
 	OptixModuleCompileOptions moduleCompileOptions = {};
 	moduleCompileOptions.maxRegisterCount = 50;
 	moduleCompileOptions.optLevel = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
 	moduleCompileOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 
-	state.pipelineCompileOptions = {};
-	state.pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-	state.pipelineCompileOptions.usesMotionBlur = false;
-	state.pipelineCompileOptions.numPayloadValues = 2;
-	state.pipelineCompileOptions.numAttributeValues = 2;
-	state.pipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
-	state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "launchParams";
+	pipelineCompileOptions = {};
+	pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+	pipelineCompileOptions.usesMotionBlur = false;
+	pipelineCompileOptions.numPayloadValues = 2;
+	pipelineCompileOptions.numAttributeValues = 2;
+	pipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+	pipelineCompileOptions.pipelineLaunchParamsVariableName = "launchParams";
 
-	state.pipelineLinkOptions.maxTraceDepth = 2;
+	pipelineLinkOptions.maxTraceDepth = 2;
 
 	const std::string ptxCode = embedded_ptx_code;
 
 	char log[2048];
 	size_t sizeoflog = sizeof(log);
 	OPTIX_CHECK(optixModuleCreateFromPTX(
-		state.context,
+		context,
 		&moduleCompileOptions,
-		&state.pipelineCompileOptions,
+		&pipelineCompileOptions,
 		ptxCode.c_str(), ptxCode.size(),
 		log, &sizeoflog,
-		&state.module
+		&module
 		));
 	if(sizeoflog > 1)
 		std::cout <<"log = " <<log <<std::endl;
@@ -100,25 +100,25 @@ void createModule(PathTracerState& state){
 
 
 
-void createProgramGroups(PathTracerState& state){
+void PathTracerState::createProgramGroups(){
 	OptixProgramGroupOptions options = {};
 
 	// raygen
 	{
 		OptixProgramGroupDesc desc = {};
 		desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-		desc.raygen.module = state.module;
+		desc.raygen.module = module;
 		desc.raygen.entryFunctionName = "__raygen__render";
 
 		char log[2048];
 		size_t sizeoflog = sizeof(log);
 		OPTIX_CHECK(optixProgramGroupCreate(
-			state.context,
+			context,
 			&desc,
 			1,
 			&options,
 			log, &sizeoflog,
-			&state.raygenProgramGroup
+			&raygenProgramGroup
 			));
 
 		if(sizeoflog>1)
@@ -131,18 +131,18 @@ void createProgramGroups(PathTracerState& state){
 	{
 		OptixProgramGroupDesc desc = {};
 		desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
-		desc.miss.module = state.module;
+		desc.miss.module = module;
 		desc.miss.entryFunctionName = "__miss__radiance";
 
 		char log[2048];
 		size_t sizeoflog = sizeof(log);
 		OPTIX_CHECK(optixProgramGroupCreate(
-			state.context,
+			context,
 			&desc,
 			1,
 			&options,
 			log, &sizeoflog,
-			&state.missProgramGroup
+			&missProgramGroup
 			));
 
 		if(sizeoflog>1)
@@ -155,20 +155,20 @@ void createProgramGroups(PathTracerState& state){
 	{
 		OptixProgramGroupDesc desc = {};
 		desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-		desc.hitgroup.moduleCH = state.module;
+		desc.hitgroup.moduleCH = module;
 		desc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
-		desc.hitgroup.moduleAH = state.module;
+		desc.hitgroup.moduleAH = module;
 		desc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
 
 		char log[2048];
 		size_t sizeoflog = sizeof(log);
 		OPTIX_CHECK(optixProgramGroupCreate(
-			state.context,
+			context,
 			&desc,
 			1,
 			&options,
 			log, &sizeoflog,
-			&state.hitgroupProgramGroup
+			&hitgroupProgramGroup
 			));
 
 		if(sizeoflog>1)
@@ -179,52 +179,53 @@ void createProgramGroups(PathTracerState& state){
 }
 
 
-void createPipeline(PathTracerState& state){
+void PathTracerState::createPipeline(){
 	OptixProgramGroup programgroups[] = {
-		state.raygenProgramGroup,
-		state.missProgramGroup,
-		state.hitgroupProgramGroup
+		raygenProgramGroup,
+		missProgramGroup,
+		hitgroupProgramGroup
 	};
 
 	char log[2048];
 	size_t sizeoflog = sizeof(log);
 	OPTIX_CHECK(optixPipelineCreate(
-		state.context,
-		&state.pipelineCompileOptions,
-		&state.pipelineLinkOptions,
+		context,
+		&pipelineCompileOptions,
+		&pipelineLinkOptions,
 		programgroups, sizeof(programgroups)/sizeof(OptixProgramGroup),
 		log, &sizeoflog,
-		&state.pipeline
+		&pipeline
 		));
 
 	std::cout <<"created pipeline" <<std::endl;
 }
 
-void buildSBT(PathTracerState& state){
+
+void PathTracerState::buildSBT(){
 	// raygen
 	{
 		RaygenRecord rec;
-		OPTIX_CHECK(optixSbtRecordPackHeader(state.raygenProgramGroup, &rec));
+		OPTIX_CHECK(optixSbtRecordPackHeader(raygenProgramGroup, &rec));
 		rec.data = nullptr;
 
-		state.raygenRecordBuffer.alloc(sizeof(RaygenRecord));
-		state.raygenRecordBuffer.upload(&rec, 1);
+		raygenRecordBuffer.alloc(sizeof(RaygenRecord));
+		raygenRecordBuffer.upload(&rec, 1);
 
-		state.sbt.raygenRecord = state.raygenRecordBuffer.d_pointer();
+		sbt.raygenRecord = raygenRecordBuffer.d_pointer();
 	}
 
 	// miss
 	{
 		MissRecord rec;
-		OPTIX_CHECK(optixSbtRecordPackHeader(state.missProgramGroup, &rec));
+		OPTIX_CHECK(optixSbtRecordPackHeader(missProgramGroup, &rec));
 		rec.data = nullptr;
 
-		state.missRecordBuffer.alloc(sizeof(MissRecord));
-		state.missRecordBuffer.upload(&rec, 1);
+		missRecordBuffer.alloc(sizeof(MissRecord));
+		missRecordBuffer.upload(&rec, 1);
 
-		state.sbt.missRecordBase = state.missRecordBuffer.d_pointer();
-		state.sbt.missRecordStrideInBytes = sizeof(MissRecord);
-		state.sbt.missRecordCount = 1;
+		sbt.missRecordBase = missRecordBuffer.d_pointer();
+		sbt.missRecordStrideInBytes = sizeof(MissRecord);
+		sbt.missRecordCount = 1;
 	}
 
 	// hitgroup
@@ -237,85 +238,87 @@ void buildSBT(PathTracerState& state){
 			HitgroupRecord rec;
 			const int index = i*rayTypeCount + 0; // add ray type offset
 
-			OPTIX_CHECK(optixSbtRecordPackHeader(state.hitgroupProgramGroup, &rec));
+			OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
 			rec.data = nullptr;
 			hitgroupRecords.push_back(rec);
 		}
 
-		state.hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
+		hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
 
-		state.sbt.hitgroupRecordBase = state.hitgroupRecordsBuffer.d_pointer();
-		state.sbt.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
-		state.sbt.hitgroupRecordCount = (int)hitgroupRecords.size();
+		sbt.hitgroupRecordBase = hitgroupRecordsBuffer.d_pointer();
+		sbt.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
+		sbt.hitgroupRecordCount = (int)hitgroupRecords.size();
 	}
 }
 
 
-void initPathTracer(PathTracerState& state){
-	createContext(state);
-	createModule(state);
-	createProgramGroups(state);
-	createPipeline(state);
-}
+PathTracerState::PathTracerState(){
+	createContext();
+	createModule();
+	createProgramGroups();
+	createPipeline();
 
-void destroyPathTracer(PathTracerState& state){
-    OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.raygenProgramGroup ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.missProgramGroup ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.hitgroupProgramGroup ) );
-    OPTIX_CHECK( optixModuleDestroy( state.module ) );
-    OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
-
-    state.raygenRecordBuffer.free();
-	state.missRecordBuffer.free();
-	state.hitgroupRecordsBuffer.free();
-	state.pixelBuffer.free();
-	state.launchParamsBuffer.free();
+	std::cout <<"initialized PathTracerState" <<std::endl;
 }
 
 
-void initLaunchParams(PathTracerState& state, const int w, const int h){
-	state.pixelBuffer.alloc(4*w*h*sizeof(float));
+PathTracerState::~PathTracerState(){
+    OPTIX_CHECK( optixPipelineDestroy( pipeline ) );
+    OPTIX_CHECK( optixProgramGroupDestroy( raygenProgramGroup ) );
+    OPTIX_CHECK( optixProgramGroupDestroy( missProgramGroup ) );
+    OPTIX_CHECK( optixProgramGroupDestroy( hitgroupProgramGroup ) );
+    OPTIX_CHECK( optixModuleDestroy( module ) );
+    OPTIX_CHECK( optixDeviceContextDestroy( context ) );
 
-	state.launchParams.image.width = w;
-	state.launchParams.image.height = h;
-	state.launchParams.image.pixels = (float*)state.pixelBuffer.d_pointer();
+    raygenRecordBuffer.free();
+	missRecordBuffer.free();
+	hitgroupRecordsBuffer.free();
+	pixelBuffer.free();
+	launchParamsBuffer.free();
 
-	state.launchParamsBuffer.alloc(sizeof(state.launchParams));
-	state.launchParamsBuffer.upload(&state.launchParams, 1);
+	std::cout <<"destroyed PathTracerState" <<std::endl;
 }
 
 
-std::vector<float> getPixels(PathTracerState& state){
-	uint32_t len = 4*state.launchParams.image.width*state.launchParams.image.height;
+void PathTracerState::initLaunchParams(const int w, const int h){
+	pixelBuffer.alloc(4*w*h*sizeof(float));
+
+	launchParams.image.width = w;
+	launchParams.image.height = h;
+	launchParams.image.pixels = (float*)pixelBuffer.d_pointer();
+
+	launchParamsBuffer.alloc(sizeof(launchParams));
+	launchParamsBuffer.upload(&launchParams, 1);
+}
+
+
+std::vector<float> PathTracerState::pixels(){
+	uint32_t len = 4*launchParams.image.width*launchParams.image.height;
 	std::vector<float> pixels(len);
-	state.pixelBuffer.download(pixels.data(), len);
+	pixelBuffer.download(pixels.data(), len);
 	return pixels;
 }
 
 
-void nothing(){
-	try{
+void PathTracerState::render(){
+	OPTIX_CHECK(optixLaunch(
+		pipeline,
+		stream,
+		launchParamsBuffer.d_pointer(),
+		launchParamsBuffer.sizeInBytes,
+		&sbt,
+		launchParams.image.width,
+		launchParams.image.height,
+		1));
 
-		cudaFree(0);
-		int numDevices;
-		cudaGetDeviceCount(&numDevices);
-
-		if(numDevices == 0)
-			throw std::runtime_error("no device found");
-
-		std::cout <<"found " <<numDevices <<" cuda device(s)" <<std::endl;
-		OPTIX_CHECK( optixInit() );
-
-		std::cout <<"optix initialized" <<std::endl;
-
-	}catch(std::runtime_error& e){
-		std::cout <<"error: " <<e.what() <<std::endl;
+	cudaDeviceSynchronize();
+	cudaError_t e = cudaGetLastError();
+	if(e != CUDA_SUCCESS){
+		fprintf( stderr, "error (%s: line %d): %s\n", __FILE__, __LINE__, cudaGetErrorString( e ) );
+		exit( 2 );
 	}
-}
 
-int add(int a, int b){
-	return a+b;
+	std::cout <<"rendered" <<std::endl;
 }
 
 } // pt5 namespace

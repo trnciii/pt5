@@ -1,7 +1,11 @@
 import core
 
-core.nothing()
+w, h = 1200, 800
 
-a = 1
-b = 2
-print(a, '+', b, '=', core.add(a, b))
+pt = core.PathTracer()
+pt.buildSBT()
+pt.initLaunchParams(w, h)
+
+pt.render()
+
+core.writeImage('out_py.png', w, h, pt.pixels())

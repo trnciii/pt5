@@ -93,7 +93,25 @@ struct CUDABuffer {
 };
 
 
-struct PathTracerState{
+class PathTracerState{
+public:
+	PathTracerState();
+	~PathTracerState();
+
+	void buildSBT();
+	void initLaunchParams(const int w, const int h);
+
+	void render();
+
+	std::vector<float> pixels();
+
+private:
+	void createContext();
+	void createModule();
+	void createProgramGroups();
+	void createPipeline();
+
+
 	OptixDeviceContext context;
 	CUstream stream;
 
@@ -120,22 +138,5 @@ struct PathTracerState{
 	LaunchParams launchParams;
 	CUDABuffer launchParamsBuffer;
 };
-
-
-void createContext(PathTracerState& state);
-void createModule(PathTracerState& state);
-void createProgramGroups(PathTracerState& state);
-void createPipeline(PathTracerState& state);
-void buildSBT(PathTracerState& state);
-
-void initPathTracer(PathTracerState& state);
-void destroyPathTracer(PathTracerState& state);
-
-void initLaunchParams(PathTracerState& state, const int w, const int h);
-
-std::vector<float> getPixels(PathTracerState& state);
-
-int add(int a, int b);
-void nothing();
 
 } // pt5 namespace
