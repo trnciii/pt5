@@ -4,6 +4,6 @@
 
 PYBIND11_MODULE(pypt5, m) {
     m
-    .def("add", &add)
-    .def("nothing", &nothing);
+    .def("add", &pt5::add)
+    .def("nothing", &pt5::nothing);
 }

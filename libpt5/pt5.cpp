@@ -8,15 +8,16 @@
 #include <stdexcept>
 
 
-#define OPTIX_CHECK( call ){                                    \
-	OptixResult res = call;                                     \
-	if( res != OPTIX_SUCCESS ){                                 \
+#define OPTIX_CHECK( call ){                                                                        \
+	OptixResult res = call;                                                                         \
+	if( res != OPTIX_SUCCESS ){                                                                     \
 		fprintf( stderr, "Optix call (%s) failed with code %d (line %d)\n", #call, res, __LINE__ ); \
-		exit( 2 );                                              \
-	}                                                           \
+		exit( 2 );                                                                                  \
+	}                                                                                               \
 }
 
 
+namespace pt5{
 
 void nothing(){
 	try{
@@ -41,3 +42,5 @@ void nothing(){
 int add(int a, int b){
 	return a+b;
 }
+
+} // pt5 namespace

@@ -29,6 +29,9 @@ void writeImage(const std::string& filename, int w, int h, const std::vector<flo
 }
 
 int main(){
+
+	pt5::nothing();
+
 	int width = 1200;
 	int height = 800;
 
