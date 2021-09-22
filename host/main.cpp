@@ -17,7 +17,8 @@ int main(){
 
 	tracer.render();
 
-	pt5::writeImage("out_c++.png", width, height, tracer.pixels());
+	std::vector<float> pixels = tracer.pixels();
+	pt5::writeImage("out_c++.png", width, height, pixels);
 	std::cout <<"image saved" <<std::endl;
 
 	return 0;

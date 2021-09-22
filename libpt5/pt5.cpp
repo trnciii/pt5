@@ -281,11 +281,12 @@ PathTracerState::~PathTracerState(){
 
 
 void PathTracerState::initLaunchParams(const int w, const int h){
-	pixelBuffer.alloc(4*w*h*sizeof(float));
+	pixelBuffer.alloc(w*h*sizeof(float4));
 
-	launchParams.image.width = w;
-	launchParams.image.height = h;
-	launchParams.image.pixels = (float*)pixelBuffer.d_pointer();
+	launchParams.image.size = make_uint2(w, h);
+	// launchParams.image.width = w;
+	// launchParams.image.height = h;
+	launchParams.image.pixels = (float4*)pixelBuffer.d_pointer();
 
 	launchParamsBuffer.alloc(sizeof(launchParams));
 	launchParamsBuffer.upload(&launchParams, 1);
@@ -293,9 +294,9 @@ void PathTracerState::initLaunchParams(const int w, const int h){
 
 
 std::vector<float> PathTracerState::pixels(){
-	uint32_t len = 4*launchParams.image.width*launchParams.image.height;
-	std::vector<float> pixels(len);
-	pixelBuffer.download(pixels.data(), len);
+	uint32_t len = launchParams.image.size.x*launchParams.image.size.y;
+	std::vector<float> pixels(4*len);
+	pixelBuffer.download(pixels.data(), 4*len);
 	return pixels;
 }
 
@@ -307,8 +308,8 @@ void PathTracerState::render(){
 		launchParamsBuffer.d_pointer(),
 		launchParamsBuffer.sizeInBytes,
 		&sbt,
-		launchParams.image.width,
-		launchParams.image.height,
+		launchParams.image.size.x,
+		launchParams.image.size.y,
 		1));
 
 	cudaDeviceSynchronize();

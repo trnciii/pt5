@@ -1,7 +1,7 @@
 #include <optix_device.h>
 
 #include "LaunchParams.h"
-
+#include "vector_math.h"
 
 namespace pt5{
 
@@ -15,12 +15,14 @@ extern "C" __global__ void __miss__radiance(){}
 extern "C" __global__ void __raygen__render(){
 	const int ix = optixGetLaunchIndex().x;
 	const int iy = optixGetLaunchIndex().y;
-	const int index = launchParams.image.width*iy + ix;
+	const int index = launchParams.image.size.x*iy + ix;
 
-	launchParams.image.pixels[4*index  ] = float(ix%256)/256;
-	launchParams.image.pixels[4*index+1] = float(iy%256)/256;
-	launchParams.image.pixels[4*index+2] = 0.5;
-	launchParams.image.pixels[4*index+3] = 1;
+	launchParams.image.pixels[index] = make_float4(float(ix%256)/256, float(iy%256)/256, 0.5, 1);
+
+	// launchParams.image.pixels[4*index  ] = float(ix%256)/256;
+	// launchParams.image.pixels[4*index+1] = float(iy%256)/256;
+	// launchParams.image.pixels[4*index+2] = 0.5;
+	// launchParams.image.pixels[4*index+3] = 1;
 }
 
 } // pt5 namespace
