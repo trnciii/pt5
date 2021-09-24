@@ -12,7 +12,8 @@ PYBIND11_MODULE(core, m) {
 
     py::class_<PathTracerState>(m, "PathTracer")
         .def(py::init<>())
-        .def("buildSBT", &PathTracerState::buildSBT)
+        .def("init", &PathTracerState::init)
+        .def("setScene", &PathTracerState::setScene)
         .def("initLaunchParams", &PathTracerState::initLaunchParams)
         .def("render", &PathTracerState::render)
         .def("pixels", &PathTracerState::pixels);

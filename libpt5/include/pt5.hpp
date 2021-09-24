@@ -10,29 +10,41 @@
 #include <vector>
 
 #include "../LaunchParams.h"
+#include "../scene.hpp"
 
 
-#define CUDA_CHECK(call)                                    \
-{                                                           \
-	cudaError_t rc = call;                                  \
-	if (rc != cudaSuccess) {                                \
-		std::stringstream txt;                              \
-		cudaError_t err =  rc; /*cudaGetLastError();*/      \
-		txt << "CUDA Error " << cudaGetErrorName(err)       \
-				<< " (" << cudaGetErrorString(err) << ")";  \
-		throw std::runtime_error(txt.str());                \
-	}                                                       \
+#define CUDA_CHECK(call)                            \
+{                                                   \
+  cudaError_t rc = call;                            \
+  if (rc != cudaSuccess) {                          \
+    std::stringstream txt;                          \
+    cudaError_t err =  rc; /*cudaGetLastError();*/  \
+    txt << "CUDA Error " << cudaGetErrorName(err)   \
+        << " (" << cudaGetErrorString(err) << ")";  \
+    throw std::runtime_error(txt.str());            \
+  }                                                 \
 }
 
 
-#define OPTIX_CHECK( call )                                                                             \
-{                                                                                                       \
-	OptixResult res = call;                                                                             \
-	if( res != OPTIX_SUCCESS )                                                                          \
-		{                                                                                               \
-			fprintf( stderr, "Optix call (%s) failed with code %d (line %d)\n", #call, res, __LINE__ ); \
-			exit( 2 );                                                                                  \
-		}                                                                                               \
+#define OPTIX_CHECK( call )                                                                       \
+{                                                                                                 \
+  OptixResult res = call;                                                                         \
+  if( res != OPTIX_SUCCESS )                                                                      \
+    {                                                                                             \
+      fprintf( stderr, "Optix call (%s) failed with code %d (line %d)\n", #call, res, __LINE__ ); \
+      exit( 2 );                                                                                  \
+    }                                                                                             \
+}
+
+#define CUDA_SYNC_CHECK()                                                                              \
+{                                                                                                      \
+	cudaDeviceSynchronize();                                                                             \
+	cudaError_t error = cudaGetLastError();                                                              \
+	if( error != cudaSuccess )                                                                           \
+		{                                                                                                  \
+			fprintf( stderr, "error (%s: line %d): %s\n", __FILE__, __LINE__, cudaGetErrorString( error ) ); \
+			exit( 2 );                                                                                       \
+		}                                                                                                  \
 }
 
 
@@ -95,11 +107,11 @@ struct CUDABuffer {
 
 class PathTracerState{
 public:
-	PathTracerState();
 	~PathTracerState();
 
-	void buildSBT();
-	void initLaunchParams(const int w, const int h);
+	void init();
+	void setScene(const Scene& scene);
+	void initLaunchParams(const uint w, const uint h);
 
 	void render();
 
@@ -110,6 +122,9 @@ private:
 	void createModule();
 	void createProgramGroups();
 	void createPipeline();
+
+	void buildAccel(std::vector<TriangleMesh>);
+	void buildSBT(const Scene& scene);
 
 
 	OptixDeviceContext context;
@@ -137,6 +152,14 @@ private:
 	CUDABuffer pixelBuffer;
 	LaunchParams launchParams;
 	CUDABuffer launchParamsBuffer;
+
+
+	OptixTraversableHandle asHandle;
+	CUDABuffer asBuffer;
+
+	std::vector<CUDABuffer> vertexBuffers;
+	std::vector<CUDABuffer> indexBuffers;
+
 };
 
 } // pt5 namespace

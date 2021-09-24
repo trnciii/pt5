@@ -9,32 +9,16 @@ extern "C" char embedded_ptx_code[];
 
 namespace pt5{
 
-/*! SBT record for a raygen program */
-struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) RaygenRecord
-{
-	__align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-	// just a dummy value - later examples will use more interesting
-	// data here
-	void *data;
+
+template <typename T>
+struct Record{
+	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+	T data;
 };
 
-/*! SBT record for a miss program */
-struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) MissRecord
-{
-	__align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-	// just a dummy value - later examples will use more interesting
-	// data here
-	void *data;
-};
-
-/*! SBT record for a hitgroup program */
-struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) HitgroupRecord
-{
-	__align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-	// just a dummy value - later examples will use more interesting
-	// data here
-	void *data;
-};
+using RaygenRecord = Record<RaygenSBTData>;
+using MissRecord = Record<MissSBTData>;
+using HitgroupRecord = Record<HitgroupSBTData>;
 
 
 void context_log_callback(unsigned int level, const char *tag, const char *message, void *){
@@ -157,8 +141,6 @@ void PathTracerState::createProgramGroups(){
 		desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 		desc.hitgroup.moduleCH = module;
 		desc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
-		desc.hitgroup.moduleAH = module;
-		desc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
 
 		char log[2048];
 		size_t sizeoflog = sizeof(log);
@@ -201,12 +183,14 @@ void PathTracerState::createPipeline(){
 }
 
 
-void PathTracerState::buildSBT(){
+void PathTracerState::buildSBT(const Scene& scene){
+
 	// raygen
 	{
 		RaygenRecord rec;
 		OPTIX_CHECK(optixSbtRecordPackHeader(raygenProgramGroup, &rec));
-		rec.data = nullptr;
+		rec.data.camera = scene.camera;
+		rec.data.traversable = asHandle;
 
 		raygenRecordBuffer.alloc(sizeof(RaygenRecord));
 		raygenRecordBuffer.upload(&rec, 1);
@@ -218,7 +202,7 @@ void PathTracerState::buildSBT(){
 	{
 		MissRecord rec;
 		OPTIX_CHECK(optixSbtRecordPackHeader(missProgramGroup, &rec));
-		rec.data = nullptr;
+		rec.data.background = scene.background;
 
 		missRecordBuffer.alloc(sizeof(MissRecord));
 		missRecordBuffer.upload(&rec, 1);
@@ -230,17 +214,18 @@ void PathTracerState::buildSBT(){
 
 	// hitgroup
 	{
-		int materialSlotSize = 1;
-		int rayTypeCount = 1;
 		std::vector<HitgroupRecord> hitgroupRecords;
+		for(int objectCount=0; objectCount<scene.meshes.size(); objectCount++){
+			int materialSlotSize = 1;
+			int rayTypeCount = 1;
 
-		for(int i=0; i<materialSlotSize; i++){
-			HitgroupRecord rec;
-			const int index = i*rayTypeCount + 0; // add ray type offset
+			for(int materialCount=0; materialCount<materialSlotSize; materialCount++){
+				HitgroupRecord rec;
 
-			OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
-			rec.data = nullptr;
-			hitgroupRecords.push_back(rec);
+				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
+
+				hitgroupRecords.push_back(rec);
+			}
 		}
 
 		hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
@@ -249,10 +234,120 @@ void PathTracerState::buildSBT(){
 		sbt.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
 		sbt.hitgroupRecordCount = (int)hitgroupRecords.size();
 	}
+
 }
 
 
-PathTracerState::PathTracerState(){
+void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
+	vertexBuffers.resize(meshes.size());
+	indexBuffers.resize(meshes.size());
+
+	std::vector<OptixBuildInput> triangleInput(meshes.size());
+	std::vector<uint32_t> triangleInputFlags(meshes.size());
+	std::vector<CUdeviceptr> d_vertices(meshes.size());
+	std::vector<CUdeviceptr> d_indices(meshes.size());
+
+	for(int i=0; i<meshes.size(); i++){
+		vertexBuffers[i].alloc_and_upload(meshes[i].vertices);
+		d_vertices[i] = vertexBuffers[i].d_pointer();
+
+		indexBuffers[i].alloc_and_upload(meshes[i].indices);
+		d_indices[i] = indexBuffers[i].d_pointer();
+
+		triangleInputFlags[i] = 0;
+
+
+		triangleInput[i] = {};
+			triangleInput[i].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+
+			triangleInput[i].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+			triangleInput[i].triangleArray.vertexStrideInBytes = sizeof(Vertex);
+			triangleInput[i].triangleArray.numVertices = (int)meshes[i].vertices.size();
+			triangleInput[i].triangleArray.vertexBuffers = &d_vertices[i];
+
+			triangleInput[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
+			triangleInput[i].triangleArray.numIndexTriplets = (int)meshes[i].indices.size();
+			triangleInput[i].triangleArray.indexBuffer = indexBuffers[i].d_pointer();
+
+			triangleInput[i].triangleArray.flags = &triangleInputFlags[i];
+			triangleInput[i].triangleArray.numSbtRecords = 1;
+			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = 0;
+			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = 0;
+			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+	}
+
+
+	// blas
+	OptixAccelBuildOptions accelOptions = {};
+		accelOptions.buildFlags = OPTIX_BUILD_FLAG_NONE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+		accelOptions.motionOptions.numKeys = 1;
+		accelOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
+
+	OptixAccelBufferSizes blasBufferSizes;
+	OPTIX_CHECK(optixAccelComputeMemoryUsage(
+		context,
+		&accelOptions,
+		triangleInput.data(),
+		(int)meshes.size(),
+		&blasBufferSizes));
+
+
+	// prepare compaction
+	CUDABuffer compactedSizeBuffer;
+	compactedSizeBuffer.alloc(sizeof(uint64_t));
+
+	OptixAccelEmitDesc emitDesc;
+		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+		emitDesc.result = compactedSizeBuffer.d_pointer();
+
+
+	// build
+	CUDABuffer tempBuffer;
+	tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
+
+	CUDABuffer outputBuffer;
+	outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
+
+	OPTIX_CHECK(optixAccelBuild(
+		context,
+		0,
+		&accelOptions,
+		triangleInput.data(),
+		(int)meshes.size(),
+		tempBuffer.d_pointer(), tempBuffer.sizeInBytes,
+		outputBuffer.d_pointer(), outputBuffer.sizeInBytes,
+		&asHandle,
+		&emitDesc, 1
+		));
+
+	CUDA_SYNC_CHECK()
+
+
+	// compaction
+	uint64_t compactedSize;
+	compactedSizeBuffer.download(&compactedSize, 1);
+
+	asBuffer.alloc(compactedSize);
+	OPTIX_CHECK(optixAccelCompact(
+		context,
+		0,
+		asHandle,
+		asBuffer.d_pointer(), asBuffer.sizeInBytes,
+		&asHandle
+		))
+
+	CUDA_SYNC_CHECK()
+
+
+	// cleanup
+	outputBuffer.free();
+	tempBuffer.free();
+	compactedSizeBuffer.free();
+}
+
+
+void PathTracerState::init(){
 	createContext();
 	createModule();
 	createProgramGroups();
@@ -261,35 +356,43 @@ PathTracerState::PathTracerState(){
 	std::cout <<"initialized PathTracerState" <<std::endl;
 }
 
+void PathTracerState::setScene(const Scene& scene){
+	buildAccel(scene.meshes);
+	buildSBT(scene);
+}
+
 
 PathTracerState::~PathTracerState(){
-    OPTIX_CHECK( optixPipelineDestroy( pipeline ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( raygenProgramGroup ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( missProgramGroup ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( hitgroupProgramGroup ) );
-    OPTIX_CHECK( optixModuleDestroy( module ) );
-    OPTIX_CHECK( optixDeviceContextDestroy( context ) );
+	OPTIX_CHECK( optixPipelineDestroy( pipeline ) );
+	OPTIX_CHECK( optixProgramGroupDestroy( raygenProgramGroup ) );
+	OPTIX_CHECK( optixProgramGroupDestroy( missProgramGroup ) );
+	OPTIX_CHECK( optixProgramGroupDestroy( hitgroupProgramGroup ) );
+	OPTIX_CHECK( optixModuleDestroy( module ) );
+	OPTIX_CHECK( optixDeviceContextDestroy( context ) );
 
-    raygenRecordBuffer.free();
+	raygenRecordBuffer.free();
 	missRecordBuffer.free();
 	hitgroupRecordsBuffer.free();
 	pixelBuffer.free();
 	launchParamsBuffer.free();
+	asBuffer.free();
+
+	for(int  i=0; i<vertexBuffers.size(); i++)
+		vertexBuffers[i].free();
+
+	for(int i=0; i<indexBuffers.size(); i++)
+		indexBuffers[i].free();
+
 
 	std::cout <<"destroyed PathTracerState" <<std::endl;
 }
 
 
-void PathTracerState::initLaunchParams(const int w, const int h){
+void PathTracerState::initLaunchParams(const uint w, const uint h){
+	// frame
 	pixelBuffer.alloc(w*h*sizeof(float4));
-
 	launchParams.image.size = make_uint2(w, h);
-	// launchParams.image.width = w;
-	// launchParams.image.height = h;
 	launchParams.image.pixels = (float4*)pixelBuffer.d_pointer();
-
-	launchParamsBuffer.alloc(sizeof(launchParams));
-	launchParamsBuffer.upload(&launchParams, 1);
 }
 
 
@@ -302,6 +405,9 @@ std::vector<float> PathTracerState::pixels(){
 
 
 void PathTracerState::render(){
+	launchParamsBuffer.alloc(sizeof(launchParams));
+	launchParamsBuffer.upload(&launchParams, 1);
+
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
 		stream,
@@ -312,12 +418,7 @@ void PathTracerState::render(){
 		launchParams.image.size.y,
 		1));
 
-	cudaDeviceSynchronize();
-	cudaError_t e = cudaGetLastError();
-	if(e != CUDA_SUCCESS){
-		fprintf( stderr, "error (%s: line %d): %s\n", __FILE__, __LINE__, cudaGetErrorString( e ) );
-		exit( 2 );
-	}
+	CUDA_SYNC_CHECK()
 
 	std::cout <<"rendered" <<std::endl;
 }

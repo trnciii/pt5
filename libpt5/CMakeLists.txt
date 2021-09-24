@@ -28,4 +28,6 @@ add_library(pt5
 
 	include/pt5.hpp
 	include/util.hpp
+
+	scene.hpp
 	)
