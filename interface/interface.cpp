@@ -2,7 +2,6 @@
 #include <pybind11/stl.h>
 
 #include "pt5.hpp"
-#include "util.hpp"
 
 
 namespace py = pybind11;
@@ -18,5 +17,4 @@ PYBIND11_MODULE(core, m) {
         .def("render", &PathTracerState::render)
         .def("pixels", &PathTracerState::pixels);
 
-    m.def("writeImage", &writeImage);
 }
