@@ -159,6 +159,7 @@ private:
 
 	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
+	CUDABuffer materialBuffer;
 
 };
 

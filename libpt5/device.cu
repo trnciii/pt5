@@ -25,7 +25,24 @@ struct PaylaodData{
 
 extern "C" __global__ void __closesthit__radiance(){
 	PaylaodData& prd = *(PaylaodData*)getPRD<PaylaodData>();
-	prd.color = make_float3(0.9, 0.8, 0.1);
+	const HitgroupSBTData& sbtData = *(HitgroupSBTData*)optixGetSbtDataPointer();
+
+	const int primID = optixGetPrimitiveIndex();
+	const Face& face = sbtData.indices[primID];
+
+	const float u = optixGetTriangleBarycentrics().x;
+	const float v = optixGetTriangleBarycentrics().y;
+
+	const Vertex& v0 = sbtData.vertices[face.vertices.x];
+	const Vertex& v1 = sbtData.vertices[face.vertices.y];
+	const Vertex& v2 = sbtData.vertices[face.vertices.z];
+
+	const Material& mtl = sbtData.materials[face.material];
+
+	const float3 p = (1-u-v)*v0.p + u*v1.p + v*v2.p;
+	const float3 n = (1-u-v)*v0.n + u*v1.n + v*v2.n;
+
+	prd.color = mtl.color;
 }
 
 

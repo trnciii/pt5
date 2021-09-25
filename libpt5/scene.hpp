@@ -19,6 +19,11 @@ struct Vertex{
 
 struct Face{
 	uint3 vertices;
+	uint32_t material;
+};
+
+struct Material{
+	float3 color;
 };
 
 struct TriangleMesh{
@@ -31,6 +36,7 @@ struct Scene{
 	float3 background;
 	Camera camera;
 	std::vector<TriangleMesh> meshes;
+	std::vector<Material> materials;
 };
 
 }

@@ -222,7 +222,14 @@ void PathTracerState::buildSBT(const Scene& scene){
 			for(int materialCount=0; materialCount<materialSlotSize; materialCount++){
 				HitgroupRecord rec;
 
+				HitgroupSBTData data = {
+					(Vertex*)vertexBuffers[objectCount].d_pointer(),
+					(Face*)indexBuffers[objectCount].d_pointer(),
+					(Material*)materialBuffer.d_pointer()
+				};
+
 				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
+				rec.data = data;
 
 				hitgroupRecords.push_back(rec);
 			}
@@ -357,6 +364,7 @@ void PathTracerState::init(){
 }
 
 void PathTracerState::setScene(const Scene& scene){
+	materialBuffer.alloc_and_upload(scene.materials);
 	buildAccel(scene.meshes);
 	buildSBT(scene);
 }
@@ -382,6 +390,8 @@ PathTracerState::~PathTracerState(){
 
 	for(int i=0; i<indexBuffers.size(); i++)
 		indexBuffers[i].free();
+
+	materialBuffer.free();
 
 
 	std::cout <<"destroyed PathTracerState" <<std::endl;

@@ -14,7 +14,11 @@ struct MissSBTData{
 	float3 background;
 };
 
-struct HitgroupSBTData{};
+struct HitgroupSBTData{
+	Vertex* vertices;
+	Face* indices;
+	Material* materials;
+};
 
 struct LaunchParams{
 	struct{
