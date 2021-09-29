@@ -34,7 +34,7 @@ void createScene(pt5::Scene& scene){
 	camera.focalLength = 2;
 
 
-	scene.background = make_float3(0.4, 0.1, 0.8);
+	scene.background = make_float3(0.2, 0, 0.4);
 
 
 	scene.materials = {
@@ -65,22 +65,23 @@ void createScene(pt5::Scene& scene){
 
 
 	std::vector<pt5::Face> f0 = {
-		{{0, 1, 2}, 0}, // indices, material
-		{{2, 3, 0}, 1},
-		{{3, 2, 5}, 2},
-		{{5, 4, 3}, 3}
-	};
-
-
-	std::vector<pt5::Face> f1 = {
-		{{0, 1, 2}, 1},
+		{{0, 1, 2}, 1}, // indices, material
 		{{2, 3, 0}, 1},
 		{{3, 2, 5}, 0},
 		{{5, 4, 3}, 0}
 	};
 
-	scene.meshes.push_back(pt5::TriangleMesh{v0, f0});
-	scene.meshes.push_back(pt5::TriangleMesh{v1, f1});
+
+	std::vector<pt5::Face> f1 = {
+		{{0, 1, 2}, 1},
+		{{2, 3, 0}, 2},
+		{{3, 2, 5}, 0},
+		{{5, 4, 3}, 1}
+	};
+
+
+	scene.meshes.push_back(pt5::TriangleMesh{v0, f0, {3, 0}});
+	scene.meshes.push_back(pt5::TriangleMesh{v1, f1, {1, 0, 2}});
 }
 
 

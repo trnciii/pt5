@@ -29,6 +29,7 @@ struct Material{
 struct TriangleMesh{
 	std::vector<Vertex> vertices;
 	std::vector<Face> indices;
+	std::vector<uint32_t> materialSlots;
 };
 
 

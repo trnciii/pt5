@@ -17,7 +17,7 @@ struct MissSBTData{
 struct HitgroupSBTData{
 	Vertex* vertices;
 	Face* indices;
-	Material* materials;
+	Material material;
 };
 
 struct LaunchParams{
