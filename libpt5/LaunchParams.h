@@ -15,8 +15,11 @@ struct MissSBTData{
 };
 
 struct HitgroupSBTData{
-	Vertex* vertices;
-	Face* indices;
+	float3* vertex_coords;
+	float3* vertex_normals;
+
+	uint3* face_vertices;
+
 	Material material;
 };
 

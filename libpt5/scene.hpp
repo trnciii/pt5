@@ -11,25 +11,18 @@ struct Camera{
 	float focalLength = 1;
 };
 
-
-struct Vertex{
-	float3 p;
-	float3 n;
-};
-
-struct Face{
-	uint3 vertices;
-	uint32_t material;
-};
-
 struct Material{
 	float3 color;
 };
 
 struct TriangleMesh{
-	std::vector<Vertex> vertices;
-	std::vector<Face> indices;
-	std::vector<uint32_t> materialSlots;
+	std::vector<float3> vertex_coords;
+	std::vector<float3> vertex_normals;
+
+	std::vector<uint3> face_vertices;
+	std::vector<uint32_t> face_material;
+
+	std::vector<uint32_t> materials;
 };
 
 

@@ -157,9 +157,10 @@ private:
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
 
-	std::vector<CUDABuffer> vertexBuffers;
+	// buffer per geometry
+	std::vector<CUDABuffer> vertexCoordsBuffers;
+	std::vector<CUDABuffer> vertexNormalBuffers;
 	std::vector<CUDABuffer> indexBuffers;
-
 };
 
 } // pt5 namespace

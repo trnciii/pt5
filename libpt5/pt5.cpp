@@ -219,13 +219,16 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			for(int materialCount=0; materialCount<mesh.materialSlots.size(); materialCount++){
+			for(int materialCount=0; materialCount<mesh.materials.size(); materialCount++){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
-					(Vertex*)vertexBuffers[objectCount].d_pointer(),
-					(Face*)indexBuffers[objectCount].d_pointer(),
-					scene.materials[mesh.materialSlots[materialCount]]
+					(float3*)vertexCoordsBuffers[objectCount].d_pointer(),
+					(float3*)vertexNormalBuffers[objectCount].d_pointer(),
+
+					(uint3*)indexBuffers[objectCount].d_pointer(),
+
+					scene.materials[mesh.materials[materialCount]]
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
@@ -246,8 +249,12 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 
 void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
-	vertexBuffers.resize(meshes.size());
+	vertexCoordsBuffers.resize(meshes.size());
+	vertexNormalBuffers.resize(meshes.size());
+
 	indexBuffers.resize(meshes.size());
+
+	std::vector<CUDABuffer> materialBuffer(meshes.size());
 
 	std::vector<OptixBuildInput> triangleInput(meshes.size());
 	std::vector<std::vector<uint32_t>> triangleInputFlags(meshes.size());
@@ -256,32 +263,35 @@ void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
 	for(int i=0; i<meshes.size(); i++){
 		const TriangleMesh& mesh = meshes[i];
 
-		vertexBuffers[i].alloc_and_upload(mesh.vertices);
-		d_vertices[i] = vertexBuffers[i].d_pointer();
+		vertexCoordsBuffers[i].alloc_and_upload(mesh.vertex_coords);
+		vertexNormalBuffers[i].alloc_and_upload(mesh.vertex_normals);
+		d_vertices[i] = vertexCoordsBuffers[i].d_pointer();
 
-		indexBuffers[i].alloc_and_upload(mesh.indices);
+		indexBuffers[i].alloc_and_upload(mesh.face_vertices);
 
-		triangleInputFlags[i] = std::vector<uint32_t>(mesh.materialSlots.size(), OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
+		materialBuffer[i].alloc_and_upload(mesh.face_material);
+
+		triangleInputFlags[i] = std::vector<uint32_t>(mesh.materials.size(), OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
 
 
 		triangleInput[i] = {};
 			triangleInput[i].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
 
 			triangleInput[i].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-			triangleInput[i].triangleArray.numVertices = (int)mesh.vertices.size();
+			triangleInput[i].triangleArray.numVertices = (int)mesh.vertex_coords.size();
 			triangleInput[i].triangleArray.vertexBuffers = &d_vertices[i];
-			triangleInput[i].triangleArray.vertexStrideInBytes = sizeof(Vertex);
+			triangleInput[i].triangleArray.vertexStrideInBytes = sizeof(float3);
 
 			triangleInput[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.indices.size();
-			triangleInput[i].triangleArray.indexBuffer = indexBuffers[i].d_pointer() + offsetof(Face, vertices);
-			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
+			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.face_vertices.size();
+			triangleInput[i].triangleArray.indexBuffer = indexBuffers[i].d_pointer();
+			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(uint3);
 
 			triangleInput[i].triangleArray.flags = triangleInputFlags[i].data();
-			triangleInput[i].triangleArray.numSbtRecords = mesh.materialSlots.size();
-			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = indexBuffers[i].d_pointer() + offsetof(Face, material);
+			triangleInput[i].triangleArray.numSbtRecords = mesh.materials.size();
+			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = materialBuffer[i].d_pointer();
 			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
-			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(Face);
+			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(uint32_t);
 	}
 
 
@@ -351,6 +361,10 @@ void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
 	outputBuffer.free();
 	tempBuffer.free();
 	compactedSizeBuffer.free();
+
+	for(int i=0; i<materialBuffer.size(); i++){
+		materialBuffer[i].free();
+	}
 }
 
 
@@ -384,8 +398,11 @@ PathTracerState::~PathTracerState(){
 	launchParamsBuffer.free();
 	asBuffer.free();
 
-	for(int  i=0; i<vertexBuffers.size(); i++)
-		vertexBuffers[i].free();
+	for(int  i=0; i<vertexCoordsBuffers.size(); i++)
+		vertexCoordsBuffers[i].free();
+
+	for(int  i=0; i<vertexNormalBuffers.size(); i++)
+		vertexNormalBuffers[i].free();
 
 	for(int i=0; i<indexBuffers.size(); i++)
 		indexBuffers[i].free();
