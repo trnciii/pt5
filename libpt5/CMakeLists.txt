@@ -20,7 +20,11 @@ endmacro()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # kind of fPIC
 
-cuda_compile_and_embed(embedded_ptx_code device.cu deviceutil.cuh)
+cuda_compile_and_embed(embedded_ptx_code
+	device/device.cu
+	device/deviceutil.cuh
+	device/math.cuh
+	)
 
 add_library(pt5
 	${embedded_ptx_code}

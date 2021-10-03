@@ -16,9 +16,10 @@ BScene.createScene(scene)
 pt = core.PathTracer()
 pt.init()
 pt.setScene(scene)
-pt.initLaunchParams(width, height)
+pt.initLaunchParams(width, height, 100)
 
 pt.render()
 
-pixels4 = np.array(np.minimum(1, np.maximum(0, pt.pixels()))).reshape((height, width, 4))
+pixels4 = np.array(pt.pixels())**0.4
+pixels4 = np.array(np.minimum(1, np.maximum(0, pixels4))).reshape((height, width, 4))
 plt.imsave('out_py.png', pixels4)

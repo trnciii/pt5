@@ -2,6 +2,7 @@
 
 #include <optix_device.h>
 #include <stdint.h>
+#include <curand_kernel.h>
 
 
 namespace pt5{

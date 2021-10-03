@@ -119,7 +119,8 @@ PYBIND11_MODULE(core, m) {
 
 	py::class_<Material>(m, "Material")
 		.def(py::init<>())
-		.def_property("color", PROPERTY_FLOAT3(Material, color));
+		.def_property("albedo", PROPERTY_FLOAT3(Material, albedo))
+		.def_property("emission", PROPERTY_FLOAT3(Material, emission));
 
 
 	py::class_<TriangleMesh>(m, "TriangleMesh");

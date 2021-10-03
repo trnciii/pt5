@@ -28,6 +28,8 @@ struct LaunchParams{
 		float4* pixels;
 		uint2 size;
 	}image;
+
+	uint32_t spp;
 };
 
 }

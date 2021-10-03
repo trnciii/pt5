@@ -411,11 +411,12 @@ PathTracerState::~PathTracerState(){
 }
 
 
-void PathTracerState::initLaunchParams(const uint w, const uint h){
+void PathTracerState::initLaunchParams(const uint w, const uint h, const uint spp){
 	// frame
 	pixelBuffer.alloc(w*h*sizeof(float4));
 	launchParams.image.size = make_uint2(w, h);
 	launchParams.image.pixels = (float4*)pixelBuffer.d_pointer();
+	launchParams.spp = spp;
 }
 
 

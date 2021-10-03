@@ -27,88 +27,96 @@ void writeImage(const std::string& filename, int w, int h, const std::vector<flo
 
 void createScene(pt5::Scene& scene){
 	pt5::Camera& camera = scene.camera;
-	camera.position = {0, -20, 1};
+	camera.position = {0, -5, 2};
 	camera.toWorld[0] = {1, 0, 0};
 	camera.toWorld[1] = {0, 0,-1};
 	camera.toWorld[2] = {0, 1, 0};
-	camera.focalLength = 2;
+	camera.focalLength = 2.3;
 
 
 	scene.background = make_float3(0.2, 0, 0.4);
 
 
 	scene.materials = {
-		{{0.8, 0.2, 0.2}}, // color
-		{{0.2, 0.8, 0.2}},
-		{{0.2, 0.2, 0.8}},
-		{{0.8, 0.8, 0.4}}
+		// albedo, emission
+		{{0.8, 0.8, 0.8}, {0, 0, 0}}, // white
+		{{0.8, 0.2, 0.2}, {0, 0, 0}},	// red
+		{{0.2, 0.8, 0.2}, {0, 0, 0}}, // green
+		{{  0,   0,   0}, {10, 10, 10}}  // light
 	};
 
 
-	std::vector<float3> v0 = {
-		{-4, 0, 6},
-		{-4, 0, 2},
-		{ 0, 0, 2},
-		{ 0, 0, 6},
-		{ 4, 0, 6},
-		{ 4, 0, 2}
+	std::vector<float3> v_box = {
+		{-2, 4, 0},
+		{-2, 0, 0},
+		{ 2, 0, 0},
+		{ 2, 4, 0},
+
+		{-2, 4, 4},
+		{-2, 0, 4},
+		{ 2, 0, 4},
+		{ 2, 4, 4},
 	};
 
-	std::vector<float3> n0 = {
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0}
+	std::vector<float3> n_box = {
+		{ 0.5773, 0.5773, 0.5773},
+		{ 0.7071, 0.0000, 0.7071},
+		{-0.7071, 0.0000, 0.7071},
+		{-0.5773, -0.5773, 0.5773},
+
+		{ 0.5773,-0.5773, -0.5773},
+		{ 0.7071, 0.0000, -0.7071},
+		{-0.7071, 0.0000, -0.7071},
+		{-0.5773,-0.5773, -0.5773}
 	};
 
-
-	std::vector<float3> v1 = {
-		{-4, 0, 6-6},
-		{-4, 0, 2-6},
-		{ 0, 0, 2-6},
-		{ 0, 0, 6-6},
-		{ 4, 0, 6-6},
-		{ 4, 0, 2-6}
+	std::vector<uint3> f_box = {
+		{0,1,2}, {2,3,0}, // floor
+		{5,1,0}, {0,4,5}, // left
+		{4,0,3}, {3,7,4}, // back
+		{7,3,2}, {2,6,7}, // right
+		{5,4,7}, {7,6,5}, // roof
 	};
 
+	std::vector<uint32_t> mSlot_box = {0,1,2};
 
-	std::vector<float3> n1 ={
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0},
-		{0, -1, 0}
-	};
-
-
-	std::vector<uint3> f0 = {
-		{0, 1, 2},
-		{2, 3, 0},
-		{3, 2, 5},
-		{5, 4, 3}
+	std::vector<uint32_t> mIndex_box = {
+		0, 0,
+		1, 1,
+		0, 0,
+		2, 2,
+		0, 0
 	};
 
 
-	std::vector<uint3> f1 = {
-		{0, 1, 2},
-		{2, 3, 0},
-		{3, 2, 5},
-		{5, 4, 3}
+	std::vector<float3> v_light = {
+		{-0.5, 1.5, 3.95},
+		{-0.5, 2.5, 3.95},
+		{ 0.5, 2.5, 3.95},
+		{ 0.5, 1.5, 3.95},
 	};
 
+	std::vector<float3> n_light = {
+		{0, 0, -1},
+		{0, 0, -1},
+		{0, 0, -1},
+		{0, 0, -1}
+	};
 
-	scene.meshes.push_back(pt5::TriangleMesh{v0, n0, f0, {1,0,1,0}, {3, 0}});
-	scene.meshes.push_back(pt5::TriangleMesh{v1, n1, f1, {1,0,2,2}, {1, 3, 2}});
+	std::vector<uint3> f_light = {{0,1,2}, {2,3,0}};
+	std::vector<uint32_t> mSlot_light = {3};
+	std::vector<uint32_t> mIndex_light = {0, 0};
+
+
+	scene.meshes.push_back(pt5::TriangleMesh{v_box, n_box, f_box, mIndex_box, mSlot_box});
+	scene.meshes.push_back(pt5::TriangleMesh{v_light, n_light, f_light, mIndex_light, mSlot_light});
 }
 
 
 int main(){
 
-	const int width = 1200;
-	const int height = 800;
+	const int width = 1024;
+	const int height = 1024;
 
 	pt5::Scene scene;
 	createScene(scene);
@@ -116,7 +124,7 @@ int main(){
 	pt5::PathTracerState tracer;
 	tracer.init();
 	tracer.setScene(scene);
-	tracer.initLaunchParams(width, height);
+	tracer.initLaunchParams(width, height, 1000);
 
 	tracer.render();
 

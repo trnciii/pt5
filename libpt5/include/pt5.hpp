@@ -111,7 +111,7 @@ public:
 
 	void init();
 	void setScene(const Scene& scene);
-	void initLaunchParams(const uint w, const uint h);
+	void initLaunchParams(const uint w, const uint h, const uint spp);
 
 	void render();
 
