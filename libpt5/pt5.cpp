@@ -2,7 +2,7 @@
 #include "pt5.hpp"
 
 #include <optix_function_table_definition.h>
-
+#include <chrono>
 
 extern "C" char embedded_ptx_code[];
 
@@ -425,6 +425,8 @@ void PathTracerState::render(){
 	launchParamsBuffer.alloc(sizeof(launchParams));
 	launchParamsBuffer.upload(&launchParams, 1);
 
+	auto t0 = std::chrono::system_clock::now();
+
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
 		stream,
@@ -437,7 +439,11 @@ void PathTracerState::render(){
 
 	CUDA_SYNC_CHECK()
 
-	std::cout <<"rendered" <<std::endl;
+	auto t1 = std::chrono::system_clock::now();
+
+	std::cout <<"rendered ("
+		<<std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
+		<<"ms)" <<std::endl;
 
 	uint32_t len = launchParams.image.size.x*launchParams.image.size.y;
 	pixels.resize(4*len);

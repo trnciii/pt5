@@ -10,13 +10,9 @@ def setCamera(scene):
   camera.data.sensor_fit = 'HORIZONTAL'
   mat = camera.matrix_world
 
-  print(mat)
-
   scene.camera.focalLength = 2*camera.data.lens/camera.data.sensor_width
   scene.camera.position = mat.to_translation()
   scene.camera.toWorld = mat.to_3x3()
-
-  print('focal', scene.camera.focalLength)
 
 
 def setBackground(scene):

@@ -73,10 +73,10 @@ extern "C" __global__ void __closesthit__radiance(){
 	float3 ray_d = sample_cosine_hemisphere(payload.rng.uniform(), payload.rng.uniform());
 
 
-	// payload.pContinue = max(mtl.albedo.x, max(mtl.albedo.y, mtl.albedo.z));
+	payload.pContinue = max(mtl.albedo.x, max(mtl.albedo.y, mtl.albedo.z));
 	payload.emission = mtl.emission;
 	payload.albedo = mtl.albedo;
-	payload.ray_o = p + 0.01*ng;
+	payload.ray_o = p + 0.001*ng;
 	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*n;
 }
 
