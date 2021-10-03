@@ -75,6 +75,16 @@ pt5::TriangleMesh createTriangleMesh(
 }
 
 
+py::array_t<float> PathTracerState_pixels_py(pt5::PathTracerState& pt){
+	return (py::array_t<float>)py::buffer_info{
+		pt.pixels.data(),
+		sizeof(float),
+		py::format_descriptor<float>::format(),
+		1, {pt.pixels.size()}, {sizeof(float)}
+	};
+}
+
+
 PYBIND11_MODULE(core, m) {
 	using namespace pt5;
 
@@ -84,7 +94,7 @@ PYBIND11_MODULE(core, m) {
 		.def("setScene", &PathTracerState::setScene)
 		.def("initLaunchParams", &PathTracerState::initLaunchParams)
 		.def("render", &PathTracerState::render)
-		.def("pixels", &PathTracerState::pixels);
+		.def("pixels", &PathTracerState_pixels_py);
 
 
 	py::class_<Scene>(m, "Scene")

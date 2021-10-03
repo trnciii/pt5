@@ -115,7 +115,7 @@ public:
 
 	void render();
 
-	std::vector<float> pixels();
+	std::vector<float> pixels;
 
 private:
 	void createContext();

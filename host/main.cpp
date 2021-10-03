@@ -128,8 +128,7 @@ int main(){
 
 	tracer.render();
 
-	std::vector<float> pixels = tracer.pixels();
-	writeImage("out_c++.png", width, height, pixels);
+	writeImage("out_c++.png", width, height, tracer.pixels);
 	std::cout <<"image saved" <<std::endl;
 
 	return 0;

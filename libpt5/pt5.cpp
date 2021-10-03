@@ -420,13 +420,6 @@ void PathTracerState::initLaunchParams(const uint w, const uint h, const uint sp
 }
 
 
-std::vector<float> PathTracerState::pixels(){
-	uint32_t len = launchParams.image.size.x*launchParams.image.size.y;
-	std::vector<float> pixels(4*len);
-	pixelBuffer.download(pixels.data(), 4*len);
-	return pixels;
-}
-
 
 void PathTracerState::render(){
 	launchParamsBuffer.alloc(sizeof(launchParams));
@@ -445,6 +438,10 @@ void PathTracerState::render(){
 	CUDA_SYNC_CHECK()
 
 	std::cout <<"rendered" <<std::endl;
+
+	uint32_t len = launchParams.image.size.x*launchParams.image.size.y;
+	pixels.resize(4*len);
+	pixelBuffer.download(pixels.data(), 4*len);
 }
 
 } // pt5 namespace
