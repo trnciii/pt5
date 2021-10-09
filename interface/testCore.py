@@ -2,6 +2,7 @@ from pt5 import core
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os, sys
 
 
 def createScene(scene):
@@ -78,7 +79,6 @@ w, h = 1200, 800
 scene = core.Scene()
 createScene(scene)
 
-print(scene.camera.toWorld)
 
 pt = core.PathTracer()
 pt.init()
@@ -90,6 +90,10 @@ pt.render()
 pixels4 = np.array(pt.pixels()).reshape((h,w,4))
 
 plt.imshow(pixels4)
-plt.show()
 
-plt.imsave('out_py.png', pixels4)
+if '--background' not in sys.argv:
+	plt.show()
+
+
+os.makedirs('result', exist_ok=True)
+plt.imsave('result/out_py.png', pixels4)

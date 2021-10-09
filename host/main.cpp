@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -127,7 +128,14 @@ int main(){
 
 	tracer.render();
 
-	writeImage("out_c++.png", width, height, tracer.pixels);
+
+	std::string outDir("result");
+	if(!( std::filesystem::exists(outDir) && std::filesystem::is_directory(outDir) )){
+		std::cout <<"created directory " <<outDir <<std::endl;
+		assert(std::filesystem::create_directory(outDir));
+	}
+
+	writeImage(outDir+"/out_c++.png", width, height, tracer.pixels);
 	std::cout <<"image saved" <<std::endl;
 
 	return 0;

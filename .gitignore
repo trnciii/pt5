@@ -1,4 +1,4 @@
 build
 *.so
-interface/*.png
+*result/
 __pycache__
