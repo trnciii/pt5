@@ -36,6 +36,7 @@ void PathTracerState::createContext(){
 	const int deviceID = 0;
 	CUDA_CHECK(cudaSetDevice(deviceID));
 	CUDA_CHECK(cudaStreamCreate(&stream));
+	CUDA_CHECK(cudaStreamCreate(&view_stream));
 
 	CUresult res = cuCtxGetCurrent(&cudaContext);
 	if(res != CUDA_SUCCESS)
@@ -192,8 +193,8 @@ void PathTracerState::buildSBT(const Scene& scene){
 		rec.data.camera = scene.camera;
 		rec.data.traversable = asHandle;
 
-		raygenRecordBuffer.alloc(sizeof(RaygenRecord));
-		raygenRecordBuffer.upload(&rec, 1);
+		raygenRecordBuffer.alloc(sizeof(RaygenRecord), stream);
+		raygenRecordBuffer.upload(&rec, 1, stream);
 
 		sbt.raygenRecord = raygenRecordBuffer.d_pointer();
 	}
@@ -204,8 +205,8 @@ void PathTracerState::buildSBT(const Scene& scene){
 		OPTIX_CHECK(optixSbtRecordPackHeader(missProgramGroup, &rec));
 		rec.data.background = scene.background;
 
-		missRecordBuffer.alloc(sizeof(MissRecord));
-		missRecordBuffer.upload(&rec, 1);
+		missRecordBuffer.alloc(sizeof(MissRecord), stream);
+		missRecordBuffer.upload(&rec, 1, stream);
 
 		sbt.missRecordBase = missRecordBuffer.d_pointer();
 		sbt.missRecordStrideInBytes = sizeof(MissRecord);
@@ -238,7 +239,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 			}
 		}
 
-		hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
+		hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords, stream);
 
 		sbt.hitgroupRecordBase = hitgroupRecordsBuffer.d_pointer();
 		sbt.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
@@ -263,13 +264,13 @@ void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
 	for(int i=0; i<meshes.size(); i++){
 		const TriangleMesh& mesh = meshes[i];
 
-		vertexCoordsBuffers[i].alloc_and_upload(mesh.vertex_coords);
-		vertexNormalBuffers[i].alloc_and_upload(mesh.vertex_normals);
+		vertexCoordsBuffers[i].alloc_and_upload(mesh.vertex_coords, stream);
+		vertexNormalBuffers[i].alloc_and_upload(mesh.vertex_normals, stream);
 		d_vertices[i] = vertexCoordsBuffers[i].d_pointer();
 
-		indexBuffers[i].alloc_and_upload(mesh.face_vertices);
+		indexBuffers[i].alloc_and_upload(mesh.face_vertices, stream);
 
-		materialBuffer[i].alloc_and_upload(mesh.face_material);
+		materialBuffer[i].alloc_and_upload(mesh.face_material, stream);
 
 		triangleInputFlags[i] = std::vector<uint32_t>(mesh.materials.size(), OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
 
@@ -312,7 +313,7 @@ void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
 
 	// prepare compaction
 	CUDABuffer compactedSizeBuffer;
-	compactedSizeBuffer.alloc(sizeof(uint64_t));
+	compactedSizeBuffer.alloc(sizeof(uint64_t), stream);
 
 	OptixAccelEmitDesc emitDesc;
 		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -321,10 +322,10 @@ void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
 
 	// build
 	CUDABuffer tempBuffer;
-	tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
+	tempBuffer.alloc(blasBufferSizes.tempSizeInBytes, stream);
 
 	CUDABuffer outputBuffer;
-	outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
+	outputBuffer.alloc(blasBufferSizes.outputSizeInBytes, stream);
 
 	OPTIX_CHECK(optixAccelBuild(
 		context,
@@ -343,9 +344,9 @@ void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
 
 	// compaction
 	uint64_t compactedSize;
-	compactedSizeBuffer.download(&compactedSize, 1);
+	compactedSizeBuffer.download(&compactedSize, 1, stream);
 
-	asBuffer.alloc(compactedSize);
+	asBuffer.alloc(compactedSize, stream);
 	OPTIX_CHECK(optixAccelCompact(
 		context,
 		0,
@@ -358,12 +359,12 @@ void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
 
 
 	// cleanup
-	outputBuffer.free();
-	tempBuffer.free();
-	compactedSizeBuffer.free();
+	outputBuffer.free(stream);
+	tempBuffer.free(stream);
+	compactedSizeBuffer.free(stream);
 
 	for(int i=0; i<materialBuffer.size(); i++){
-		materialBuffer[i].free();
+		materialBuffer[i].free(stream);
 	}
 }
 
@@ -391,21 +392,21 @@ PathTracerState::~PathTracerState(){
 	OPTIX_CHECK( optixModuleDestroy( module ) );
 	OPTIX_CHECK( optixDeviceContextDestroy( context ) );
 
-	raygenRecordBuffer.free();
-	missRecordBuffer.free();
-	hitgroupRecordsBuffer.free();
-	pixelBuffer.free();
-	launchParamsBuffer.free();
-	asBuffer.free();
+	raygenRecordBuffer.free(stream);
+	missRecordBuffer.free(stream);
+	hitgroupRecordsBuffer.free(stream);
+	pixelBuffer.free(stream);
+	launchParamsBuffer.free(stream);
+	asBuffer.free(stream);
 
 	for(int  i=0; i<vertexCoordsBuffers.size(); i++)
-		vertexCoordsBuffers[i].free();
+		vertexCoordsBuffers[i].free(stream);
 
 	for(int  i=0; i<vertexNormalBuffers.size(); i++)
-		vertexNormalBuffers[i].free();
+		vertexNormalBuffers[i].free(stream);
 
 	for(int i=0; i<indexBuffers.size(); i++)
-		indexBuffers[i].free();
+		indexBuffers[i].free(stream);
 
 	std::cout <<"destroyed PathTracerState" <<std::endl;
 }
@@ -413,7 +414,7 @@ PathTracerState::~PathTracerState(){
 
 void PathTracerState::initLaunchParams(const uint w, const uint h, const uint spp){
 	// frame
-	pixelBuffer.alloc(w*h*sizeof(float4));
+	pixelBuffer.alloc(w*h*sizeof(float4), stream);
 	launchParams.image.size = make_uint2(w, h);
 	launchParams.image.pixels = (float4*)pixelBuffer.d_pointer();
 	launchParams.spp = spp;
@@ -422,8 +423,8 @@ void PathTracerState::initLaunchParams(const uint w, const uint h, const uint sp
 
 
 void PathTracerState::render(){
-	launchParamsBuffer.alloc(sizeof(launchParams));
-	launchParamsBuffer.upload(&launchParams, 1);
+	launchParamsBuffer.alloc(sizeof(launchParams), stream);
+	launchParamsBuffer.upload(&launchParams, 1, stream);
 
 	auto t0 = std::chrono::system_clock::now();
 
@@ -436,18 +437,12 @@ void PathTracerState::render(){
 		launchParams.image.size.x,
 		launchParams.image.size.y,
 		1));
+}
 
-	CUDA_SYNC_CHECK()
-
-	auto t1 = std::chrono::system_clock::now();
-
-	std::cout <<"rendered ("
-		<<std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
-		<<"ms)" <<std::endl;
-
+void PathTracerState::downloadPixels(std::vector<float>& pixels){
 	uint32_t len = launchParams.image.size.x*launchParams.image.size.y;
 	pixels.resize(4*len);
-	pixelBuffer.download(pixels.data(), 4*len);
+	pixelBuffer.download(pixels.data(), 4*len, view_stream);
 }
 
 } // pt5 namespace

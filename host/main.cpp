@@ -118,6 +118,9 @@ int main(){
 	const int width = 1024;
 	const int height = 1024;
 
+	std::vector<float> pixels;
+
+
 	pt5::Scene scene;
 	createScene(scene);
 
@@ -128,6 +131,9 @@ int main(){
 
 	tracer.render();
 
+	CUDA_SYNC_CHECK();
+
+	tracer.downloadPixels(pixels);
 
 	std::string outDir("result");
 	if(!( std::filesystem::exists(outDir) && std::filesystem::is_directory(outDir) )){
@@ -135,7 +141,7 @@ int main(){
 		assert(std::filesystem::create_directory(outDir));
 	}
 
-	writeImage(outDir+"/out_c++.png", width, height, tracer.pixels);
+	writeImage(outDir+"/out_c++.png", width, height, pixels);
 	std::cout <<"image saved" <<std::endl;
 
 	return 0;

@@ -76,12 +76,19 @@ pt5::TriangleMesh createTriangleMesh(
 
 
 py::array_t<float> PathTracerState_pixels_py(pt5::PathTracerState& pt){
-	return (py::array_t<float>)py::buffer_info{
-		pt.pixels.data(),
-		sizeof(float),
-		py::format_descriptor<float>::format(),
-		1, {pt.pixels.size()}, {sizeof(float)}
-	};
+	std::vector<float> pixels;
+	pt.downloadPixels(pixels);
+
+	auto result = py::array_t<float>(pixels.size());
+	py::buffer_info buf = result.request();
+	memcpy(static_cast<float*>(result.request().ptr), pixels.data(), pixels.size()*sizeof(float));
+
+	return result;
+}
+
+
+void cuda_sync(){
+	CUDA_SYNC_CHECK();
 }
 
 
@@ -135,5 +142,7 @@ PYBIND11_MODULE(core, m) {
 
 	py::class_<TriangleMesh>(m, "TriangleMesh");
 	m.def("createTriangleMesh", &createTriangleMesh);
+
+	m.def("cuda_sync", &cuda_sync);
 
 }

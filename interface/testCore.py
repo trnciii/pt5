@@ -86,6 +86,7 @@ pt.setScene(scene)
 pt.initLaunchParams(w, h, 1000)
 
 pt.render()
+core.cuda_sync()
 
 pixels4 = np.array(pt.pixels()).reshape((h,w,4))
 
