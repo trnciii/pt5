@@ -1,3 +1,5 @@
+include_directories(${PROJECT_SOURCE_DIR}/libpt5)
+
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/interface/pt5)
 
 

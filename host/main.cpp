@@ -7,7 +7,6 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#include "vector_math.h"
 
 
 void writeImage(const std::string& filename, int w, int h, const std::vector<float>& color_float){

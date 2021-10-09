@@ -1,7 +1,7 @@
 #include <optix_device.h>
 #include <stdint.h>
 
-#include "vector_math.h"
+#include "../vector_math.h"
 #include "../LaunchParams.h"
 #include "../scene.hpp"
 #include "util.cuh"

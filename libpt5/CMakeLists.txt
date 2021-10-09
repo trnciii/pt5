@@ -29,7 +29,7 @@ cuda_compile_and_embed(embedded_ptx_code
 add_library(pt5
 	${embedded_ptx_code}
 	pt5.cpp
-	include/pt5.hpp
+	pt5.hpp
 	LaunchParams.h
 	scene.hpp
 	)

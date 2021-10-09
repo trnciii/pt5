@@ -21,4 +21,4 @@ pt.initLaunchParams(width, height, 100)
 pt.render()
 
 pixels4 = np.array(np.minimum(1, np.maximum(0, pt.pixels()**0.4))).reshape((height, width, 4))
-plt.imsave('out_py.png', pixels4)
+plt.imsave('out_blender.png', pixels4)

@@ -3,7 +3,7 @@ project(pt5)
 
 
 set(CMAKE_MODULE_PATH
-  "${CMAKE_SOURCE_DIR}/extern/cmake"
+  "${CMAKE_SOURCE_DIR}/cmake"
   ${CMAKE_MODULE_PATH}
   )
 
@@ -25,9 +25,6 @@ include_directories(${OptiX_INCLUDE})
 
 
 # add
-include_directories(${PROJECT_SOURCE_DIR}/extern)
-include_directories(${PROJECT_SOURCE_DIR}/libpt5/include)
-
 add_subdirectory(libpt5)
 add_subdirectory(host)
 add_subdirectory(interface)

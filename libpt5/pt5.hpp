@@ -9,8 +9,8 @@
 #include <cassert>
 #include <vector>
 
-#include "../LaunchParams.h"
-#include "../scene.hpp"
+#include "LaunchParams.h"
+#include "scene.hpp"
 
 
 #define CUDA_CHECK(call)                            \
