@@ -45,11 +45,12 @@ void View::initWindow(){
 }
 
 
-void View::showWindow(const cudaEvent_t* const finished){
+void View::showWindow(){
 	initWindow();
 	do{
 		downloadImage();
 
+		glEnable(GL_FRAMEBUFFER_SRGB);
 
 		GLuint fbTexture {0};
 		glGenTextures(1, &fbTexture);
@@ -82,8 +83,10 @@ void View::showWindow(const cudaEvent_t* const finished){
     glfwPollEvents();
 	}while(
 		!glfwWindowShouldClose(window)
-		&& (cudaEventQuery(*finished) == cudaErrorNotReady)
+		// && (cudaEventQuery(*tracerFinishEvent) == cudaErrorNotReady)
 		);
+	glfwDestroyWindow(window);
+	glfwTerminate();
 }
 
 }

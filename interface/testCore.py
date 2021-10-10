@@ -88,12 +88,13 @@ pt.setScene(scene)
 pt.initLaunchParams(view, 1000)
 
 pt.render()
+view.showWindow()
 core.cuda_sync()
 
 
 view.downloadImage()
 
-plt.imshow(view.pixels)
+# plt.imshow(view.pixels)
 
 if '--background' not in sys.argv:
 	plt.show()

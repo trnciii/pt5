@@ -410,17 +410,18 @@ PathTracerState::~PathTracerState(){
 }
 
 
-void PathTracerState::initLaunchParams(const View& view, const uint spp){
-	// frame
+void PathTracerState::initLaunchParams(View& view, const uint spp){
 	launchParams.image.size = make_uint2(view.width, view.height);
 	launchParams.image.pixels = (float4*)view.pixelBuffer.d_pointer();
 	launchParams.spp = spp;
+
+	view.tracerFinishEvent = &finishEvent;
 }
 
 
 
 void PathTracerState::render(){
-	cudaEventCreate(&finished);
+	cudaEventCreate(&finishEvent);
 
 	launchParamsBuffer.alloc(sizeof(launchParams), stream);
 	launchParamsBuffer.upload(&launchParams, 1, stream);
@@ -435,7 +436,7 @@ void PathTracerState::render(){
 		launchParams.image.size.y,
 		1));
 
-	cudaEventRecord(finished, stream);
+	cudaEventRecord(finishEvent, stream);
 }
 
 

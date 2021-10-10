@@ -19,18 +19,16 @@ BScene.createScene(scene)
 pt = core.PathTracer()
 pt.init()
 pt.setScene(scene)
-pt.initLaunchParams(view, 100)
+pt.initLaunchParams(view, 10000)
 
 
 pt.render()
+view.showWindow()
 core.cuda_sync()
 
 
 view.downloadImage()
-
-print('before', view.pixels)
 pixels = np.array(np.minimum(1, np.maximum(0, view.pixels**0.4)))
-print('after', pixels)
 
 
 os.makedirs('result', exist_ok=True)

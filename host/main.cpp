@@ -132,7 +132,7 @@ int main(){
 
 
 	tracer.render();
-	viewer.showWindow(&tracer.finished);
+	viewer.showWindow();
 
 	CUDA_SYNC_CHECK();
 

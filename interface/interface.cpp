@@ -87,8 +87,7 @@ PYBIND11_MODULE(core, m) {
 	py::class_<View>(m, "View")
 		.def(py::init<int, int>())
 		.def("downloadImage", &View::downloadImage)
-		// .def("initWindow", &View::initWindow)
-		// .def("showWindow", &View::showWindow)
+		.def("showWindow", &View::showWindow)
 		.def_readwrite("width", &View::width)
 		.def_readwrite("height", &View::height)
 		.def_readwrite("pixels", &View::pixels)
@@ -102,8 +101,7 @@ PYBIND11_MODULE(core, m) {
 				{self.height, self.width, 4},
 				{self.width*4*sizeof(float), 4*sizeof(float), sizeof(float)}
 				);
-			}
-			);
+			});
 
 
 	py::class_<PathTracerState>(m, "PathTracer")

@@ -116,7 +116,7 @@ public:
 	void downloadImage();
 
 	void initWindow();
-	void showWindow(const cudaEvent_t* const finished);
+	void showWindow();
 
 	CUstream stream;
 
@@ -124,6 +124,8 @@ public:
 	int height;
 	std::vector<float> pixels;
 	CUDABuffer pixelBuffer;
+
+	cudaEvent_t* tracerFinishEvent;
 
 	GLFWwindow* window;
 };
@@ -136,13 +138,11 @@ public:
 
 	void init();
 	void setScene(const Scene& scene);
-	void initLaunchParams(const View& view, const uint spp);
+	void initLaunchParams(View& view, const uint spp);
 
 	void render();
 
 	uint2 size(){return launchParams.image.size;}
-
-	cudaEvent_t finished = 0;
 
 private:
 	void createContext();
@@ -187,6 +187,8 @@ private:
 	std::vector<CUDABuffer> vertexCoordsBuffers;
 	std::vector<CUDABuffer> vertexNormalBuffers;
 	std::vector<CUDABuffer> indexBuffers;
+
+	cudaEvent_t finishEvent;
 };
 
 } // pt5 namespace
