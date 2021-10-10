@@ -28,15 +28,14 @@ void context_log_callback(unsigned int level, const char *tag, const char *messa
 
 
 void PathTracerState::createContext(){
+	const int deviceID = 0;
 	CUcontext cudaContext;
 
 	CUDA_CHECK(cudaFree(0));
 	OPTIX_CHECK(optixInit());
 
-	const int deviceID = 0;
 	CUDA_CHECK(cudaSetDevice(deviceID));
 	CUDA_CHECK(cudaStreamCreate(&stream));
-	CUDA_CHECK(cudaStreamCreate(&view_stream));
 
 	CUresult res = cuCtxGetCurrent(&cudaContext);
 	if(res != CUDA_SUCCESS)
@@ -423,10 +422,10 @@ void PathTracerState::initLaunchParams(const uint w, const uint h, const uint sp
 
 
 void PathTracerState::render(){
+	cudaEventCreate(&finished);
+
 	launchParamsBuffer.alloc(sizeof(launchParams), stream);
 	launchParamsBuffer.upload(&launchParams, 1, stream);
-
-	auto t0 = std::chrono::system_clock::now();
 
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
@@ -437,12 +436,9 @@ void PathTracerState::render(){
 		launchParams.image.size.x,
 		launchParams.image.size.y,
 		1));
+
+	cudaEventRecord(finished, stream);
 }
 
-void PathTracerState::downloadPixels(std::vector<float>& pixels){
-	uint32_t len = launchParams.image.size.x*launchParams.image.size.y;
-	pixels.resize(4*len);
-	pixelBuffer.download(pixels.data(), 4*len, view_stream);
-}
 
 } // pt5 namespace

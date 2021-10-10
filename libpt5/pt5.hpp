@@ -115,7 +115,10 @@ public:
 
 	void render();
 
-	void downloadPixels(std::vector<float>& pixels);
+	uint2 size(){return launchParams.image.size;}
+
+	CUDABuffer pixelBuffer;
+	cudaEvent_t finished;
 
 private:
 	void createContext();
@@ -129,7 +132,6 @@ private:
 
 	OptixDeviceContext context;
 	CUstream stream;
-	CUstream view_stream;
 
 	OptixModule module;
 
@@ -150,7 +152,6 @@ private:
 	OptixShaderBindingTable sbt = {};
 
 
-	CUDABuffer pixelBuffer;
 	LaunchParams launchParams;
 	CUDABuffer launchParamsBuffer;
 

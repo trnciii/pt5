@@ -76,12 +76,17 @@ pt5::TriangleMesh createTriangleMesh(
 
 
 py::array_t<float> PathTracerState_pixels_py(pt5::PathTracerState& pt){
-	std::vector<float> pixels;
-	pt.downloadPixels(pixels);
+	CUstream stream = 0;
+	int len = pt.size().x*pt.size().y;
 
-	auto result = py::array_t<float>(pixels.size());
+	auto result = py::array_t<float>(4*len);
 	py::buffer_info buf = result.request();
-	memcpy(static_cast<float*>(result.request().ptr), pixels.data(), pixels.size()*sizeof(float));
+	cudaMemcpyAsync(
+		(result.request().ptr),
+		(void*)pt.pixelBuffer.d_pointer(),
+		4*len*sizeof(float),
+		cudaMemcpyDeviceToHost,
+		stream);
 
 	return result;
 }
