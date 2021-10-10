@@ -1,7 +1,4 @@
-include_directories(${PROJECT_SOURCE_DIR}/libpt5)
-
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/interface/pt5)
-
 
 set(PYBIND11_PYTHON_VERSION 3.9)
 add_subdirectory(pybind11)
@@ -14,4 +11,6 @@ target_link_libraries(core
 	pt5
 	cuda
 	${CUDA_LIBRARIES}
+	glfw
+	${OPENGL_LIBRARIES}
 	)

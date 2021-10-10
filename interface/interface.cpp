@@ -75,22 +75,6 @@ pt5::TriangleMesh createTriangleMesh(
 }
 
 
-py::array_t<float> PathTracerState_pixels_py(pt5::PathTracerState& pt){
-	CUstream stream = 0;
-	int len = pt.size().x*pt.size().y;
-
-	auto result = py::array_t<float>(4*len);
-	py::buffer_info buf = result.request();
-	cudaMemcpyAsync(
-		(result.request().ptr),
-		(void*)pt.pixelBuffer.d_pointer(),
-		4*len*sizeof(float),
-		cudaMemcpyDeviceToHost,
-		stream);
-
-	return result;
-}
-
 
 void cuda_sync(){
 	CUDA_SYNC_CHECK();
@@ -100,13 +84,34 @@ void cuda_sync(){
 PYBIND11_MODULE(core, m) {
 	using namespace pt5;
 
+	py::class_<View>(m, "View")
+		.def(py::init<int, int>())
+		.def("downloadImage", &View::downloadImage)
+		// .def("initWindow", &View::initWindow)
+		// .def("showWindow", &View::showWindow)
+		.def_readwrite("width", &View::width)
+		.def_readwrite("height", &View::height)
+		.def_readwrite("pixels", &View::pixels)
+		.def_property_readonly("pixels",
+			[](View& self){
+			return (py::array_t<float>)py::buffer_info(
+				self.pixels.data(),
+				sizeof(float),
+				py::format_descriptor<float>::format(),
+				3,
+				{self.height, self.width, 4},
+				{self.width*4*sizeof(float), 4*sizeof(float), sizeof(float)}
+				);
+			}
+			);
+
+
 	py::class_<PathTracerState>(m, "PathTracer")
 		.def(py::init<>())
 		.def("init", &PathTracerState::init)
 		.def("setScene", &PathTracerState::setScene)
 		.def("initLaunchParams", &PathTracerState::initLaunchParams)
-		.def("render", &PathTracerState::render)
-		.def("pixels", &PathTracerState_pixels_py);
+		.def("render", &PathTracerState::render);
 
 
 	py::class_<Scene>(m, "Scene")

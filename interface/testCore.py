@@ -76,6 +76,8 @@ def createScene(scene):
 
 w, h = 1200, 800
 
+view = core.View(w,h)
+
 scene = core.Scene()
 createScene(scene)
 
@@ -83,18 +85,19 @@ createScene(scene)
 pt = core.PathTracer()
 pt.init()
 pt.setScene(scene)
-pt.initLaunchParams(w, h, 1000)
+pt.initLaunchParams(view, 1000)
 
 pt.render()
 core.cuda_sync()
 
-pixels4 = np.array(pt.pixels()).reshape((h,w,4))
 
-plt.imshow(pixels4)
+view.downloadImage()
+
+plt.imshow(view.pixels)
 
 if '--background' not in sys.argv:
 	plt.show()
 
 
 os.makedirs('result', exist_ok=True)
-plt.imsave('result/out_py.png', pixels4)
+plt.imsave('result/out_py.png', view.pixels)
