@@ -394,7 +394,6 @@ PathTracerState::~PathTracerState(){
 	raygenRecordBuffer.free(stream);
 	missRecordBuffer.free(stream);
 	hitgroupRecordsBuffer.free(stream);
-	pixelBuffer.free(stream);
 	launchParamsBuffer.free(stream);
 	asBuffer.free(stream);
 
@@ -411,11 +410,10 @@ PathTracerState::~PathTracerState(){
 }
 
 
-void PathTracerState::initLaunchParams(const uint w, const uint h, const uint spp){
+void PathTracerState::initLaunchParams(const View& view, const uint spp){
 	// frame
-	pixelBuffer.alloc(w*h*sizeof(float4), stream);
-	launchParams.image.size = make_uint2(w, h);
-	launchParams.image.pixels = (float4*)pixelBuffer.d_pointer();
+	launchParams.image.size = make_uint2(view.width, view.height);
+	launchParams.image.pixels = (float4*)view.pixelBuffer.d_pointer();
 	launchParams.spp = spp;
 }
 

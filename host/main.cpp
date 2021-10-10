@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <filesystem>
 
-#include <GLFW/glfw3.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -114,98 +113,14 @@ void createScene(pt5::Scene& scene){
 	scene.meshes.push_back(pt5::TriangleMesh{v_light, n_light, f_light, mIndex_light, mSlot_light});
 }
 
-class Viewer{
-public:
-	Viewer(int w, int h, pt5::CUDABuffer& buf):width(w), height(h), buffer(buf){
-		CUDA_CHECK(cudaStreamCreate(&stream));
-		pixels.resize(4*width*height);
-	}
-
-	~Viewer(){}
-
-	void downloadImage(){
-		buffer.download(pixels.data(), pixels.size(), stream);
-	}
-
-	void initWindow(){
-		if(!glfwInit()) assert(0);
-
-		window = glfwCreateWindow(width, height, "pt5 view", NULL, NULL);
-		if (!window){
-				assert(0);
-		    glfwTerminate();
-		}
-
-		glfwMakeContextCurrent(window);
-
-
-		glDisable(GL_LIGHTING);
-		glDisable(GL_DEPTH_TEST);
-
-		glViewport(0,0,width, height);
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, (float)width, 0, (float)height, -1, 1);
-	}
-
-	void draw(){
-		downloadImage();
-
-		GLuint fbTexture {0};
-		glGenTextures(1, &fbTexture);
-		glBindTexture(GL_TEXTURE_2D, fbTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_FLOAT, pixels.data());
-
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, fbTexture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glBegin(GL_QUADS);
-		{
-			glTexCoord2f(0.f, 0.f);
-			glVertex3f(0.f, (float)height, 0.f);
-
-			glTexCoord2f(0.f, 1.f);
-			glVertex3f(0.f, 0.f, 0.f);
-
-			glTexCoord2f(1.f, 1.f);
-			glVertex3f((float)width, 0.f, 0.f);
-
-			glTexCoord2f(1.f, 0.f);
-			glVertex3f((float)width, (float)height, 0.f);
-		}
-		glEnd();
-
-	}
-
-
-	void run(const cudaEvent_t* const finished){
-		do{
-			draw();
-			glfwSwapBuffers(window);
-	    glfwPollEvents();
-		}while(
-			!glfwWindowShouldClose(window)
-			&& (cudaEventQuery(*finished) == cudaErrorNotReady)
-			);
-	}
-
-
-	CUstream stream;
-	pt5::CUDABuffer& buffer;
-	int width;
-	int height;
-	std::vector<float> pixels;
-	GLFWwindow* window;
-};
-
 
 int main(){
 
 	const int width = 1024;
 	const int height = 1024;
+
+	pt5::View viewer(width, height);
+
 
 	pt5::Scene scene;
 	createScene(scene);
@@ -213,14 +128,11 @@ int main(){
 	pt5::PathTracerState tracer;
 	tracer.init();
 	tracer.setScene(scene);
-	tracer.initLaunchParams(width, height, 1000);
-
-	Viewer viewer(width, height, tracer.pixelBuffer);
-	viewer.initWindow();
+	tracer.initLaunchParams(viewer, 1000);
 
 
 	tracer.render();
-	viewer.run(&tracer.finished);
+	viewer.showWindow(&tracer.finished);
 
 	CUDA_SYNC_CHECK();
 
@@ -233,7 +145,7 @@ int main(){
 		assert(std::filesystem::create_directory(outDir));
 	}
 
-	writeImage(outDir+"/out_c++.png", width, height, viewer.pixels);
+	writeImage(outDir+"/out_c++.png", viewer.width, viewer.height, viewer.pixels);
 	std::cout <<"image saved" <<std::endl;
 
 	return 0;

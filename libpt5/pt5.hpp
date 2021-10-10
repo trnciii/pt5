@@ -3,6 +3,8 @@
 #include <cuda_runtime.h>
 #include <optix_stubs.h>
 
+#include <GLFW/glfw3.h>
+
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
@@ -105,20 +107,42 @@ struct CUDABuffer {
 };
 
 
+
+class View{
+public:
+	View(int w, int h);
+	~View();
+
+	void downloadImage();
+
+	void initWindow();
+	void showWindow(const cudaEvent_t* const finished);
+
+	CUstream stream;
+
+	int width;
+	int height;
+	std::vector<float> pixels;
+	CUDABuffer pixelBuffer;
+
+	GLFWwindow* window;
+};
+
+
+
 class PathTracerState{
 public:
 	~PathTracerState();
 
 	void init();
 	void setScene(const Scene& scene);
-	void initLaunchParams(const uint w, const uint h, const uint spp);
+	void initLaunchParams(const View& view, const uint spp);
 
 	void render();
 
 	uint2 size(){return launchParams.image.size;}
 
-	CUDABuffer pixelBuffer;
-	cudaEvent_t finished;
+	cudaEvent_t finished = 0;
 
 private:
 	void createContext();

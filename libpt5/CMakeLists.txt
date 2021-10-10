@@ -32,4 +32,5 @@ add_library(pt5
 	pt5.hpp
 	LaunchParams.h
 	scene.hpp
+	view.cpp
 	)
