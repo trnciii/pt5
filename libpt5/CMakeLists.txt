@@ -34,3 +34,11 @@ add_library(pt5
 	scene.hpp
 	view.cpp
 	)
+
+target_link_libraries(pt5
+	cuda
+	${CUDA_LIBRARIES}
+
+	glfw
+	${OPENGL_LIBRARIES}
+	)
