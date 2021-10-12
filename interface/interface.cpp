@@ -81,26 +81,27 @@ void cuda_sync(){
 }
 
 
+
 PYBIND11_MODULE(core, m) {
 	using namespace pt5;
 
 	py::class_<View>(m, "View")
 		.def(py::init<int, int>())
 		.def("downloadImage", &View::downloadImage)
-		.def("showWindow", &View::showWindow)
+		.def("drawWindow", &View::drawWindow)
 		.def_readwrite("width", &View::width)
 		.def_readwrite("height", &View::height)
-		.def_readwrite("pixels", &View::pixels)
+		.def_readonly("glTextureHandle", &View::glTextureHandle)
 		.def_property_readonly("pixels",
 			[](View& self){
-			return (py::array_t<float>)py::buffer_info(
-				self.pixels.data(),
-				sizeof(float),
-				py::format_descriptor<float>::format(),
-				3,
-				{self.height, self.width, 4},
-				{self.width*4*sizeof(float), 4*sizeof(float), sizeof(float)}
-				);
+				return (py::array_t<float>)py::buffer_info(
+					self.pixels.data(),
+					sizeof(float),
+					py::format_descriptor<float>::format(),
+					3,
+					{self.height, self.width, 4},
+					{self.width*4*sizeof(float), 4*sizeof(float), sizeof(float)}
+					);
 			});
 
 

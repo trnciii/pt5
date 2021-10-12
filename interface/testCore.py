@@ -72,33 +72,35 @@ def createScene(scene):
 	scene.meshes = meshes
 
 
+def main():
+	w, h = 1200, 800
+
+	view = core.View(w,h)
+
+	scene = core.Scene()
+	createScene(scene)
 
 
-w, h = 1200, 800
+	pt = core.PathTracer()
+	pt.init()
+	pt.setScene(scene)
+	pt.initLaunchParams(view, 1000)
 
-view = core.View(w,h)
-
-scene = core.Scene()
-createScene(scene)
-
-
-pt = core.PathTracer()
-pt.init()
-pt.setScene(scene)
-pt.initLaunchParams(view, 1000)
-
-pt.render()
-view.showWindow()
-core.cuda_sync()
+	pt.render()
+	view.drawWindow()
+	core.cuda_sync()
 
 
-view.downloadImage()
+	view.downloadImage()
 
-# plt.imshow(view.pixels)
+	# plt.imshow(view.pixels)
 
-if '--background' not in sys.argv:
-	plt.show()
+	if '--background' not in sys.argv:
+		plt.show()
 
 
-os.makedirs('result', exist_ok=True)
-plt.imsave('result/out_py.png', view.pixels)
+	os.makedirs('result', exist_ok=True)
+	plt.imsave('result/out_py.png', view.pixels)
+
+
+main()

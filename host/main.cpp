@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <filesystem>
 
+#include <GLFW/glfw3.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -119,7 +120,7 @@ int main(){
 	const int width = 1024;
 	const int height = 1024;
 
-	pt5::View viewer(width, height);
+	pt5::View view(width, height);
 
 
 	pt5::Scene scene;
@@ -128,16 +129,15 @@ int main(){
 	pt5::PathTracerState tracer;
 	tracer.init();
 	tracer.setScene(scene);
-	tracer.initLaunchParams(viewer, 1000);
+	tracer.initLaunchParams(view, 1000);
 
 
 	tracer.render();
-	viewer.showWindow();
-
+	view.drawWindow();
 	CUDA_SYNC_CHECK();
+	std::cout <<"rendered" <<std::endl;
 
-
-	viewer.downloadImage();
+	view.downloadImage();
 
 	std::string outDir("result");
 	if(!( std::filesystem::exists(outDir) && std::filesystem::is_directory(outDir) )){
@@ -145,7 +145,7 @@ int main(){
 		assert(std::filesystem::create_directory(outDir));
 	}
 
-	writeImage(outDir+"/out_c++.png", viewer.width, viewer.height, viewer.pixels);
+	writeImage(outDir+"/out_c++.png", view.width, view.height, view.pixels);
 	std::cout <<"image saved" <<std::endl;
 
 	return 0;

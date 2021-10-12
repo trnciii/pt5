@@ -421,10 +421,11 @@ void PathTracerState::initLaunchParams(View& view, const uint spp){
 
 
 void PathTracerState::render(){
-	cudaEventCreate(&finishEvent);
-
+	std::cout <<"launch kernel" <<std::endl;
 	launchParamsBuffer.alloc(sizeof(launchParams), stream);
 	launchParamsBuffer.upload(&launchParams, 1, stream);
+
+	cudaEventCreate(&finishEvent);
 
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
@@ -437,6 +438,11 @@ void PathTracerState::render(){
 		1));
 
 	cudaEventRecord(finishEvent, stream);
+}
+
+
+bool PathTracerState::running(){
+	return cudaEventQuery(finishEvent) == cudaErrorNotReady;
 }
 
 

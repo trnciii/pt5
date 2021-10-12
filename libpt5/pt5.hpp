@@ -1,9 +1,11 @@
 #pragma once
 
+#include "glad/gl.h"
+#include <GLFW/glfw3.h>
+
 #include <cuda_runtime.h>
 #include <optix_stubs.h>
-
-#include <GLFW/glfw3.h>
+#include <cuda_gl_interop.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -115,17 +117,23 @@ public:
 
 	void downloadImage();
 
-	void initWindow();
-	void showWindow();
-
-	CUstream stream;
+	void drawWindow();
 
 	int width;
 	int height;
+
 	std::vector<float> pixels;
 	CUDABuffer pixelBuffer;
+	GLuint glTextureHandle;
 
 	cudaEvent_t* tracerFinishEvent;
+
+private:
+	void updateTexture();
+
+	CUstream stream;
+
+	cudaGraphicsResource* cudaTextureResourceHandle;
 
 	GLFWwindow* window;
 };
@@ -141,6 +149,8 @@ public:
 	void initLaunchParams(View& view, const uint spp);
 
 	void render();
+
+	bool running();
 
 	uint2 size(){return launchParams.image.size;}
 
