@@ -1,8 +1,5 @@
 #pragma once
 
-#include "glad/gl.h"
-#include <GLFW/glfw3.h>
-
 #include <cuda_runtime.h>
 #include <optix_stubs.h>
 #include <cuda_gl_interop.h>
@@ -115,27 +112,24 @@ public:
 	View(int w, int h);
 	~View();
 
+	uint2 size() const;
+	float4* d_pointer() const;
+
+	void registerGLTexture(GLuint tx);
+	void updateGLTexture();
 	void downloadImage();
 
-	void drawWindow();
+	std::vector<float> pixels;
+
+private:
+	CUstream stream;
 
 	int width;
 	int height;
 
-	std::vector<float> pixels;
-	CUDABuffer pixelBuffer;
-	GLuint glTextureHandle;
-
-	cudaEvent_t* tracerFinishEvent;
-
-private:
-	void updateTexture();
-
-	CUstream stream;
-
 	cudaGraphicsResource* cudaTextureResourceHandle;
-
-	GLFWwindow* window;
+	GLuint glTextureHandle;
+	CUDABuffer pixelBuffer;
 };
 
 
@@ -146,13 +140,11 @@ public:
 
 	void init();
 	void setScene(const Scene& scene);
-	void initLaunchParams(View& view, const uint spp);
+	void initLaunchParams(const View& view, uint spp);
 
 	void render();
 
-	bool running();
-
-	uint2 size(){return launchParams.image.size;}
+	bool running() const;
 
 private:
 	void createContext();
@@ -160,7 +152,7 @@ private:
 	void createProgramGroups();
 	void createPipeline();
 
-	void buildAccel(std::vector<TriangleMesh>);
+	void buildAccel(const std::vector<TriangleMesh>&);
 	void buildSBT(const Scene& scene);
 
 

@@ -6,4 +6,4 @@ add_subdirectory(pybind11)
 
 pybind11_add_module(core interface.cpp)
 
-target_link_libraries(core PRIVATE pt5)
+target_link_libraries(core PRIVATE pt5 glfw)

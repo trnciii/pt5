@@ -75,19 +75,22 @@ def createScene(scene):
 def main():
 	w, h = 1200, 800
 
+	window = core.Window(w,h)
+
 	view = core.View(w,h)
+	view.registerGLTexture(window.texture)
 
 	scene = core.Scene()
 	createScene(scene)
 
-
 	pt = core.PathTracer()
 	pt.init()
 	pt.setScene(scene)
-	pt.initLaunchParams(view, 1000)
+	pt.initLaunchParams(view, 100)
+
 
 	pt.render()
-	view.drawWindow()
+	window.draw(view, pt)
 	core.cuda_sync()
 
 

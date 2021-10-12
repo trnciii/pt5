@@ -11,7 +11,10 @@ def main():
 	height = int(bpy.context.scene.render.resolution_y*scale)
 
 
+	window = core.Window(width, height)
+
 	view = core.View(width, height)
+	view.registerGLTexture(window.texture)
 
 	scene = core.Scene()
 	BScene.createScene(scene)
@@ -20,11 +23,11 @@ def main():
 	pt = core.PathTracer()
 	pt.init()
 	pt.setScene(scene)
-	pt.initLaunchParams(view, 10000)
+	pt.initLaunchParams(view, 1000)
 
 
 	pt.render()
-	view.drawWindow()
+	window.draw(view, pt)
 	core.cuda_sync()
 
 

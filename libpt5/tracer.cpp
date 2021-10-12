@@ -2,7 +2,6 @@
 #include "pt5.hpp"
 
 #include <optix_function_table_definition.h>
-#include <chrono>
 
 extern "C" char embedded_ptx_code[];
 
@@ -248,7 +247,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 }
 
 
-void PathTracerState::buildAccel(std::vector<TriangleMesh> meshes){
+void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 	vertexCoordsBuffers.resize(meshes.size());
 	vertexNormalBuffers.resize(meshes.size());
 
@@ -410,14 +409,11 @@ PathTracerState::~PathTracerState(){
 }
 
 
-void PathTracerState::initLaunchParams(View& view, const uint spp){
-	launchParams.image.size = make_uint2(view.width, view.height);
-	launchParams.image.pixels = (float4*)view.pixelBuffer.d_pointer();
+void PathTracerState::initLaunchParams(const View& view, uint spp){
+	launchParams.image.size = view.size();
+	launchParams.image.pixels = view.d_pointer();
 	launchParams.spp = spp;
-
-	view.tracerFinishEvent = &finishEvent;
 }
-
 
 
 void PathTracerState::render(){
@@ -441,7 +437,7 @@ void PathTracerState::render(){
 }
 
 
-bool PathTracerState::running(){
+bool PathTracerState::running() const{
 	return cudaEventQuery(finishEvent) == cudaErrorNotReady;
 }
 

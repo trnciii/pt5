@@ -39,6 +39,5 @@ target_link_libraries(pt5
 	cuda
 	${CUDA_LIBRARIES}
 
-	glfw
 	${OPENGL_LIBRARIES}
 	)

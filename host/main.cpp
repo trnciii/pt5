@@ -12,13 +12,16 @@
 #include "stb_image_write.h"
 
 
-void writeImage(const std::string& filename, int w, int h, const std::vector<float>& color_float){
+void writeImage(const std::string& filename, const pt5::View& view){
+	const int w = view.size().x;
+	const int h = view.size().y;
+
 	std::vector<uint32_t> color(w*h);
 	for(int i=0; i<w*h; i++){
-		const uint32_t r(255.99 * std::max(0.0f, std::min(1.0f, color_float[4*i  ])) );
-		const uint32_t g(255.99 * std::max(0.0f, std::min(1.0f, color_float[4*i+1])) );
-		const uint32_t b(255.99 * std::max(0.0f, std::min(1.0f, color_float[4*i+2])) );
-		const uint32_t a(255.99 * std::max(0.0f, std::min(1.0f, color_float[4*i+3])) );
+		const uint32_t r(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i  ])) );
+		const uint32_t g(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i+1])) );
+		const uint32_t b(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i+2])) );
+		const uint32_t a(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i+3])) );
 
 		color[i] = (r<<0) | (g<<8) | (b<<16) | (a<<24);
 	}
@@ -120,7 +123,30 @@ int main(){
 	const int width = 1024;
 	const int height = 1024;
 
+
+	if(!glfwInit()) assert(0);
+
+	GLFWwindow* window = glfwCreateWindow(width, height, "pt5 view", NULL, NULL);
+	if (!window){
+			assert(0);
+	    glfwTerminate();
+	}
+
+	glfwMakeContextCurrent(window);
+
+
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glViewport(0,0,width, height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, (float)width, 0, (float)height, -1, 1);
+
+	GLuint tx;
+	glGenTextures(1, &tx);
+
+
 	pt5::View view(width, height);
+	view.registerGLTexture(tx);
 
 
 	pt5::Scene scene;
@@ -133,7 +159,40 @@ int main(){
 
 
 	tracer.render();
-	view.drawWindow();
+
+	do{
+		view.updateGLTexture();
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, tx);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glBegin(GL_QUADS);
+		{
+			glTexCoord2f(0.f, 0.f);
+			glVertex3f(0.f, (float)height, 0.f);
+
+			glTexCoord2f(0.f, 1.f);
+			glVertex3f(0.f, 0.f, 0.f);
+
+			glTexCoord2f(1.f, 1.f);
+			glVertex3f((float)width, 0.f, 0.f);
+
+			glTexCoord2f(1.f, 0.f);
+			glVertex3f((float)width, (float)height, 0.f);
+		}
+		glEnd();
+
+
+		glfwSwapBuffers(window);
+    glfwPollEvents();
+	}while(
+		!glfwWindowShouldClose(window)
+		&& tracer.running()
+	);
+
+
 	CUDA_SYNC_CHECK();
 	std::cout <<"rendered" <<std::endl;
 
@@ -145,7 +204,7 @@ int main(){
 		assert(std::filesystem::create_directory(outDir));
 	}
 
-	writeImage(outDir+"/out_c++.png", view.width, view.height, view.pixels);
+	writeImage(outDir+"/out_c++.png", view);
 	std::cout <<"image saved" <<std::endl;
 
 	return 0;

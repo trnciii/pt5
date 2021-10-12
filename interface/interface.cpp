@@ -2,6 +2,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
+#include <GLFW/glfw3.h>
+
 #include <cassert>
 
 #include "pt5.hpp"
@@ -24,6 +26,11 @@ namespace py = pybind11;
 		assert(r.shape(0) == 3);                         \
 		memcpy(&self.member, x.data(0), sizeof(float3)); \
 	}
+
+
+void cuda_sync(){
+	CUDA_SYNC_CHECK();
+}
 
 
 pt5::TriangleMesh createTriangleMesh(
@@ -75,10 +82,71 @@ pt5::TriangleMesh createTriangleMesh(
 }
 
 
+class Window{
+public:
+	Window(int x, int y){
+		if(!glfwInit()) assert(0);
 
-void cuda_sync(){
-	CUDA_SYNC_CHECK();
-}
+		window = glfwCreateWindow(x, y, "pt5 view", NULL, NULL);
+		if (!window){
+				assert(0);
+		    glfwTerminate();
+		}
+
+		glfwMakeContextCurrent(window);
+
+		glEnable(GL_FRAMEBUFFER_SRGB);
+		glViewport(0,0,x,y);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, (float)x, 0, (float)y, -1, 1);
+
+		glGenTextures(1, &tx);
+	}
+
+
+	void draw(pt5::View& view, pt5::PathTracerState& tracer){
+		glfwSetWindowSize(window, view.size().x, view.size().y);
+
+		do{
+			view.updateGLTexture();
+
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, tx);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			glBegin(GL_QUADS);
+			{
+				glTexCoord2f(0.f, 0.f);
+				glVertex3f(0.f, (float)view.size().y, 0.f);
+
+				glTexCoord2f(0.f, 1.f);
+				glVertex3f(0.f, 0.f, 0.f);
+
+				glTexCoord2f(1.f, 1.f);
+				glVertex3f((float)view.size().x, 0.f, 0.f);
+
+				glTexCoord2f(1.f, 0.f);
+				glVertex3f((float)view.size().x, (float)view.size().y, 0.f);
+			}
+			glEnd();
+
+
+			glfwSwapBuffers(window);
+	    glfwPollEvents();
+		}while(
+			!glfwWindowShouldClose(window)
+			&& tracer.running()
+		);
+	}
+
+	GLuint texture(){return tx;}
+
+private:
+	GLFWwindow* window;
+	GLuint tx;
+};
 
 
 
@@ -88,10 +156,12 @@ PYBIND11_MODULE(core, m) {
 	py::class_<View>(m, "View")
 		.def(py::init<int, int>())
 		.def("downloadImage", &View::downloadImage)
-		.def("drawWindow", &View::drawWindow)
-		.def_readwrite("width", &View::width)
-		.def_readwrite("height", &View::height)
-		.def_readonly("glTextureHandle", &View::glTextureHandle)
+		.def("registerGLTexture", &View::registerGLTexture)
+		.def("updateGLTexture", &View::updateGLTexture)
+		.def_property_readonly("size",
+			[](View& self){
+				return py::make_tuple(self.size().x, self.size().y);
+			})
 		.def_property_readonly("pixels",
 			[](View& self){
 				return (py::array_t<float>)py::buffer_info(
@@ -99,10 +169,15 @@ PYBIND11_MODULE(core, m) {
 					sizeof(float),
 					py::format_descriptor<float>::format(),
 					3,
-					{self.height, self.width, 4},
-					{self.width*4*sizeof(float), 4*sizeof(float), sizeof(float)}
+					{(int)self.size().y, (int)self.size().x, 4},
+					{(int)self.size().x*4*sizeof(float), 4*sizeof(float), sizeof(float)}
 					);
 			});
+
+	py::class_<Window>(m, "Window")
+		.def(py::init<int, int>())
+		.def("draw", &Window::draw)
+		.def_property_readonly("texture", &Window::texture);
 
 
 	py::class_<PathTracerState>(m, "PathTracer")
