@@ -118,35 +118,42 @@ void createScene(pt5::Scene& scene){
 }
 
 
-int main(){
+bool hasArg(int argc, char* argv[], const std::string& key){
+	for(int i=0; i<argc; i++){
+		if(std::string(argv[i]) == key)
+			return true;
+	}
+	return false;
+}
+
+
+int main(int argc, char* argv[]){
 
 	const int width = 1024;
 	const int height = 1024;
 
-
-	if(!glfwInit()) assert(0);
-
-	GLFWwindow* window = glfwCreateWindow(width, height, "pt5 view", NULL, NULL);
-	if (!window){
-			assert(0);
-	    glfwTerminate();
-	}
-
-	glfwMakeContextCurrent(window);
-
-
-	glEnable(GL_FRAMEBUFFER_SRGB);
-	glViewport(0,0,width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, (float)width, 0, (float)height, -1, 1);
-
-	GLuint tx;
-	glGenTextures(1, &tx);
-
-
 	pt5::View view(width, height);
-	view.registerGLTexture(tx);
+
+
+	GLFWwindow* window;
+	GLuint tx;
+	bool useWindow = !hasArg(argc, argv, "--background")
+		&& glfwInit()
+		&& (window = glfwCreateWindow(width, height, "pt5 view", NULL, NULL));
+
+
+	if(useWindow){
+		glfwMakeContextCurrent(window);
+
+		glEnable(GL_FRAMEBUFFER_SRGB);
+		glViewport(0,0,width, height);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, (float)width, 0, (float)height, -1, 1);
+
+		glGenTextures(1, &tx);
+		view.registerGLTexture(tx);
+	}
 
 
 	pt5::Scene scene;
@@ -160,7 +167,10 @@ int main(){
 
 	tracer.render();
 
-	do{
+	while(useWindow
+		&& !glfwWindowShouldClose(window)
+		&& tracer.running()
+	){
 		view.updateGLTexture();
 
 		glEnable(GL_TEXTURE_2D);
@@ -187,11 +197,7 @@ int main(){
 
 		glfwSwapBuffers(window);
     glfwPollEvents();
-	}while(
-		!glfwWindowShouldClose(window)
-		&& tracer.running()
-	);
-
+	};
 
 	CUDA_SYNC_CHECK();
 	std::cout <<"rendered" <<std::endl;
