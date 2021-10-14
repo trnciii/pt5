@@ -75,10 +75,11 @@ def createScene(scene):
 def main():
 	w, h = 1200, 800
 
-	window = core.Window(w,h)
-
 	view = core.View(w,h)
-	view.registerGLTexture(window.texture)
+
+	if '--background' not in sys.argv:
+		window = core.Window(view)
+
 
 	scene = core.Scene()
 	createScene(scene)
@@ -89,18 +90,15 @@ def main():
 	pt.initLaunchParams(view, 100)
 
 
-	pt.render()
-	window.draw(view, pt)
+	if '--background' in sys.argv:
+		pt.render()
+	else:
+		window.draw(view, pt)
+
 	core.cuda_sync()
 
 
 	view.downloadImage()
-
-	# plt.imshow(view.pixels)
-
-	if '--background' not in sys.argv:
-		plt.show()
-
 
 	os.makedirs('result', exist_ok=True)
 	plt.imsave('result/out_py.png', view.pixels)

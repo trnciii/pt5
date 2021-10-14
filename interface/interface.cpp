@@ -2,6 +2,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
+#define GLAD_GL_IMPLEMENTATION
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
 #include <cassert>
@@ -84,68 +86,168 @@ pt5::TriangleMesh createTriangleMesh(
 
 class Window{
 public:
-	Window(int x, int y){
-		if(!glfwInit()) assert(0);
+	Window(pt5::View& view){
+		const int x = view.size().x;
+		const int y = view.size().y;
 
-		window = glfwCreateWindow(x, y, "pt5 view", NULL, NULL);
-		if (!window){
-				assert(0);
-		    glfwTerminate();
+		use = glfwInit()
+			&& (window = glfwCreateWindow(x, y, "pt5 view", NULL, NULL) );
+
+		if(use){
+			use = true;
+			glfwMakeContextCurrent(window);
+			gladLoadGL(glfwGetProcAddress);
+
+			glEnable(GL_FRAMEBUFFER_SRGB);
+			glViewport(0,0,x,y);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0, (float)x, 0, (float)y, -1, 1);
+
+			initPrograms();
+			createVAO();
+
+			glGenTextures(1, &tx);
+			view.registerGLTexture(tx);
 		}
-
-		glfwMakeContextCurrent(window);
-
-		glEnable(GL_FRAMEBUFFER_SRGB);
-		glViewport(0,0,x,y);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, (float)x, 0, (float)y, -1, 1);
-
-		glGenTextures(1, &tx);
 	}
 
 
 	void draw(pt5::View& view, pt5::PathTracerState& tracer){
-		glfwSetWindowSize(window, view.size().x, view.size().y);
+		tracer.render();
 
-		do{
+		if(!use){
+			CUDA_SYNC_CHECK();
+			return;
+		}
+
+	  glUniform1i(glGetUniformLocation(program, "txBuffer"), 0);
+
+		glUseProgram(program);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, tx);
+		glBindVertexArray(vertexArray);
+
+
+		while(!glfwWindowShouldClose(window)
+			&& tracer.running())
+		{
 			view.updateGLTexture();
 
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, tx);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-			glBegin(GL_QUADS);
-			{
-				glTexCoord2f(0.f, 0.f);
-				glVertex3f(0.f, (float)view.size().y, 0.f);
-
-				glTexCoord2f(0.f, 1.f);
-				glVertex3f(0.f, 0.f, 0.f);
-
-				glTexCoord2f(1.f, 1.f);
-				glVertex3f((float)view.size().x, 0.f, 0.f);
-
-				glTexCoord2f(1.f, 0.f);
-				glVertex3f((float)view.size().x, (float)view.size().y, 0.f);
-			}
-			glEnd();
-
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 			glfwSwapBuffers(window);
 	    glfwPollEvents();
-		}while(
-			!glfwWindowShouldClose(window)
-			&& tracer.running()
-		);
+		};
+
+		CUDA_SYNC_CHECK();
 	}
 
 	GLuint texture(){return tx;}
+	bool hasContext(){return use;}
 
 private:
+	GLuint compileShader(const std::string& source, const GLuint type){
+		const GLchar* source_data = (GLchar*)source.c_str();
+
+		GLuint shader = glCreateShader(type);
+		glShaderSource(shader, 1, &source_data, nullptr);
+		glCompileShader(shader);
+
+		GLint compiled = GL_FALSE;
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+
+		return shader;
+	}
+
+	void initPrograms(){
+		{
+			std::string source =
+				"#version 460\n"
+
+				"layout (location = 0) in vec3 position;\n"
+				"layout (location = 1) in vec2 txCoord;\n"
+
+				"out vec2 co;\n"
+
+				"void main(){\n"
+				"		co = txCoord;\n"
+				"		gl_Position = vec4( position, 1.0 );\n"
+				"}\n";
+
+			vs = compileShader(source, GL_VERTEX_SHADER);
+		}
+		{
+			std::string source =
+				"#version 460\n"
+
+				"in vec2 co;\n"
+				"out vec4 fragColor;\n"
+
+				"uniform sampler2D txBuffer;\n"
+
+				"void main(){\n"
+				"		fragColor = texture(txBuffer, co);\n"
+				"}\n";
+
+			fs = compileShader(source, GL_FRAGMENT_SHADER);
+		}
+
+		program = glCreateProgram();
+		glAttachShader(program, vs);
+		glAttachShader(program, fs);
+		glLinkProgram(program);
+
+		glDetachShader(program, vs);
+		glDetachShader(program, fs);
+		glDeleteShader(vs);
+		glDeleteShader(fs);
+	}
+
+	void createVAO(){
+		GLfloat vertices[] = {
+			-1, 1, 0,  0, 0,
+			 1, 1, 0,  1, 0,
+			 1,-1, 0,	 1, 1,
+			-1,-1, 0,  0, 1
+		};
+
+		GLuint indices[] = {
+			0, 1, 2,
+			2, 3, 0
+		};
+
+		glGenBuffers(1, &vertexBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+		glGenVertexArrays(1, &vertexArray);
+		glBindVertexArray(vertexArray);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), 0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(3*sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+
+
+		glGenBuffers(1, &indexBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	}
+
+
 	GLFWwindow* window;
 	GLuint tx;
+	bool use;
+
+	GLuint vs;
+	GLuint fs;
+	GLuint program;
+
+	GLuint vertexBuffer;
+	GLuint vertexArray;
+	GLuint indexBuffer;
 };
 
 
@@ -175,7 +277,7 @@ PYBIND11_MODULE(core, m) {
 			});
 
 	py::class_<Window>(m, "Window")
-		.def(py::init<int, int>())
+		.def(py::init<View&>())
 		.def("draw", &Window::draw)
 		.def_property_readonly("texture", &Window::texture);
 

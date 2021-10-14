@@ -19,14 +19,14 @@ bold_magenta "clean $RESULT"
 rm $RESULT/*
 
 
-boldcyan "run c++ app"
+bold_magenta "run c++ app"
 $ROOT/build/main
 breakline
 
 
 breakline
 bold_magenta "run python"
-python3 $ROOT/interface/testCore.py --background
+python3 $ROOT/interface/testCore.py
 breakline
 
 
