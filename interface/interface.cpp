@@ -86,7 +86,7 @@ pt5::TriangleMesh createTriangleMesh(
 
 class Window{
 public:
-	Window(pt5::View& view){
+	Window(pt5::View& v):view(v){
 		const int x = view.size().x;
 		const int y = view.size().y;
 
@@ -109,13 +109,23 @@ public:
 
 			glGenTextures(1, &tx);
 			view.registerGLTexture(tx);
+
+			std::cout <<"window " <<window
+				<<"\ntexture id " <<tx <<std::endl;
 		}
 	}
 
+	~Window(){
+		glDeleteBuffers(1, &vertexBuffer);
+		glDeleteBuffers(1, &indexBuffer);
+		glDeleteVertexArrays(1, &vertexArray);
+		glDeleteTextures(1, &tx);
+		glDeleteProgram(program);
+		glfwDestroyWindow(window);
+	}
 
-	void draw(pt5::View& view, pt5::PathTracerState& tracer){
-		tracer.render();
 
+	void draw(pt5::PathTracerState& tracer){
 		if(!use){
 			CUDA_SYNC_CHECK();
 			return;
@@ -130,8 +140,8 @@ public:
 
 
 		while(!glfwWindowShouldClose(window)
-			&& tracer.running())
-		{
+			&& tracer.running()
+		){
 			view.updateGLTexture();
 
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -144,7 +154,7 @@ public:
 	}
 
 	GLuint texture(){return tx;}
-	bool hasContext(){return use;}
+	bool avairable(){return use;}
 
 private:
 	GLuint compileShader(const std::string& source, const GLuint type){
@@ -238,6 +248,7 @@ private:
 
 
 	GLFWwindow* window;
+	pt5::View& view;
 	GLuint tx;
 	bool use;
 
@@ -279,7 +290,8 @@ PYBIND11_MODULE(core, m) {
 	py::class_<Window>(m, "Window")
 		.def(py::init<View&>())
 		.def("draw", &Window::draw)
-		.def_property_readonly("texture", &Window::texture);
+		.def_property_readonly("texture", &Window::texture)
+		.def_property_readonly("avairable", &Window::avairable);
 
 
 	py::class_<PathTracerState>(m, "PathTracer")
@@ -287,7 +299,8 @@ PYBIND11_MODULE(core, m) {
 		.def("init", &PathTracerState::init)
 		.def("setScene", &PathTracerState::setScene)
 		.def("initLaunchParams", &PathTracerState::initLaunchParams)
-		.def("render", &PathTracerState::render);
+		.def("render", &PathTracerState::render)
+		.def_property_readonly("running",[](PathTracerState& self){return self.running();});
 
 
 	py::class_<Scene>(m, "Scene")
