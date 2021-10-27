@@ -2,7 +2,7 @@ from pt5 import BScene, core
 import numpy as np
 import matplotlib.pyplot as plt
 import bpy
-import os, sys
+import os, sys, threading
 
 
 def main():
@@ -12,6 +12,7 @@ def main():
 
 
 	view = core.View(width, height)
+	view.clear([0.4, 0.4, 0.4, 0.4])
 
 	if '--background' not in sys.argv:
 		window = core.Window(view)
@@ -26,11 +27,9 @@ def main():
 	pt.initLaunchParams(view, 1000)
 
 
-	if '--background' in sys.argv:
-		pt.render()
-	else:
-		pt.render()
-		window.draw(view, pt)
+	pt.render()
+	if not '--background' in sys.argv:
+		window.draw(pt)
 
 	core.cuda_sync()
 
@@ -41,5 +40,8 @@ def main():
 	os.makedirs('result', exist_ok=True)
 	plt.imsave('result/out_blender.png', pixels)
 
-main()
-print('end')
+
+th = threading.Thread(target=main)
+th.start()
+th.join()
+del th
