@@ -8,6 +8,8 @@ View::View(int w, int h)
 {
 	CUDA_CHECK(cudaStreamCreate(&stream));
 
+	pixels.resize(4*width*height);
+
 	pixelBuffer.alloc(4*width*height*sizeof(float), stream);
 	CUDA_SYNC_CHECK()
 }
@@ -64,6 +66,12 @@ void View::updateGLTexture(){
 		))
 
 	CUDA_CHECK(cudaGraphicsUnmapResources(1, &cudaTextureResourceHandle, stream));
+}
+
+void View::clear(float4 c){
+	std::fill_n((float4*)pixels.data(), width*height, c);
+	pixelBuffer.upload(pixels.data(), pixels.size(), stream);
+	if(glTextureHandle) updateGLTexture();
 }
 
 

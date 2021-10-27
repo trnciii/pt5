@@ -122,6 +122,7 @@ public:
 		glDeleteTextures(1, &tx);
 		glDeleteProgram(program);
 		glfwDestroyWindow(window);
+		glfwTerminate();
 	}
 
 
@@ -271,6 +272,11 @@ PYBIND11_MODULE(core, m) {
 		.def("downloadImage", &View::downloadImage)
 		.def("registerGLTexture", &View::registerGLTexture)
 		.def("updateGLTexture", &View::updateGLTexture)
+		.def("clear", [](View& self, py::array_t<float> c){
+			auto r = c.mutable_unchecked<1>();
+			assert(r.shape(0) == 4);
+			self.clear(make_float4(r(0), r(1), r(2), r(3)));
+		})
 		.def_property_readonly("size",
 			[](View& self){
 				return py::make_tuple(self.size().x, self.size().y);

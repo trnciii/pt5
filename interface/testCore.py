@@ -159,6 +159,7 @@ def main(background, use_python_window):
 
 	if not background:
 		window = Window(view) if use_python_window else core.Window(view)
+		view.clear([0.3, 0.3, 0.3, 1])
 
 
 	scene = core.Scene()
@@ -167,7 +168,7 @@ def main(background, use_python_window):
 	pt = core.PathTracer()
 	pt.init()
 	pt.setScene(scene)
-	pt.initLaunchParams(view, 10000)
+	pt.initLaunchParams(view, 5000)
 
 
 	pt.render()
@@ -181,7 +182,6 @@ def main(background, use_python_window):
 
 	os.makedirs('result', exist_ok=True)
 	plt.imsave('result/out_py.png', view.pixels)
-
 
 
 main(background='--background' in sys.argv, use_python_window=True)

@@ -133,6 +133,7 @@ int main(int argc, char* argv[]){
 	const int height = 1024;
 
 	pt5::View view(width, height);
+	view.clear(make_float4(0.4, 0.4, 0.4, 0.4));
 
 
 	GLFWwindow* window;

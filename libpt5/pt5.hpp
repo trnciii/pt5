@@ -118,6 +118,7 @@ public:
 	void registerGLTexture(GLuint tx);
 	void updateGLTexture();
 	void downloadImage();
+	void clear(float4 c);
 
 	std::vector<float> pixels;
 
@@ -127,8 +128,8 @@ private:
 	int width;
 	int height;
 
-	cudaGraphicsResource* cudaTextureResourceHandle;
-	GLuint glTextureHandle;
+	cudaGraphicsResource* cudaTextureResourceHandle = nullptr;
+	GLuint glTextureHandle = GL_FALSE;
 	CUDABuffer pixelBuffer;
 };
 
