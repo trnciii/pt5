@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 import numpy as np
-from . import core
+from .. import core
 import traceback
 
 

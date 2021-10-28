@@ -1,5 +1,4 @@
 import pt5
-from pt5.BScene import *
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,7 +21,7 @@ def main():
 
 	pt = pt5.PathTracer()
 	pt.init()
-	pt.setScene(createSceneFromBlender())
+	pt.setScene(pt5.scene.createSceneFromBlender())
 	pt.initLaunchParams(view, 1000)
 
 
