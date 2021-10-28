@@ -133,27 +133,23 @@ int main(int argc, char* argv[]){
 	const int height = 1024;
 
 	pt5::View view(width, height);
-	view.clear(make_float4(0.4, 0.4, 0.4, 0.4));
 
+	GLFWwindow* window = nullptr;
+	if(!hasArg(argc, argv, "--background") && glfwInit()){
+		window = glfwCreateWindow(width, height, "pt5 view", NULL, NULL);
+		if(!window) glfwTerminate();
+		else{
+			glfwMakeContextCurrent(window);
 
-	GLFWwindow* window;
-	GLuint tx;
-	bool useWindow = !hasArg(argc, argv, "--background")
-		&& glfwInit()
-		&& (window = glfwCreateWindow(width, height, "pt5 view", NULL, NULL));
+			glEnable(GL_FRAMEBUFFER_SRGB);
+			glViewport(0,0,width, height);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0, (float)width, 0, (float)height, -1, 1);
 
-
-	if(useWindow){
-		glfwMakeContextCurrent(window);
-
-		glEnable(GL_FRAMEBUFFER_SRGB);
-		glViewport(0,0,width, height);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, (float)width, 0, (float)height, -1, 1);
-
-		glGenTextures(1, &tx);
-		view.registerGLTexture(tx);
+			view.createGLTexture();
+			view.clear(make_float4(0.4, 0.4, 0.4, 0.4));
+		}
 	}
 
 
@@ -168,14 +164,14 @@ int main(int argc, char* argv[]){
 
 	tracer.render();
 
-	while(useWindow
+	while(window
 		&& !glfwWindowShouldClose(window)
 		&& tracer.running()
 	){
 		view.updateGLTexture();
 
 		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, tx);
+		glBindTexture(GL_TEXTURE_2D, view.GLTexture());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

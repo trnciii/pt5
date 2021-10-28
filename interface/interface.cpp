@@ -90,44 +90,48 @@ public:
 		const int x = view.size().x;
 		const int y = view.size().y;
 
-		use = glfwInit()
-			&& (window = glfwCreateWindow(x, y, "pt5 view", NULL, NULL) );
+		if(!glfwInit()) return;
 
-		if(use){
-			use = true;
-			glfwMakeContextCurrent(window);
-			gladLoadGL(glfwGetProcAddress);
-
-			glEnable(GL_FRAMEBUFFER_SRGB);
-			glViewport(0,0,x,y);
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			glOrtho(0, (float)x, 0, (float)y, -1, 1);
-
-			initPrograms();
-			createVAO();
-
-			glGenTextures(1, &tx);
-			view.registerGLTexture(tx);
-
-			std::cout <<"window " <<window
-				<<"\ntexture id " <<tx <<std::endl;
+		window = glfwCreateWindow(x, y, "pt5 view", NULL, NULL);
+		if(!window){
+			glfwTerminate();
+			return;
 		}
+
+		glfwMakeContextCurrent(window);
+		gladLoadGL(glfwGetProcAddress);
+
+		glEnable(GL_FRAMEBUFFER_SRGB);
+		glViewport(0,0,x,y);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, (float)x, 0, (float)y, -1, 1);
+
+		initPrograms();
+		createVAO();
+
+		view.createGLTexture();
+
+		std::cout <<"created Window" <<std::endl;
 	}
 
 	~Window(){
+		if(!window) return;
+
+		view.destroyGLTexture(); // destruct view within opengl context.
 		glDeleteBuffers(1, &vertexBuffer);
 		glDeleteBuffers(1, &indexBuffer);
 		glDeleteVertexArrays(1, &vertexArray);
-		glDeleteTextures(1, &tx);
 		glDeleteProgram(program);
 		glfwDestroyWindow(window);
 		glfwTerminate();
+
+		std::cout <<"destroyed Window" <<std::endl;
 	}
 
 
-	void draw(pt5::PathTracerState& tracer){
-		if(!use){
+	void draw(const pt5::PathTracerState& tracer){
+		if(!window){
 			CUDA_SYNC_CHECK();
 			return;
 		}
@@ -136,7 +140,7 @@ public:
 
 		glUseProgram(program);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tx);
+		glBindTexture(GL_TEXTURE_2D, view.GLTexture());
 		glBindVertexArray(vertexArray);
 
 
@@ -154,8 +158,7 @@ public:
 		CUDA_SYNC_CHECK();
 	}
 
-	GLuint texture(){return tx;}
-	bool avairable(){return use;}
+	bool hasWindow(){return window;}
 
 private:
 	GLuint compileShader(const std::string& source, const GLuint type){
@@ -250,8 +253,6 @@ private:
 
 	GLFWwindow* window;
 	pt5::View& view;
-	GLuint tx;
-	bool use;
 
 	GLuint vs;
 	GLuint fs;
@@ -270,13 +271,16 @@ PYBIND11_MODULE(core, m) {
 	py::class_<View>(m, "View")
 		.def(py::init<int, int>())
 		.def("downloadImage", &View::downloadImage)
-		.def("registerGLTexture", &View::registerGLTexture)
+		.def("createGLTexture", &View::createGLTexture)
+		.def("destroyGLTexture", &View::destroyGLTexture)
 		.def("updateGLTexture", &View::updateGLTexture)
 		.def("clear", [](View& self, py::array_t<float> c){
 			auto r = c.mutable_unchecked<1>();
 			assert(r.shape(0) == 4);
 			self.clear(make_float4(r(0), r(1), r(2), r(3)));
 		})
+		.def_property_readonly("GLTexture", &View::GLTexture)
+		.def_property_readonly("hasGLTexture", &View::hasGLTexture)
 		.def_property_readonly("size",
 			[](View& self){
 				return py::make_tuple(self.size().x, self.size().y);
@@ -293,11 +297,10 @@ PYBIND11_MODULE(core, m) {
 					);
 			});
 
-	py::class_<Window>(m, "Window")
+	py::class_<Window>(m, "Window_cpp")
 		.def(py::init<View&>())
 		.def("draw", &Window::draw)
-		.def_property_readonly("texture", &Window::texture)
-		.def_property_readonly("avairable", &Window::avairable);
+		.def_property_readonly("hasWindow", &Window::hasWindow);
 
 
 	py::class_<PathTracerState>(m, "PathTracer")

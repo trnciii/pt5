@@ -12,12 +12,16 @@ View::View(int w, int h)
 
 	pixelBuffer.alloc(4*width*height*sizeof(float), stream);
 	CUDA_SYNC_CHECK()
+
+	std::cout <<"created View" <<std::endl;
 }
 
 
 View::~View(){
+	if(hasGLTexture()) destroyGLTexture();
 	pixelBuffer.free(stream);
 	cudaStreamDestroy(stream);
+	std::cout <<"destructed View" <<std::endl;
 }
 
 
@@ -31,8 +35,8 @@ void View::downloadImage(){
 }
 
 
-void View::registerGLTexture(GLuint tx){
-	glTextureHandle = tx;
+void View::createGLTexture(){
+	glGenTextures(1, &glTextureHandle);
 
 	glBindTexture(GL_TEXTURE_2D, glTextureHandle);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -46,8 +50,24 @@ void View::registerGLTexture(GLuint tx){
 		glTextureHandle,
 		GL_TEXTURE_2D,
 		cudaGraphicsRegisterFlagsWriteDiscard));
+
+	std::cout <<"created and registered opengl texture" <<std::endl;
 }
 
+void View::destroyGLTexture(){
+	assert(hasGLTexture());
+
+	CUDA_CHECK(cudaGraphicsUnregisterResource(cudaTextureResourceHandle))
+	glDeleteTextures(1, &glTextureHandle);
+	glTextureHandle = 0;
+	cudaTextureResourceHandle = nullptr;
+
+	std::cout <<"removed opengl texture" <<std::endl;
+}
+
+bool View::hasGLTexture(){
+	return glTextureHandle != 0 && cudaTextureResourceHandle != nullptr;
+}
 
 void View::updateGLTexture(){
 	cudaArray* texture_ptr;

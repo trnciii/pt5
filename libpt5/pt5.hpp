@@ -115,8 +115,12 @@ public:
 	uint2 size() const;
 	float4* d_pointer() const;
 
-	void registerGLTexture(GLuint tx);
+	void createGLTexture();
 	void updateGLTexture();
+	void destroyGLTexture();
+	bool hasGLTexture();
+	GLuint GLTexture()const{return glTextureHandle;};
+
 	void downloadImage();
 	void clear(float4 c);
 
