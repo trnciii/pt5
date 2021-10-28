@@ -1,4 +1,6 @@
-from pt5 import BScene, core
+import pt5
+from pt5.BScene import *
+
 import numpy as np
 import matplotlib.pyplot as plt
 import bpy
@@ -11,19 +13,16 @@ def main():
 	height = int(bpy.context.scene.render.resolution_y*scale)
 
 
-	view = core.View(width, height)
+	view = pt5.View(width, height)
 	view.clear([0.4, 0.4, 0.4, 0.4])
 
 	if '--background' not in sys.argv:
-		window = core.Window(view)
+		window = pt5.Window_py(view)
 
 
-	scene = core.Scene()
-	BScene.createScene(scene)
-
-	pt = core.PathTracer()
+	pt = pt5.PathTracer()
 	pt.init()
-	pt.setScene(scene)
+	pt.setScene(createSceneFromBlender())
 	pt.initLaunchParams(view, 1000)
 
 
@@ -31,7 +30,7 @@ def main():
 	if not '--background' in sys.argv:
 		window.draw(pt)
 
-	core.cuda_sync()
+	pt5.cuda_sync()
 
 	view.downloadImage()
 	pixels = np.array(np.minimum(1, np.maximum(0, view.pixels**0.4)))

@@ -411,7 +411,7 @@ PathTracerState::~PathTracerState(){
 
 void PathTracerState::initLaunchParams(const View& view, uint spp){
 	launchParams.image.size = view.size();
-	launchParams.image.pixels = view.d_pointer();
+	launchParams.image.pixels = view.bufferPtr();
 	launchParams.spp = spp;
 }
 

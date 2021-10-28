@@ -25,10 +25,6 @@ View::~View(){
 }
 
 
-uint2 View::size() const{return make_uint2(width, height);}
-float4* View::d_pointer() const{return (float4*)pixelBuffer.d_pointer();};
-
-
 void View::downloadImage(){
 	pixels.resize(4*width*height);
 	pixelBuffer.download(pixels.data(), pixels.size(), stream);

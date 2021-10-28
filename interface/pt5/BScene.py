@@ -94,9 +94,10 @@ def setMesh(scene):
   scene.meshes = meshes
 
 
-def createScene(scene):
-
+def createSceneFromBlender():
+  scene = core.Scene()
   setCamera(scene)
   setBackground(scene)
   setMaterials(scene)
   setMesh(scene)
+  return scene

@@ -112,8 +112,8 @@ public:
 	View(int w, int h);
 	~View();
 
-	uint2 size() const;
-	float4* d_pointer() const;
+	uint2 size() const{return make_uint2(width, height);}
+	float4* bufferPtr() const{return (float4*)pixelBuffer.d_pointer();}
 
 	void createGLTexture();
 	void updateGLTexture();
