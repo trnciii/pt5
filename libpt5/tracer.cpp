@@ -188,7 +188,6 @@ void PathTracerState::buildSBT(const Scene& scene){
 	{
 		RaygenRecord rec;
 		OPTIX_CHECK(optixSbtRecordPackHeader(raygenProgramGroup, &rec));
-		rec.data.camera = scene.camera;
 		rec.data.traversable = asHandle;
 
 		raygenRecordBuffer.alloc(sizeof(RaygenRecord), stream);
@@ -405,6 +404,15 @@ void PathTracerState::removeScene(){
 	destroySBT();
 }
 
+// void PathTracerState::setCamera(const Camera& cam){
+// 	camera.alloc(sizeof(Camera), stream);
+// 	camera.upload(&cam, 1, stream);
+// }
+
+// void PathTracerState::removeCamera(){
+// 	camera.free(stream);
+// }
+
 
 PathTracerState::~PathTracerState(){
 	removeScene();
@@ -421,12 +429,13 @@ PathTracerState::~PathTracerState(){
 
 
 
-void PathTracerState::render(const View& view, uint spp){
+void PathTracerState::render(const View& view, uint spp, Camera camera){
 	std::cout <<"launch kernel" <<std::endl;
 
 	launchParams.image.size = view.size();
 	launchParams.image.pixels = view.bufferPtr();
 	launchParams.spp = spp;
+	launchParams.camera = camera;
 
 	launchParamsBuffer.alloc(sizeof(launchParams), stream);
 	launchParamsBuffer.upload(&launchParams, 1, stream);

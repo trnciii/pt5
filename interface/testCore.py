@@ -5,14 +5,14 @@ import numpy as np
 import os, sys
 
 
-def createScene(scene):
+def createScene(scene, camera):
 
 	# camera
-	scene.camera.position = [0, -25, 1]
-	scene.camera.focalLength = 2
-	scene.camera.toWorld = [[1, 0, 0],
-													[0, 0,-1],
-													[0, 1, 0]]
+	camera.position = [0, -25, 1]
+	camera.focalLength = 2
+	camera.toWorld = [[1, 0, 0],
+										[0, 0,-1],
+										[0, 1, 0]]
 
 	# background
 	scene.background = [0.8, 0.8, 0.8]
@@ -84,12 +84,13 @@ def main(background, use_python_window):
 
 
 	scene = pt5.Scene()
-	createScene(scene)
+	camera = pt5.Camera()
+	createScene(scene, camera)
 
 	pt = pt5.PathTracer()
 	pt.setScene(scene)
 
-	pt.render(view, 1000)
+	pt.render(view, 1000, camera)
 	if not background:
 		window.draw(pt)
 

@@ -6,7 +6,6 @@
 namespace pt5{
 
 struct RaygenSBTData{
-	Camera camera;
 	OptixTraversableHandle traversable;
 };
 
@@ -30,6 +29,8 @@ struct LaunchParams{
 	}image;
 
 	uint32_t spp;
+
+	Camera camera;
 };
 
 }

@@ -38,7 +38,6 @@ struct TriangleMesh{
 
 struct Scene{
 	float3 background;
-	Camera camera;
 	std::vector<TriangleMesh> meshes;
 	std::vector<Material> materials;
 };

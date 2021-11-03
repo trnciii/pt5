@@ -5,14 +5,16 @@ from .. import core
 import traceback
 
 
-def setCamera(scene):
-  camera = bpy.context.scene.camera
-  camera.data.sensor_fit = 'HORIZONTAL'
-  mat = camera.matrix_world
+def getCurrentCameraObject():
+  bcam = bpy.context.scene.camera
+  # camera.data.sensor_fit = 'HORIZONTAL'
+  mat = bcam.matrix_world
 
-  scene.camera.focalLength = 2*camera.data.lens/camera.data.sensor_width
-  scene.camera.position = mat.to_translation()
-  scene.camera.toWorld = mat.to_3x3()
+  camera = core.Camera()
+  camera.focalLength = 2*bcam.data.lens/bcam.data.sensor_width
+  camera.position = mat.to_translation()
+  camera.toWorld = mat.to_3x3()
+  return camera
 
 
 def setBackground(scene):
@@ -96,7 +98,6 @@ def setMesh(scene):
 
 def createSceneFromBlender():
   scene = core.Scene()
-  setCamera(scene)
   setBackground(scene)
   setMaterials(scene)
   setMesh(scene)

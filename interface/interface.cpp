@@ -315,7 +315,6 @@ PYBIND11_MODULE(core, m) {
 		.def(py::init<>())
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("meshes", &Scene::meshes)
-		.def_readwrite("camera", &Scene::camera)
 		.def_property("background", PROPERTY_FLOAT3(Scene, background));
 
 

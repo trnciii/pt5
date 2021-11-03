@@ -22,8 +22,10 @@ def main():
 	pt = pt5.PathTracer()
 	pt.setScene(pt5.scene.createSceneFromBlender())
 
+	camera = pt5.scene.getCurrentCameraObject()
 
-	pt.render(view, 1000)
+
+	pt.render(view, 1000, camera)
 	if not '--background' in sys.argv:
 		window.draw(pt)
 

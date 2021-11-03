@@ -111,8 +111,8 @@ extern "C" __global__ void __raygen__render(){
 		const float y = -(2*(iy+payload.rng.uniform()) - frameSize.y)/frameSize.x;
 
 		payload.pContinue = 1;
-		payload.ray_o = sbtData.camera.position;
-		payload.ray_d = sbtData.camera.view(x,y);
+		payload.ray_o = launchParams.camera.position;
+		payload.ray_d = launchParams.camera.view(x,y);
 
 		float3 throuput = make_float3(1);
 

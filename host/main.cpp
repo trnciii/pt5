@@ -30,8 +30,7 @@ void writeImage(const std::string& filename, const pt5::View& view){
 }
 
 
-void createScene(pt5::Scene& scene){
-	pt5::Camera& camera = scene.camera;
+void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	camera.position = {0, -5, 2};
 	camera.toWorld[0] = {1, 0, 0};
 	camera.toWorld[1] = {0, 0,-1};
@@ -154,12 +153,13 @@ int main(int argc, char* argv[]){
 
 
 	pt5::Scene scene;
-	createScene(scene);
+	pt5::Camera camera;
+	createScene(scene, camera);
 
 	pt5::PathTracerState tracer;
 	tracer.setScene(scene);
 
-	tracer.render(view, 1000);
+	tracer.render(view, 1000, camera);
 
 	while(window
 		&& !glfwWindowShouldClose(window)
