@@ -305,9 +305,8 @@ PYBIND11_MODULE(core, m) {
 
 	py::class_<PathTracerState>(m, "PathTracer")
 		.def(py::init<>())
-		.def("init", &PathTracerState::init)
 		.def("setScene", &PathTracerState::setScene)
-		.def("initLaunchParams", &PathTracerState::initLaunchParams)
+		.def("removeScene", &PathTracerState::removeScene)
 		.def("render", &PathTracerState::render)
 		.def_property_readonly("running",[](PathTracerState& self){return self.running();});
 

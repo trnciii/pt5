@@ -20,19 +20,17 @@ def main():
 
 
 	pt = pt5.PathTracer()
-	pt.init()
 	pt.setScene(pt5.scene.createSceneFromBlender())
-	pt.initLaunchParams(view, 1000)
 
 
-	pt.render()
+	pt.render(view, 1000)
 	if not '--background' in sys.argv:
 		window.draw(pt)
 
 	pt5.cuda_sync()
 
 	view.downloadImage()
-	pixels = np.array(np.minimum(1, np.maximum(0, view.pixels**0.4)))
+	pixels = np.minimum(1, np.maximum(0, view.pixels**0.4))
 
 
 	os.makedirs('result', exist_ok=True)

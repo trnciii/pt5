@@ -157,12 +157,9 @@ int main(int argc, char* argv[]){
 	createScene(scene);
 
 	pt5::PathTracerState tracer;
-	tracer.init();
 	tracer.setScene(scene);
-	tracer.initLaunchParams(view, 1000);
 
-
-	tracer.render();
+	tracer.render(view, 1000);
 
 	while(window
 		&& !glfwWindowShouldClose(window)

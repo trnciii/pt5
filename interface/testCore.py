@@ -87,12 +87,9 @@ def main(background, use_python_window):
 	createScene(scene)
 
 	pt = pt5.PathTracer()
-	pt.init()
 	pt.setScene(scene)
-	pt.initLaunchParams(view, 1000)
 
-
-	pt.render()
+	pt.render(view, 1000)
 	if not background:
 		window.draw(pt)
 

@@ -141,13 +141,13 @@ private:
 
 class PathTracerState{
 public:
+	PathTracerState();
 	~PathTracerState();
 
-	void init();
 	void setScene(const Scene& scene);
-	void initLaunchParams(const View& view, uint spp);
+	void removeScene();
 
-	void render();
+	void render(const View& view, uint spp);
 
 	bool running() const;
 
@@ -159,6 +159,9 @@ private:
 
 	void buildAccel(const std::vector<TriangleMesh>&);
 	void buildSBT(const Scene& scene);
+
+	void destroyAccel();
+	void destroySBT();
 
 
 	OptixDeviceContext context;

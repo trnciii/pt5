@@ -246,6 +246,12 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 }
 
+void PathTracerState::destroySBT(){
+	raygenRecordBuffer.free(stream);
+	missRecordBuffer.free(stream);
+	hitgroupRecordsBuffer.free(stream);
+}
+
 
 void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 	vertexCoordsBuffers.resize(meshes.size());
@@ -366,8 +372,21 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 	}
 }
 
+void PathTracerState::destroyAccel(){
+	asBuffer.free(stream);
 
-void PathTracerState::init(){
+	for(int  i=0; i<vertexCoordsBuffers.size(); i++)
+		vertexCoordsBuffers[i].free(stream);
+
+	for(int  i=0; i<vertexNormalBuffers.size(); i++)
+		vertexNormalBuffers[i].free(stream);
+
+	for(int i=0; i<indexBuffers.size(); i++)
+		indexBuffers[i].free(stream);
+}
+
+
+PathTracerState::PathTracerState(){
 	createContext();
 	createModule();
 	createProgramGroups();
@@ -381,8 +400,15 @@ void PathTracerState::setScene(const Scene& scene){
 	buildSBT(scene);
 }
 
+void PathTracerState::removeScene(){
+	destroyAccel();
+	destroySBT();
+}
+
 
 PathTracerState::~PathTracerState(){
+	removeScene();
+
 	OPTIX_CHECK( optixPipelineDestroy( pipeline ) );
 	OPTIX_CHECK( optixProgramGroupDestroy( raygenProgramGroup ) );
 	OPTIX_CHECK( optixProgramGroupDestroy( missProgramGroup ) );
@@ -390,36 +416,21 @@ PathTracerState::~PathTracerState(){
 	OPTIX_CHECK( optixModuleDestroy( module ) );
 	OPTIX_CHECK( optixDeviceContextDestroy( context ) );
 
-	raygenRecordBuffer.free(stream);
-	missRecordBuffer.free(stream);
-	hitgroupRecordsBuffer.free(stream);
-	launchParamsBuffer.free(stream);
-	asBuffer.free(stream);
-
-	for(int  i=0; i<vertexCoordsBuffers.size(); i++)
-		vertexCoordsBuffers[i].free(stream);
-
-	for(int  i=0; i<vertexNormalBuffers.size(); i++)
-		vertexNormalBuffers[i].free(stream);
-
-	for(int i=0; i<indexBuffers.size(); i++)
-		indexBuffers[i].free(stream);
-
 	std::cout <<"destroyed PathTracerState" <<std::endl;
 }
 
 
-void PathTracerState::initLaunchParams(const View& view, uint spp){
+
+void PathTracerState::render(const View& view, uint spp){
+	std::cout <<"launch kernel" <<std::endl;
+
 	launchParams.image.size = view.size();
 	launchParams.image.pixels = view.bufferPtr();
 	launchParams.spp = spp;
-}
 
-
-void PathTracerState::render(){
-	std::cout <<"launch kernel" <<std::endl;
 	launchParamsBuffer.alloc(sizeof(launchParams), stream);
 	launchParamsBuffer.upload(&launchParams, 1, stream);
+
 
 	cudaEventCreate(&finishEvent);
 
@@ -433,6 +444,7 @@ void PathTracerState::render(){
 		launchParams.image.size.y,
 		1));
 
+	launchParamsBuffer.free(stream);
 	cudaEventRecord(finishEvent, stream);
 }
 
