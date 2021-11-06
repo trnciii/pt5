@@ -22,7 +22,7 @@ def main():
 	pt = pt5.PathTracer()
 	pt.setScene(pt5.scene.createSceneFromBlender())
 
-	camera = pt5.scene.getCurrentCameraObject()
+	camera = pt5.scene.createCameraFromObject(bpy.context.scene.camera)
 
 
 	pt.render(view, 1000, camera)

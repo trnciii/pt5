@@ -5,15 +5,31 @@ from .. import core
 import traceback
 
 
-def getCurrentCameraObject():
-  bcam = bpy.context.scene.camera
-  # camera.data.sensor_fit = 'HORIZONTAL'
+def createCameraFromObject(bcam):
+  camera = core.Camera()
+
+  sx = bcam.data.sensor_width
+  sy = bcam.data.sensor_height
+  lens = bcam.data.lens
+  rx = bpy.context.scene.render.resolution_x
+  ry = bpy.context.scene.render.resolution_y
+
+  if bcam.data.sensor_fit == 'HORIZONTAL':
+    camera.focalLength = 2*lens/sx
+  elif bcam.data.sensor_fit == 'VERTICAL':
+    camera.focalLength = (2*lens/sy)*(ry/rx)
+  else:
+    if rx>ry:
+      camera.focalLength = 2*lens/sx
+    else:
+      camera.focalLength = (2*lens/sx)*(ry/rx)
+
+
   mat = bcam.matrix_world
 
-  camera = core.Camera()
-  camera.focalLength = 2*bcam.data.lens/bcam.data.sensor_width
   camera.position = mat.to_translation()
   camera.toWorld = mat.to_3x3()
+
   return camera
 
 
