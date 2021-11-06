@@ -3,29 +3,42 @@
 import bpy
 import bgl
 
+import pt5
+import numpy as np
+
 
 class CustomRenderEngine(bpy.types.RenderEngine):
     # These three members are used by blender to set up the
     # RenderEngine; define its internal name, visible name and capabilities.
-    bl_idname = "CUSTOM"
-    bl_label = "Custom"
+    bl_idname = "PT5"
+    bl_label = "pt5"
     bl_use_preview = True
+    bl_use_custom_shading_node = False
 
     # Init is called whenever a new render engine instance is created. Multiple
     # instances may exist at the same time, for example for a viewport and final
     # render.
     def __init__(self):
+        print()
+        print('engine init')
+
         self.scene_data = None
         self.draw_data = None
+
+        self.tracer = pt5.PathTracer()
+
 
     # When the render engine instance is destroy, this is called. Clean up any
     # render engine data here, for example stopping running render threads.
     def __del__(self):
-        pass
+        print('engine delete')
+        print()
 
     # This is the method called by Blender for both final renders (F12) and
     # small preview for materials, world and lights.
     def render(self, depsgraph):
+        print('final render')
+
         scene = depsgraph.scene
         scale = scene.render.resolution_percentage / 100.0
         self.size_x = int(scene.render.resolution_x * scale)
@@ -34,13 +47,17 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         # Fill the render result with a flat color. The framebuffer is
         # defined as a list of pixels, each pixel itself being a list of
         # R,G,B,A values.
-        if self.is_preview:
-            color = [0.1, 0.2, 0.1, 1.0]
-        else:
-            color = [0.2, 0.1, 0.1, 1.0]
 
-        pixel_count = self.size_x * self.size_y
-        rect = [color] * pixel_count
+        view = pt5.View(self.size_x, self.size_y)
+
+        self.tracer.setScene(pt5.scene.createSceneFromBlender())
+        camera = pt5.scene.getCurrentCameraObject()
+
+        self.tracer.render(view, 1000, camera)
+        pt5.cuda_sync()
+
+        view.downloadImage()
+        rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
 
         # Here we write the pixel values to the RenderResult
         result = self.begin_result(0, 0, self.size_x, self.size_y)
@@ -57,8 +74,9 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         view3d = context.space_data
         scene = depsgraph.scene
 
-        # Get viewport dimensions
-        dimensions = region.width, region.height
+        self.tracer.removeScene()
+        self.tracer.setScene(pt5.scene.createSceneFromBlender())
+
 
         if not self.scene_data:
             # First time initialization
@@ -102,7 +120,15 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         self.bind_display_space_shader(scene)
 
         if not self.draw_data or self.draw_data.dimensions != dimensions:
-            self.draw_data = CustomDrawData(dimensions)
+            print('resize')
+            self.view = pt5.View(*dimensions)
+            self.draw_data = CustomDrawData(dimensions, self.view)
+
+
+        self.camera = pt5.scene.getViewAsCamera(context)
+
+        self.tracer.render(self.view, 100, self.camera)
+        pt5.cuda_sync()
 
         self.draw_data.draw()
 
@@ -111,23 +137,13 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 
 class CustomDrawData:
-    def __init__(self, dimensions):
+    def __init__(self, dimensions, view):
         # Generate dummy float image buffer
         self.dimensions = dimensions
         width, height = dimensions
 
-        pixels = [0.1, 0.2, 0.1, 1.0] * width * height
-        pixels = bgl.Buffer(bgl.GL_FLOAT, width * height * 4, pixels)
-
-        # Generate texture
-        self.texture = bgl.Buffer(bgl.GL_INT, 1)
-        bgl.glGenTextures(1, self.texture)
-        bgl.glActiveTexture(bgl.GL_TEXTURE0)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.texture[0])
-        bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA16F, width, height, 0, bgl.GL_RGBA, bgl.GL_FLOAT, pixels)
-        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
-        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_LINEAR)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, 0)
+        self.view = view
+        self.view.createGLTexture()
 
         # Bind shader that converts from scene linear to display space,
         # use the scene's color management settings.
@@ -148,7 +164,7 @@ class CustomDrawData:
         # Generate geometry buffers for drawing textured quad
         position = [0.0, 0.0, width, 0.0, width, height, 0.0, height]
         position = bgl.Buffer(bgl.GL_FLOAT, len(position), position)
-        texcoord = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0]
+        texcoord = [0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
         texcoord = bgl.Buffer(bgl.GL_FLOAT, len(texcoord), texcoord)
 
         self.vertex_buffer = bgl.Buffer(bgl.GL_INT, 2)
@@ -168,12 +184,13 @@ class CustomDrawData:
     def __del__(self):
         bgl.glDeleteBuffers(2, self.vertex_buffer)
         bgl.glDeleteVertexArrays(1, self.vertex_array)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, 0)
-        bgl.glDeleteTextures(1, self.texture)
+        self.view.destroyGLTexture()
 
     def draw(self):
+        self.view.updateGLTexture()
+
         bgl.glActiveTexture(bgl.GL_TEXTURE0)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.texture[0])
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.view.GLTexture)
         bgl.glBindVertexArray(self.vertex_array[0])
         bgl.glDrawArrays(bgl.GL_TRIANGLE_FAN, 0, 4)
         bgl.glBindVertexArray(0)
@@ -204,15 +221,15 @@ def register():
     bpy.utils.register_class(CustomRenderEngine)
 
     for panel in get_panels():
-        panel.COMPAT_ENGINES.add('CUSTOM')
+        panel.COMPAT_ENGINES.add('PT5')
 
 
 def unregister():
     bpy.utils.unregister_class(CustomRenderEngine)
 
     for panel in get_panels():
-        if 'CUSTOM' in panel.COMPAT_ENGINES:
-            panel.COMPAT_ENGINES.remove('CUSTOM')
+        if 'PT5' in panel.COMPAT_ENGINES:
+            panel.COMPAT_ENGINES.remove('PT5')
 
 
 if __name__ == "__main__":

@@ -17,6 +17,15 @@ def getCurrentCameraObject():
   return camera
 
 
+def getViewAsCamera(context):
+  camera = core.Camera()
+  mat = context.region_data.view_matrix.inverted()
+  camera.focalLength = context.space_data.lens/36
+  camera.position = mat.to_translation()
+  camera.toWorld = mat.to_3x3()
+  return camera
+
+
 def setBackground(scene):
     tree = bpy.data.worlds['World'].node_tree
 
