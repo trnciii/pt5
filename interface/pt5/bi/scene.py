@@ -85,27 +85,34 @@ def setMaterials(scene):
 
 
 def getTriangles(obj):
-  depsgraph = bpy.context.evaluated_depsgraph_get()
-  object_eval = obj.evaluated_get(depsgraph)
+  try:
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    object_eval = obj.evaluated_get(depsgraph)
 
-  mesh = bpy.data.meshes.new_from_object(object_eval)
+    mesh = object_eval.to_mesh()
 
-  bm = bmesh.new()
-  bm.from_mesh(mesh)
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
 
-  bmesh.ops.triangulate(bm, faces=bm.faces[:])
+    bmesh.ops.triangulate(bm, faces=bm.faces[:])
 
-  bm.to_mesh(mesh)
-  bm.free
+    bm.to_mesh(mesh)
+    bm.free()
 
-  return mesh
+    return mesh
+
+  except:
+    print('error: failed to evaluate object as mesh')
+    traceback.print_exc()
+    return None
 
 
 def setMesh(scene):
   meshes = []
+
   for obj in bpy.data.objects.values():
-    try:
-      mesh = getTriangles(obj)
+    mesh = getTriangles(obj)
+    if mesh:
       mat = obj.matrix_world
 
       verts = [mat@v.co for v in mesh.vertices]
@@ -115,8 +122,6 @@ def setMesh(scene):
       mtlSlots = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
       meshes.append(core.createTriangleMesh(verts, normals, indices, mtlIDs, mtlSlots))
-    except:
-      traceback.print_exc()
 
   scene.meshes = meshes
 
