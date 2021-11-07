@@ -86,6 +86,12 @@ struct CUDABuffer {
 	}
 
 	template<typename T>
+	void alloc_and_upload(const T& t, CUstream stream){
+		alloc(sizeof(T), stream);
+		upload(&t, 1, stream);
+	}
+
+	template<typename T>
 	void upload(const T *t, size_t count, CUstream stream)
 	{
 		assert(d_ptr != nullptr);

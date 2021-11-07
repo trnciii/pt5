@@ -190,8 +190,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 		OPTIX_CHECK(optixSbtRecordPackHeader(raygenProgramGroup, &rec));
 		rec.data.traversable = asHandle;
 
-		raygenRecordBuffer.alloc(sizeof(RaygenRecord), stream);
-		raygenRecordBuffer.upload(&rec, 1, stream);
+		raygenRecordBuffer.alloc_and_upload(rec, stream);
 
 		sbt.raygenRecord = raygenRecordBuffer.d_pointer();
 	}
@@ -202,8 +201,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 		OPTIX_CHECK(optixSbtRecordPackHeader(missProgramGroup, &rec));
 		rec.data.background = scene.background;
 
-		missRecordBuffer.alloc(sizeof(MissRecord), stream);
-		missRecordBuffer.upload(&rec, 1, stream);
+		missRecordBuffer.alloc_and_upload(rec, stream);
 
 		sbt.missRecordBase = missRecordBuffer.d_pointer();
 		sbt.missRecordStrideInBytes = sizeof(MissRecord);
@@ -411,8 +409,7 @@ void PathTracerState::render(const View& view, uint spp, Camera camera){
 	launchParams.spp = spp;
 	launchParams.camera = camera;
 
-	launchParamsBuffer.alloc(sizeof(launchParams), stream);
-	launchParamsBuffer.upload(&launchParams, 1, stream);
+	launchParamsBuffer.alloc_and_upload(launchParams, stream);
 
 
 	cudaEventCreate(&finishEvent);
