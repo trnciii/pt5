@@ -109,10 +109,19 @@ class CustomRenderEngine(bpy.types.RenderEngine):
     # rendered image automatically.
     def view_draw(self, context, depsgraph):
         region = context.region
+        space = context.space_data
         scene = depsgraph.scene
 
         # Get viewport dimensions
         dimensions = region.width, region.height
+        if space.use_render_border:
+            border = (space.render_border_min_x,
+                space.render_border_min_y,
+                space.render_border_max_x,
+                space.render_border_max_y)
+        else:
+            border = (0, 0, 1, 1)
+
 
         # Bind shader that converts from scene linear to display space,
         bgl.glEnable(bgl.GL_BLEND)
