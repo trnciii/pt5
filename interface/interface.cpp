@@ -48,39 +48,30 @@ pt5::TriangleMesh createTriangleMesh(
 	assert(pN.shape(1) == 3);
 	assert(pV.shape(0) == pN.shape(0));
 
-	const uint32_t nVerts = pV.shape(0);
-
 	auto pIndex = _pIndex.mutable_unchecked<2>();
 	auto pmID = _pmID.mutable_unchecked<1>();
 	assert(pIndex.shape(1) == 3);
 	assert(pIndex.shape(0) == pmID.shape(0));
 
-	const uint32_t nFaces = pIndex.shape(0);
-
 	auto pmSlot = _pmSlot.mutable_unchecked<1>();
 
 
-
-	std::vector<float3> cV(nVerts);
-	memcpy(cV.data(), (float3*)pV.data(0,0), nVerts*sizeof(float3));
-
-
-	std::vector<float3> cN(nVerts);
-	memcpy(cN.data(), (float3*)pN.data(0,0), nVerts*sizeof(float3));
+	std::vector<pt5::Vertex> cv(pV.shape(0));
+	for(uint32_t i=0; i<pV.shape(0); i++){
+		cv[i] = pt5::Vertex{*(float3*)pV.data(i,0), *(float3*)pN.data(i,0)};
+	}
 
 
-	std::vector<uint3> cIndex(nFaces);
-	memcpy(cIndex.data(), (uint3*)pIndex.data(0,0), nFaces*sizeof(uint3));
+	std::vector<pt5::Face> cf(pIndex.shape(0));
+	for(uint32_t i=0; i<pIndex.shape(0); i++){
+		cf[i] = pt5::Face{*(uint3*)pIndex.data(i,0), *pmID.data(i)};
+	}
 
 
-	std::vector<uint32_t> cMID(nFaces);
-	memcpy(cMID.data(), pmID.data(0), nFaces*sizeof(uint32_t));
+	std::vector<uint32_t> cm(pmSlot.shape(0));
+	memcpy(cm.data(), pmSlot.data(0), pmSlot.shape(0)*sizeof(uint32_t));
 
-
-	std::vector<uint32_t> cMSlot(pmSlot.shape(0));
-	memcpy(cMSlot.data(), pmSlot.data(0), pmSlot.shape(0)*sizeof(uint32_t));
-
-	return pt5::TriangleMesh{cV, cN, cIndex, cMID, cMSlot};
+	return pt5::TriangleMesh(cv, cf, cm);
 }
 
 

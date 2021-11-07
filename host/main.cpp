@@ -112,8 +112,8 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	std::vector<uint32_t> mIndex_light = {0, 0};
 
 
-	scene.meshes.push_back(pt5::TriangleMesh{v_box, n_box, f_box, mIndex_box, mSlot_box});
-	scene.meshes.push_back(pt5::TriangleMesh{v_light, n_light, f_light, mIndex_light, mSlot_light});
+	scene.meshes.push_back(pt5::TriangleMesh(v_box, n_box, f_box, mIndex_box, mSlot_box));
+	scene.meshes.push_back(pt5::TriangleMesh(v_light, n_light, f_light, mIndex_light, mSlot_light));
 }
 
 

@@ -193,9 +193,7 @@ private:
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
 
-	// buffer per geometry
-	std::vector<CUDABuffer> vertexCoordsBuffers;
-	std::vector<CUDABuffer> vertexNormalBuffers;
+	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
 
 	cudaEvent_t finishEvent;
