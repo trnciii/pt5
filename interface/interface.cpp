@@ -24,55 +24,9 @@ namespace py = pybind11;
 			);                                             \
 	},                                                 \
 	[](Class& self, py::array_t<float>& x){            \
-		auto r = x.mutable_unchecked<1>();               \
-		assert(r.shape(0) == 3);                         \
-		memcpy(&self.member, x.data(0), sizeof(float3)); \
+		auto r = x.unchecked<1>();                       \
+		self.member = make_float3(r(0), r(1), r(2));     \
 	}
-
-
-void cuda_sync(){
-	CUDA_SYNC_CHECK();
-}
-
-
-pt5::TriangleMesh createTriangleMesh(
-	py::array_t<float>& _pV,
-	py::array_t<float>& _pN,
-	py::array_t<uint>& _pIndex,
-	py::array_t<uint32_t>& _pmID,
-	py::array_t<uint32_t>& _pmSlot)
-{
-	auto pV = _pV.mutable_unchecked<2>();
-	auto pN = _pN.mutable_unchecked<2>();
-	assert(pV.shape(1) == 3);
-	assert(pN.shape(1) == 3);
-	assert(pV.shape(0) == pN.shape(0));
-
-	auto pIndex = _pIndex.mutable_unchecked<2>();
-	auto pmID = _pmID.mutable_unchecked<1>();
-	assert(pIndex.shape(1) == 3);
-	assert(pIndex.shape(0) == pmID.shape(0));
-
-	auto pmSlot = _pmSlot.mutable_unchecked<1>();
-
-
-	std::vector<pt5::Vertex> cv(pV.shape(0));
-	for(uint32_t i=0; i<pV.shape(0); i++){
-		cv[i] = pt5::Vertex{*(float3*)pV.data(i,0), *(float3*)pN.data(i,0)};
-	}
-
-
-	std::vector<pt5::Face> cf(pIndex.shape(0));
-	for(uint32_t i=0; i<pIndex.shape(0); i++){
-		cf[i] = pt5::Face{*(uint3*)pIndex.data(i,0), *pmID.data(i)};
-	}
-
-
-	std::vector<uint32_t> cm(pmSlot.shape(0));
-	memcpy(cm.data(), pmSlot.data(0), pmSlot.shape(0)*sizeof(uint32_t));
-
-	return pt5::TriangleMesh(cv, cf, cm);
-}
 
 
 class Window{
@@ -266,7 +220,7 @@ PYBIND11_MODULE(core, m) {
 		.def("destroyGLTexture", &View::destroyGLTexture)
 		.def("updateGLTexture", &View::updateGLTexture)
 		.def("clear", [](View& self, py::array_t<float> c){
-			auto r = c.mutable_unchecked<1>();
+			auto r = c.unchecked<1>();
 			assert(r.shape(0) == 4);
 			self.clear(make_float4(r(0), r(1), r(2), r(3)));
 		})
@@ -324,9 +278,8 @@ PYBIND11_MODULE(core, m) {
 					);
 			},
 			[](Camera& self, py::array_t<float>& x){
-				auto r = x.mutable_unchecked<2>();
-				assert(x.shape(0) == 3 && x.shape(1) == 3);
-				memcpy(&self.toWorld, r.data(0,0), 9*sizeof(float));
+				assert(x.ndim()==2 && x.shape(0) == 3 && x.shape(1) == 3);
+				memcpy(&self.toWorld, x.data(0,0), 9*sizeof(float));
 			})
 		.def_readwrite("focalLength", &Camera::focalLength);
 
@@ -337,9 +290,22 @@ PYBIND11_MODULE(core, m) {
 		.def_property("emission", PROPERTY_FLOAT3(Material, emission));
 
 
-	py::class_<TriangleMesh>(m, "TriangleMesh");
-	m.def("createTriangleMesh", &createTriangleMesh);
+	py::class_<TriangleMesh>(m, "TriangleMesh")
+		.def(py::init([](
+			py::array_t<float>& v,
+			py::array_t<float>& n,
+			py::array_t<uint32_t>& f,
+			py::array_t<uint32_t>& mIdx,
+			py::array_t<uint32_t>& mSlt)
+		{
+			return TriangleMesh(
+				std::vector<float3>( (float3*)v.data(0,0), (float3*)v.data(0,0)+v.shape(0) ),
+				std::vector<float3>( (float3*)n.data(0,0), (float3*)n.data(0,0)+n.shape(0) ),
+				std::vector<uint3>( (uint3*)f.data(0,0), (uint3*)f.data(0,0)+f.shape(0)),
+				std::vector<uint32_t>(mIdx.data(0), mIdx.data(0)+mIdx.size()),
+				std::vector<uint32_t>(mSlt.data(0), mSlt.data(0)+mSlt.size()));
+		}));
 
-	m.def("cuda_sync", &cuda_sync);
+	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});
 
 }

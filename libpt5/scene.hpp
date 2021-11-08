@@ -46,7 +46,7 @@ struct TriangleMesh{
 	TriangleMesh(
 		const std::vector<Vertex>& v,
 		const std::vector<Face>& f,
-		std::vector<uint32_t>& m)
+		const std::vector<uint32_t>& m)
 	:vertices(v), indices(f), materialSlots(m){}
 
 	TriangleMesh(

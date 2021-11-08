@@ -65,8 +65,8 @@ def createScene(scene, camera):
 
 
 	meshes = [
-		pt5.createTriangleMesh(verts0, normals, indices, mIDs0, mSlots0),
-		pt5.createTriangleMesh(verts1, normals, indices, mIDs1, mSlots1)
+		pt5.TriangleMesh(verts0, normals, indices, mIDs0, mSlots0),
+		pt5.TriangleMesh(verts1, normals, indices, mIDs1, mSlots1)
 	]
 
 	scene.meshes = meshes

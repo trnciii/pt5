@@ -121,7 +121,7 @@ def setMesh(scene):
       mtlIDs = [p.material_index for p in mesh.polygons]
       mtlSlots = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
-      meshes.append(core.createTriangleMesh(verts, normals, indices, mtlIDs, mtlSlots))
+      meshes.append(core.TriangleMesh(verts, normals, indices, mtlIDs, mtlSlots))
 
   scene.meshes = meshes
 
