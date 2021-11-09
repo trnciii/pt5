@@ -21,8 +21,8 @@ struct Camera{
 };
 
 struct Material{
-	float3 albedo;
-	float3 emission;
+	float3 albedo = {0.6, 0.6, 0.6};
+	float3 emission = {0, 0, 0};
 };
 
 struct TriangleMesh{
@@ -37,7 +37,7 @@ struct TriangleMesh{
 
 
 struct Scene{
-	float3 background;
+	float3 background = {0.4, 0.4, 0.4};
 	std::vector<TriangleMesh> meshes;
 	std::vector<Material> materials;
 };
