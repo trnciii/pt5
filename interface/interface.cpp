@@ -29,6 +29,12 @@ namespace py = pybind11;
 	}
 
 
+template <typename T>
+std::vector<T> toSTDVector(py::array_t<T>& x){
+	return std::vector<T>(x.data(0), x.data(0)+x.size());
+}
+
+
 class Window{
 public:
 	Window(pt5::View& v):view(v){
@@ -295,6 +301,7 @@ PYBIND11_MODULE(core, m) {
 			py::array_t<float>& v,
 			py::array_t<float>& n,
 			py::array_t<uint32_t>& f,
+			py::array_t<bool>& smooth,
 			py::array_t<uint32_t>& mIdx,
 			py::array_t<uint32_t>& mSlt)
 		{
@@ -302,8 +309,9 @@ PYBIND11_MODULE(core, m) {
 				std::vector<float3>( (float3*)v.data(0,0), (float3*)v.data(0,0)+v.shape(0) ),
 				std::vector<float3>( (float3*)n.data(0,0), (float3*)n.data(0,0)+n.shape(0) ),
 				std::vector<uint3>( (uint3*)f.data(0,0), (uint3*)f.data(0,0)+f.shape(0)),
-				std::vector<uint32_t>(mIdx.data(0), mIdx.data(0)+mIdx.size()),
-				std::vector<uint32_t>(mSlt.data(0), mSlt.data(0)+mSlt.size()));
+				toSTDVector(smooth),
+				toSTDVector(mIdx),
+				toSTDVector(mSlt));
 		}));
 
 	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});

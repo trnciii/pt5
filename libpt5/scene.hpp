@@ -28,6 +28,7 @@ struct Vertex{
 
 struct Face{
 	uint3 vertices;
+	bool smooth = true;
 	uint32_t material;
 };
 
@@ -53,12 +54,14 @@ struct TriangleMesh{
 		const std::vector<float3>& v,
 		const std::vector<float3>& n,
 		const std::vector<uint3>& f,
+		const std::vector<bool>& smooth,
 		const std::vector<uint32_t>& mIdx,
 		const std::vector<uint32_t>& mSlt)
 	:materialSlots(mSlt)
 	{
 		assert(v.size() == n.size());
-		assert(f.size() == mIdx.size());
+		assert((f.size() == mIdx.size())
+			&& (f.size() == smooth.size()));
 
 		vertices.resize(v.size());
 		indices.resize(f.size());
@@ -71,6 +74,7 @@ struct TriangleMesh{
 		for(int i=0; i<f.size(); i++){
 			indices[i].vertices = f[i];
 			indices[i].material = mIdx[i];
+			indices[i].smooth = smooth[i];
 		}
 	}
 };

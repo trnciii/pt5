@@ -48,11 +48,11 @@ extern "C" __global__ void __closesthit__radiance(){
 	const Material& mtl = sbtData.material;
 
 	const float3 p = (1-u-v)*v0.p + u*v1.p + v*v2.p;
-	float3 n = (1-u-v)*v0.n + u*v1.n + v*v2.n;
 	float3 ng = normalize(cross(v1.p-v0.p, v2.p-v0.p));
+	float3 n = face.smooth? normalize((1-u-v)*v0.n + u*v1.n + v*v2.n) : ng;
 
 	ng = faceforward(ng, wi, ng);
-	n = ng;
+	n = faceforward(n, wi, ng);
 
 	float3 tangent;
 	float3 binromal;

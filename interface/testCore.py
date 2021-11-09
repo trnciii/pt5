@@ -56,6 +56,7 @@ def createScene(scene, camera):
 		[5, 4, 3]
 	]
 
+	smooth = [False]*len(indices)
 	mIDs0 = [1, 1,	0, 0]
 	mSlots0 = [0, 3]
 
@@ -65,8 +66,8 @@ def createScene(scene, camera):
 
 
 	meshes = [
-		pt5.TriangleMesh(verts0, normals, indices, mIDs0, mSlots0),
-		pt5.TriangleMesh(verts1, normals, indices, mIDs1, mSlots1)
+		pt5.TriangleMesh(verts0, normals, indices, smooth, mIDs0, mSlots0),
+		pt5.TriangleMesh(verts1, normals, indices, smooth, mIDs1, mSlots1)
 	]
 
 	scene.meshes = meshes

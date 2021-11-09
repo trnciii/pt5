@@ -64,11 +64,12 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	};
 
 	std::vector<pt5::Face> f_box = {
-		{{0,1,2}, 0}, {{2,3,0}, 0}, // floor
-		{{5,1,0}, 1}, {{0,4,5}, 1}, // left
-		{{4,0,3}, 0}, {{3,7,4}, 0}, // back
-		{{7,3,2}, 2}, {{2,6,7}, 2}, // right
-		{{5,4,7}, 0}, {{7,6,5}, 0}, // roof
+		// verts, smooth, mtl
+		{{0,1,2}, false, 0}, {{2,3,0}, false, 0}, // floor
+		{{5,1,0}, false, 1}, {{0,4,5}, false, 1}, // left
+		{{4,0,3}, false, 0}, {{3,7,4}, false, 0}, // back
+		{{7,3,2}, false, 2}, {{2,6,7}, false, 2}, // right
+		{{5,4,7}, false, 0}, {{7,6,5}, false, 0}, // roof
 	};
 
 	std::vector<uint32_t> mSlot_box = {0,1,2};
@@ -88,13 +89,20 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 		{0, 0, -1}
 	};
 
+	std::vector<bool> smooth_light = {false, false};
 	std::vector<uint3> f_light = {{0,1,2}, {2,3,0}};
 	std::vector<uint32_t> mSlot_light = {3};
 	std::vector<uint32_t> mIndex_light = {0, 0};
 
 
 	scene.meshes.push_back(pt5::TriangleMesh(v_box, f_box, mSlot_box));
-	scene.meshes.push_back(pt5::TriangleMesh(v_light, n_light, f_light, mIndex_light, mSlot_light));
+	scene.meshes.push_back(pt5::TriangleMesh(
+		v_light,
+		n_light,
+		f_light,
+		smooth_light,
+		mIndex_light,
+		mSlot_light));
 }
 
 

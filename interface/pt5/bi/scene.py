@@ -117,11 +117,14 @@ def setMesh(scene):
 
       verts = [mat@v.co for v in mesh.vertices]
       normals = [(mat@v.normal - mat.to_translation()).normalized() for v in mesh.vertices]
+
       indices = [p.vertices[:3] for p in mesh.polygons]
+      smooth = [p.use_smooth for p in mesh.polygons]
       mtlIDs = [p.material_index for p in mesh.polygons]
+
       mtlSlots = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
-      meshes.append(core.TriangleMesh(verts, normals, indices, mtlIDs, mtlSlots))
+      meshes.append(core.TriangleMesh(verts, normals, indices, smooth, mtlIDs, mtlSlots))
 
   scene.meshes = meshes
 
