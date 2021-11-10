@@ -52,14 +52,10 @@ def setBackground(scene):
             if to.is_active_output and l.to_socket.name == 'Surface':
                 scene.background = frm.inputs[0].default_value[:3]
 
-def setMaterials(scene):
-  materials = []
 
-  for m in bpy.data.materials.values():
-
-    links = m.node_tree.links
-
-    for l in links:
+def perseMaterial(mtl):
+  if mtl.node_tree and mtl.grease_pencil == None:
+    for l in mtl.node_tree.links:
       if type(l.to_node) is bpy.types.ShaderNodeOutputMaterial:
         if l.to_node.is_active_output and l.to_socket.name == 'Surface':
           shader_node = l.from_node
@@ -79,7 +75,28 @@ def setMaterials(scene):
             m_pt5.albedo = shader_node.inputs[0].default_value[:3]
             m_pt5.emission = [0,0,0]
 
-          materials.append(m_pt5)
+          return m_pt5
+
+  black = core.Material()
+  black.albedo = [0,0,0]
+  black.emission = [0,0,0]
+  return black
+
+
+def setMaterials(scene):
+  materials = []
+
+  for m in bpy.data.materials.values():
+    try:
+      materials.append(perseMaterial(m))
+    except:
+      magenta = core.Material()
+      magenta.albedo
+      magenta.emission = [1,0,1]
+      materials.append(magenta)
+
+      print(m.name)
+      traceback.print_exc()
 
   scene.materials = materials
 
@@ -101,21 +118,53 @@ def getTriangles(obj):
   return mesh
 
 
-def setMesh(scene):
+def geometries():
+  types = [
+    'MESH',
+    'CURVE',
+    'SURFACE',
+    'META',
+    'FONT',
+    # 'HAIR',
+    # 'POINTCLOUD',
+    # 'VOLUME',
+    # 'GPENCIL',
+    # 'ARMATURE',
+    # 'LATTICE',
+    # 'EMPTY',
+    # 'LIGHT',
+    # 'LIGHT_PROBE',
+    # 'CAMERA',
+    # 'SPEAKER'
+  ]
+
+  return [o for o in bpy.data.objects.values()
+    if o.type in types
+    and not (o.type=='META' and '.' in o.name)
+  ]
+
+def setObjects(scene):
   meshes = []
-  for obj in bpy.data.objects.values():
+
+  for obj in geometries():
     try:
       mesh = getTriangles(obj)
       mat = obj.matrix_world
 
+      if len(mesh.polygons) == 0: continue
+
       verts = [mat@v.co for v in mesh.vertices]
       normals = [(mat@v.normal - mat.to_translation()).normalized() for v in mesh.vertices]
+
       indices = [p.vertices[:3] for p in mesh.polygons]
       mtlIDs = [p.material_index for p in mesh.polygons]
+
       mtlSlots = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
       meshes.append(core.createTriangleMesh(verts, normals, indices, mtlIDs, mtlSlots))
+
     except:
+      print(obj.name)
       traceback.print_exc()
 
   scene.meshes = meshes
@@ -125,5 +174,5 @@ def createSceneFromBlender():
   scene = core.Scene()
   setBackground(scene)
   setMaterials(scene)
-  setMesh(scene)
+  setObjects(scene)
   return scene
