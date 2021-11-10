@@ -190,8 +190,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 		OPTIX_CHECK(optixSbtRecordPackHeader(raygenProgramGroup, &rec));
 		rec.data.traversable = asHandle;
 
-		raygenRecordBuffer.alloc(sizeof(RaygenRecord), stream);
-		raygenRecordBuffer.upload(&rec, 1, stream);
+		raygenRecordBuffer.alloc_and_upload(rec, stream);
 
 		sbt.raygenRecord = raygenRecordBuffer.d_pointer();
 	}
@@ -202,8 +201,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 		OPTIX_CHECK(optixSbtRecordPackHeader(missProgramGroup, &rec));
 		rec.data.background = scene.background;
 
-		missRecordBuffer.alloc(sizeof(MissRecord), stream);
-		missRecordBuffer.upload(&rec, 1, stream);
+		missRecordBuffer.alloc_and_upload(rec, stream);
 
 		sbt.missRecordBase = missRecordBuffer.d_pointer();
 		sbt.missRecordStrideInBytes = sizeof(MissRecord);
@@ -218,11 +216,11 @@ void PathTracerState::buildSBT(const Scene& scene){
 			int rayTypeCount = 1;
 
 			std::vector<Material> materials;
-			if(mesh.materials.size()==0)
+			if(mesh.materialSlots.size()==0)
 				materials.push_back(Material());
 			else{
-				for(int i=0; i<mesh.materials.size(); i++){
-					materials.push_back(scene.materials[mesh.materials[i]]);
+				for(int i=0; i<mesh.materialSlots.size(); i++){
+					materials.push_back(scene.materials[mesh.materialSlots[i]]);
 				}
 			}
 
@@ -230,11 +228,8 @@ void PathTracerState::buildSBT(const Scene& scene){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
-					(float3*)vertexCoordsBuffers[objectCount].d_pointer(),
-					(float3*)vertexNormalBuffers[objectCount].d_pointer(),
-
-					(uint3*)indexBuffers[objectCount].d_pointer(),
-
+					(Vertex*)vertexBuffers[objectCount].d_pointer(),
+					(Face*)indexBuffers[objectCount].d_pointer(),
 					materials[i]
 				};
 
@@ -262,12 +257,8 @@ void PathTracerState::destroySBT(){
 
 
 void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
-	vertexCoordsBuffers.resize(meshes.size());
-	vertexNormalBuffers.resize(meshes.size());
-
+	vertexBuffers.resize(meshes.size());
 	indexBuffers.resize(meshes.size());
-
-	std::vector<CUDABuffer> materialBuffer(meshes.size());
 
 	std::vector<OptixBuildInput> triangleInput(meshes.size());
 	std::vector<std::vector<uint32_t>> triangleInputFlags(meshes.size());
@@ -275,37 +266,33 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 
 	for(int i=0; i<meshes.size(); i++){
 		const TriangleMesh& mesh = meshes[i];
-		const int materialSize = mesh.materials.size()? mesh.materials.size() : 1;
+		const int materialSize = mesh.materialSlots.size()? mesh.materialSlots.size() : 1;
 
-		vertexCoordsBuffers[i].alloc_and_upload(mesh.vertex_coords, stream);
-		vertexNormalBuffers[i].alloc_and_upload(mesh.vertex_normals, stream);
-		d_vertices[i] = vertexCoordsBuffers[i].d_pointer();
+		vertexBuffers[i].alloc_and_upload(mesh.vertices, stream);
+		d_vertices[i] = vertexBuffers[i].d_pointer() + offsetof(Vertex, p);
 
-		indexBuffers[i].alloc_and_upload(mesh.face_vertices, stream);
-
-		materialBuffer[i].alloc_and_upload(mesh.face_material, stream);
+		indexBuffers[i].alloc_and_upload(mesh.indices, stream);
 
 		triangleInputFlags[i] = std::vector<uint32_t>(materialSize, OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
-
 
 		triangleInput[i] = {};
 			triangleInput[i].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
 
 			triangleInput[i].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-			triangleInput[i].triangleArray.numVertices = (int)mesh.vertex_coords.size();
+			triangleInput[i].triangleArray.numVertices = (int)mesh.vertices.size();
 			triangleInput[i].triangleArray.vertexBuffers = &d_vertices[i];
-			triangleInput[i].triangleArray.vertexStrideInBytes = sizeof(float3);
+			triangleInput[i].triangleArray.vertexStrideInBytes = sizeof(Vertex);
 
 			triangleInput[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.face_vertices.size();
-			triangleInput[i].triangleArray.indexBuffer = indexBuffers[i].d_pointer();
-			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(uint3);
+			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.indices.size();
+			triangleInput[i].triangleArray.indexBuffer = indexBuffers[i].d_pointer() + offsetof(Face, vertices);
+			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
 
 			triangleInput[i].triangleArray.flags = triangleInputFlags[i].data();
 			triangleInput[i].triangleArray.numSbtRecords = materialSize;
-			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = materialBuffer[i].d_pointer();
+			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = indexBuffers[i].d_pointer() + offsetof(Face, material);
 			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
-			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(uint32_t);
+			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(Face);
 	}
 
 
@@ -375,20 +362,13 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 	outputBuffer.free(stream);
 	tempBuffer.free(stream);
 	compactedSizeBuffer.free(stream);
-
-	for(int i=0; i<materialBuffer.size(); i++){
-		materialBuffer[i].free(stream);
-	}
 }
 
 void PathTracerState::destroyAccel(){
 	asBuffer.free(stream);
 
-	for(int  i=0; i<vertexCoordsBuffers.size(); i++)
-		vertexCoordsBuffers[i].free(stream);
-
-	for(int  i=0; i<vertexNormalBuffers.size(); i++)
-		vertexNormalBuffers[i].free(stream);
+	for(int  i=0; i<vertexBuffers.size(); i++)
+		vertexBuffers[i].free(stream);
 
 	for(int i=0; i<indexBuffers.size(); i++)
 		indexBuffers[i].free(stream);
@@ -414,15 +394,6 @@ void PathTracerState::removeScene(){
 	destroySBT();
 }
 
-// void PathTracerState::setCamera(const Camera& cam){
-// 	camera.alloc(sizeof(Camera), stream);
-// 	camera.upload(&cam, 1, stream);
-// }
-
-// void PathTracerState::removeCamera(){
-// 	camera.free(stream);
-// }
-
 
 PathTracerState::~PathTracerState(){
 	removeScene();
@@ -445,8 +416,7 @@ void PathTracerState::render(const View& view, uint spp, Camera camera){
 	launchParams.spp = spp;
 	launchParams.camera = camera;
 
-	launchParamsBuffer.alloc(sizeof(launchParams), stream);
-	launchParamsBuffer.upload(&launchParams, 1, stream);
+	launchParamsBuffer.alloc_and_upload(launchParams, stream);
 
 
 	cudaEventCreate(&finishEvent);

@@ -34,29 +34,25 @@ extern "C" __global__ void __closesthit__radiance(){
 	const HitgroupSBTData& sbtData = *(HitgroupSBTData*)optixGetSbtDataPointer();
 
 	const int primID = optixGetPrimitiveIndex();
-	const uint3& indices = sbtData.face_vertices[primID];
+	const Face& face = sbtData.faces[primID];
 
 	const float3 wi = -optixGetWorldRayDirection();
 
 	const float u = optixGetTriangleBarycentrics().x;
 	const float v = optixGetTriangleBarycentrics().y;
 
-	const float3& p0 = sbtData.vertex_coords[indices.x];
-	const float3& p1 = sbtData.vertex_coords[indices.y];
-	const float3& p2 = sbtData.vertex_coords[indices.z];
-
-	const float3& n0 = sbtData.vertex_normals[indices.x];
-	const float3& n1 = sbtData.vertex_normals[indices.y];
-	const float3& n2 = sbtData.vertex_normals[indices.z];
+	const Vertex& v0 = sbtData.vertices[face.vertices.x];
+	const Vertex& v1 = sbtData.vertices[face.vertices.y];
+	const Vertex& v2 = sbtData.vertices[face.vertices.z];
 
 	const Material& mtl = sbtData.material;
 
-	const float3 p = (1-u-v)*p0 + u*p1 + v*p2;
-	float3 n = (1-u-v)*n0 + u*n1 + v*n2;
-	float3 ng = normalize(cross(p1-p0, p2-p0));
+	const float3 p = (1-u-v)*v0.p + u*v1.p + v*v2.p;
+	float3 ng = normalize(cross(v1.p-v0.p, v2.p-v0.p));
+	float3 n = face.smooth? normalize((1-u-v)*v0.n + u*v1.n + v*v2.n) : ng;
 
 	ng = faceforward(ng, wi, ng);
-	n = ng;
+	n = faceforward(n, wi, ng);
 
 	float3 tangent;
 	float3 binromal;

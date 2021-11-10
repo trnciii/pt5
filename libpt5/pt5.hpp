@@ -86,6 +86,12 @@ struct CUDABuffer {
 	}
 
 	template<typename T>
+	void alloc_and_upload(const T& t, CUstream stream){
+		alloc(sizeof(T), stream);
+		upload(&t, 1, stream);
+	}
+
+	template<typename T>
 	void upload(const T *t, size_t count, CUstream stream)
 	{
 		assert(d_ptr != nullptr);
@@ -193,9 +199,7 @@ private:
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
 
-	// buffer per geometry
-	std::vector<CUDABuffer> vertexCoordsBuffers;
-	std::vector<CUDABuffer> vertexNormalBuffers;
+	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
 
 	cudaEvent_t finishEvent;
