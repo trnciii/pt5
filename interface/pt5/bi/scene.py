@@ -3,6 +3,7 @@ import bmesh
 import numpy as np
 from .. import core
 import traceback
+import time
 
 
 def createCameraFromObject(bcam):
@@ -110,21 +111,34 @@ def getTriangles(obj):
 def setMesh(scene):
   meshes = []
 
+  t0 = time.time()
+
   for obj in bpy.data.objects.values():
     mesh = getTriangles(obj)
     if mesh:
       mat = obj.matrix_world
+      verts = np.array([(
+          tuple(mat@v.co),
+          tuple((mat@v.normal - mat.to_translation()).normalized()))
+          for v in mesh.vertices
+        ],
+        dtype=core.Vertex_dtype
+      )
 
-      verts = [mat@v.co for v in mesh.vertices]
-      normals = [(mat@v.normal - mat.to_translation()).normalized() for v in mesh.vertices]
+      faces = np.array([(
+          tuple(p.vertices[:3]),
+          (p.use_smooth),
+          (p.material_index))
+          for p in mesh.polygons
+        ],
+        dtype=core.Face_dtype
+      )
 
-      indices = [p.vertices[:3] for p in mesh.polygons]
-      smooth = [p.use_smooth for p in mesh.polygons]
-      mtlIDs = [p.material_index for p in mesh.polygons]
+      mtls = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
-      mtlSlots = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
+      meshes.append(core.TriangleMesh(verts, faces, mtls))
 
-      meshes.append(core.TriangleMesh(verts, normals, indices, smooth, mtlIDs, mtlSlots))
+  print('time', time.time()-t0)
 
   scene.meshes = meshes
 

@@ -30,9 +30,22 @@ namespace py = pybind11;
 
 
 template <typename T>
-std::vector<T> toSTDVector(py::array_t<T>& x){
+std::vector<T> toSTDVector(const py::array_t<T>& x){
 	return std::vector<T>(x.data(0), x.data(0)+x.size());
 }
+
+const std::vector<py::tuple> float3_dtype{
+	py::make_tuple("x", "<f4"),
+	py::make_tuple("y", "<f4"),
+	py::make_tuple("z", "<f4")
+};
+
+const std::vector<py::tuple> uint3_dtype{
+	py::make_tuple("x", "<i4"),
+	py::make_tuple("y", "<i4"),
+	py::make_tuple("z", "<i4")
+};
+
 
 
 class Window{
@@ -296,14 +309,30 @@ PYBIND11_MODULE(core, m) {
 		.def_property("emission", PROPERTY_FLOAT3(Material, emission));
 
 
+	PYBIND11_NUMPY_DTYPE(float3, x, y, z);
+	PYBIND11_NUMPY_DTYPE(uint3, x, y, z);
+	PYBIND11_NUMPY_DTYPE(Vertex, p, n);
+	PYBIND11_NUMPY_DTYPE(Face, vertices, smooth, material);
+
+	m.attr("Vertex_dtype") = std::vector<py::tuple>{
+		py::make_tuple("p", float3_dtype),
+		py::make_tuple("n", float3_dtype)
+	};
+
+	m.attr("Face_dtype") = std::vector<py::tuple>{
+		py::make_tuple("vertices", uint3_dtype),
+		py::make_tuple("smooth", "i1"),
+		py::make_tuple("material", "<i4")
+	};
+
 	py::class_<TriangleMesh>(m, "TriangleMesh")
 		.def(py::init([](
-			py::array_t<float>& v,
-			py::array_t<float>& n,
-			py::array_t<uint32_t>& f,
-			py::array_t<bool>& smooth,
-			py::array_t<uint32_t>& mIdx,
-			py::array_t<uint32_t>& mSlt)
+			const py::array_t<float>& v,
+			const py::array_t<float>& n,
+			const py::array_t<uint32_t>& f,
+			const py::array_t<bool>& smooth,
+			const py::array_t<uint32_t>& mIdx,
+			const py::array_t<uint32_t>& mSlt)
 		{
 			return TriangleMesh(
 				std::vector<float3>( (float3*)v.data(0,0), (float3*)v.data(0,0)+v.shape(0) ),
@@ -312,7 +341,18 @@ PYBIND11_MODULE(core, m) {
 				toSTDVector(smooth),
 				toSTDVector(mIdx),
 				toSTDVector(mSlt));
+		}))
+		.def(py::init([](
+			const py::array_t<Vertex>& v,
+			const py::array_t<Face>& f,
+			const py::array_t<uint32_t>& m)
+		{
+			return TriangleMesh(
+				toSTDVector(v),
+				toSTDVector(f),
+				toSTDVector(m));
 		}));
+
 
 	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});
 
