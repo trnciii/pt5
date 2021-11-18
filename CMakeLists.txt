@@ -24,16 +24,6 @@ find_package(OptiX REQUIRED)
 include_directories(${OptiX_INCLUDE})
 
 
-# gl
-if( POLICY CMP0072 )
-  cmake_policy(SET CMP0072 NEW)
-endif()
-
-find_package(OpenGL REQUIRED)
-
-find_package(glfw3 3.3 REQUIRED)
-
-
 # add
 include_directories(${PROJECT_SOURCE_DIR}/libpt5)
 
