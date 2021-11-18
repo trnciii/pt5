@@ -1,4 +1,5 @@
 import pt5
+from pt5.window import Window as Window
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -88,13 +89,13 @@ def createScene(scene, camera):
 
 
 
-def main(background, use_python_window):
+def main(background):
 	w, h = 1200, 800
 
 	view = pt5.View(w,h)
 
 	if not background:
-		window = pt5.Window_py(view) if use_python_window else pt5.Window_cpp(view)
+		window = Window(view)
 		view.clear([0.3, 0.3, 0.3, 1])
 
 
@@ -116,13 +117,5 @@ def main(background, use_python_window):
 	os.makedirs('result', exist_ok=True)
 	plt.imsave('result/out_py.png', view.pixels)
 
-	# explicitly destroy window before view.
-	# (view could be deleted first when using c++ wrapped Window class...)
-	del window
-	del view
 
-for i in range(1):
-	main(background='--background' in sys.argv, use_python_window=True)
-	print('-'*40)
-	main(background='--background' in sys.argv, use_python_window=False)
-	print('-'*40)
+main(background='--background' in sys.argv)

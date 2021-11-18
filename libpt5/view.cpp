@@ -32,8 +32,6 @@ void View::downloadImage(){
 
 
 void View::createGLTexture(){
-	glEnable(GL_TEXTURE_2D);
-
 	glGenTextures(1, &glTextureHandle);
 
 	glBindTexture(GL_TEXTURE_2D, glTextureHandle);
