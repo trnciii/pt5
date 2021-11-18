@@ -5,6 +5,11 @@ from .. import core
 import traceback
 
 
+def autoFocalLen(lens, film, x, y):
+	if x>y: return 2*lens/film
+	else: return (2*lens/film)*(y/x)
+
+
 def createCameraFromObject(bcam):
   camera = core.Camera()
 
@@ -19,10 +24,7 @@ def createCameraFromObject(bcam):
   elif bcam.data.sensor_fit == 'VERTICAL':
     camera.focalLength = (2*lens/sy)*(ry/rx)
   else:
-    if rx>ry:
-      camera.focalLength = 2*lens/sx
-    else:
-      camera.focalLength = (2*lens/sx)*(ry/rx)
+    camera.focalLength = autoFocalLen(lens, sx, rx, ry)
 
 
   mat = bcam.matrix_world
@@ -33,10 +35,10 @@ def createCameraFromObject(bcam):
   return camera
 
 
-def getViewAsCamera(context):
+def getViewAsCamera(context, dim):
   camera = core.Camera()
   mat = context.region_data.view_matrix.inverted()
-  camera.focalLength = context.space_data.lens/36
+  camera.focalLength = autoFocalLen(context.space_data.lens, 72, *dim)
   camera.position = mat.to_translation()
   camera.toWorld = mat.to_3x3()
   return camera

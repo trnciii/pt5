@@ -134,7 +134,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
             self.draw_data = CustomDrawData(dimensions, self.view)
 
 
-        self.camera = pt5.scene.getViewAsCamera(context)
+        self.camera = pt5.scene.getViewAsCamera(context, dimensions)
 
         self.tracer.render(self.view, 100, self.camera)
         pt5.cuda_sync()
