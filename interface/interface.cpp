@@ -31,7 +31,8 @@ namespace py = pybind11;
 
 template <typename T>
 std::vector<T> toSTDVector(py::array_t<T>& x){
-	return std::vector<T>(x.data(0), x.data(0)+x.size());
+	if(x.size()==0) return std::vector<T>(0);
+	else return std::vector<T>(x.data(0), x.data(0)+x.size());
 }
 
 
@@ -311,7 +312,7 @@ PYBIND11_MODULE(core, m) {
 				std::vector<uint3>( (uint3*)f.data(0,0), (uint3*)f.data(0,0)+f.shape(0)),
 				toSTDVector(smooth),
 				toSTDVector(mIdx),
-				(mSlt.size()>0)? toSTDVector(mSlt) : std::vector<uint32_t>(0));
+				toSTDVector(mSlt));
 		}));
 
 	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});
