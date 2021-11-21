@@ -13,7 +13,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
     bl_idname = "PT5"
     bl_label = "pt5"
     bl_use_preview = True
-    bl_use_custom_shading_node = False
+    bl_use_shading_nodes_custom = False
 
     # Init is called whenever a new render engine instance is created. Multiple
     # instances may exist at the same time, for example for a viewport and final
@@ -53,7 +53,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
         self.tracer.setScene(pt5.scene.createSceneFromBlender())
         camera = pt5.scene.createCameraFromObject(scene.camera)
 
-        self.tracer.render(view, 1000, camera)
+        self.tracer.render(view, scene.pt5.spp_final, camera)
         pt5.cuda_sync()
 
         view.downloadImage()
@@ -127,7 +127,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
         self.camera = pt5.scene.getViewAsCamera(context)
 
-        self.tracer.render(self.view, 100, self.camera)
+        self.tracer.render(self.view, scene.pt5.spp_viewport, self.camera)
         pt5.cuda_sync()
 
         self.draw_data.draw()

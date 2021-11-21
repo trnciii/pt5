@@ -12,6 +12,21 @@ import importlib
 if importlib.util.find_spec("bpy"):
 	print('import blender interface')
 	from .bi import *
-	from .bi.engine import register, unregister
+
+	def register():
+		from .bi import engine, panels, props
+
+		engine.register()
+		panels.register()
+		props.register()
+
+
+	def unregister():
+		from .bi import engine, panels, props
+
+		engine.unregister()
+		panels.unregister()
+		props.unregister()
+
 
 del importlib
