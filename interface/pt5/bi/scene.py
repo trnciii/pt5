@@ -3,6 +3,7 @@ import bmesh
 import numpy as np
 from .. import core
 import traceback
+import time
 
 
 def autoFocalLen(lens, film, x, y):
@@ -151,26 +152,35 @@ def geometries():
 		and not (o.type=='META' and '.' in o.name)
 	]
 
+
 def setObjects(scene):
 	meshes = []
 
 	for obj in geometries():
 		try:
 			mesh = getTriangles(obj)
-			mat = obj.matrix_world
+			if mesh and len(mesh.polygons)>0:
+				mat = obj.matrix_world
+				verts = np.array([(
+						tuple(mat@v.co),
+						tuple((mat@v.normal - mat.to_translation()).normalized()))
+						for v in mesh.vertices
+					],
+					dtype=core.Vertex_dtype
+				)
 
-			if len(mesh.polygons) == 0: continue
+				faces = np.array([(
+						tuple(p.vertices[:3]),
+						(p.use_smooth),
+						(p.material_index))
+						for p in mesh.polygons
+					],
+					dtype=core.Face_dtype
+				)
 
-			verts = [mat@v.co for v in mesh.vertices]
-			normals = [(mat@v.normal - mat.to_translation()).normalized() for v in mesh.vertices]
+				mtls = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
-			indices = [p.vertices[:3] for p in mesh.polygons]
-			smooth = [p.use_smooth for p in mesh.polygons]
-			mtlIDs = [p.material_index for p in mesh.polygons]
-
-			mtlSlots = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
-
-			meshes.append(core.TriangleMesh(verts, normals, indices, smooth, mtlIDs, mtlSlots))
+				meshes.append(core.TriangleMesh(verts, faces, mtls))
 
 		except:
 			print(obj.name)

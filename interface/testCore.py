@@ -1,4 +1,5 @@
 import pt5
+from pt5.window import Window as Window
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,7 +57,6 @@ def createScene(scene, camera):
 		[5, 4, 3]
 	]
 
-	smooth = [False]*len(indices)
 	mIDs0 = [1, 1,	0, 0]
 	mSlots0 = [0, 3]
 
@@ -66,21 +66,36 @@ def createScene(scene, camera):
 
 
 	meshes = [
-		pt5.TriangleMesh(verts0, normals, indices, smooth, mIDs0, mSlots0),
-		pt5.TriangleMesh(verts1, normals, indices, smooth, mIDs1, mSlots1)
+		pt5.TriangleMesh(
+			np.array([(
+				tuple(v),
+				tuple(n))
+				for v, n in zip(verts0, normals)],
+				dtype=pt5.Vertex_dtype
+			),
+			np.array([(
+				tuple(i),
+				False,
+				m)
+				for i, m in zip(indices, mIDs0)],
+				dtype=pt5.Face_dtype
+			),
+			mSlots0),
+
+		pt5.TriangleMesh(verts1, normals, indices, [False]*len(indices), mIDs1, mSlots1)
 	]
 
 	scene.meshes = meshes
 
 
 
-def main(background, use_python_window):
+def main(background):
 	w, h = 1200, 800
 
 	view = pt5.View(w,h)
 
 	if not background:
-		window = pt5.Window_py(view) if use_python_window else pt5.Window_cpp(view)
+		window = Window(view)
 		view.clear([0.3, 0.3, 0.3, 1])
 
 
@@ -102,13 +117,5 @@ def main(background, use_python_window):
 	os.makedirs('result', exist_ok=True)
 	plt.imsave('result/out_py.png', view.pixels)
 
-	# explicitly destroy window before view.
-	# (view could be deleted first when using c++ wrapped Window class...)
-	del window
-	del view
 
-for i in range(1):
-	main(background='--background' in sys.argv, use_python_window=True)
-	print('-'*40)
-	main(background='--background' in sys.argv, use_python_window=False)
-	print('-'*40)
+main(background='--background' in sys.argv)

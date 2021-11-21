@@ -2,10 +2,6 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
-#define GLAD_GL_IMPLEMENTATION
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
-
 #include <cassert>
 
 #include "pt5.hpp"
@@ -30,189 +26,21 @@ namespace py = pybind11;
 
 
 template <typename T>
-std::vector<T> toSTDVector(py::array_t<T>& x){
+std::vector<T> toSTDVector(const py::array_t<T>& x){
 	if(x.size()==0) return std::vector<T>(0);
 	else return std::vector<T>(x.data(0), x.data(0)+x.size());
 }
 
+const std::vector<py::tuple> float3_dtype{
+	py::make_tuple("x", "<f4"),
+	py::make_tuple("y", "<f4"),
+	py::make_tuple("z", "<f4")
+};
 
-class Window{
-public:
-	Window(pt5::View& v):view(v){
-		const int x = view.size().x;
-		const int y = view.size().y;
-
-		if(!glfwInit()) return;
-
-		window = glfwCreateWindow(x, y, "pt5 view", NULL, NULL);
-		if(!window){
-			glfwTerminate();
-			return;
-		}
-
-		glfwMakeContextCurrent(window);
-		gladLoadGL(glfwGetProcAddress);
-
-		glEnable(GL_FRAMEBUFFER_SRGB);
-		glViewport(0,0,x,y);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, (float)x, 0, (float)y, -1, 1);
-
-		initPrograms();
-		createVAO();
-
-		view.createGLTexture();
-
-		std::cout <<"created Window" <<std::endl;
-	}
-
-	~Window(){
-		if(!window) return;
-
-		view.destroyGLTexture(); // destruct view within opengl context.
-		glDeleteBuffers(1, &vertexBuffer);
-		glDeleteBuffers(1, &indexBuffer);
-		glDeleteVertexArrays(1, &vertexArray);
-		glDeleteProgram(program);
-		glfwDestroyWindow(window);
-		glfwTerminate();
-
-		std::cout <<"destroyed Window" <<std::endl;
-	}
-
-
-	void draw(const pt5::PathTracerState& tracer){
-		if(!window){
-			CUDA_SYNC_CHECK();
-			return;
-		}
-
-	  glUniform1i(glGetUniformLocation(program, "txBuffer"), 0);
-
-		glUseProgram(program);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, view.GLTexture());
-		glBindVertexArray(vertexArray);
-
-
-		while(!glfwWindowShouldClose(window)
-			&& tracer.running()
-		){
-			view.updateGLTexture();
-
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-			glfwSwapBuffers(window);
-	    glfwPollEvents();
-		};
-
-		CUDA_SYNC_CHECK();
-	}
-
-	bool hasWindow(){return window;}
-
-private:
-	GLuint compileShader(const std::string& source, const GLuint type){
-		const GLchar* source_data = (GLchar*)source.c_str();
-
-		GLuint shader = glCreateShader(type);
-		glShaderSource(shader, 1, &source_data, nullptr);
-		glCompileShader(shader);
-
-		GLint compiled = GL_FALSE;
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-
-		return shader;
-	}
-
-	void initPrograms(){
-		{
-			std::string source =
-				"#version 460\n"
-
-				"layout (location = 0) in vec3 position;\n"
-				"layout (location = 1) in vec2 txCoord;\n"
-
-				"out vec2 co;\n"
-
-				"void main(){\n"
-				"		co = txCoord;\n"
-				"		gl_Position = vec4( position, 1.0 );\n"
-				"}\n";
-
-			vs = compileShader(source, GL_VERTEX_SHADER);
-		}
-		{
-			std::string source =
-				"#version 460\n"
-
-				"in vec2 co;\n"
-				"out vec4 fragColor;\n"
-
-				"uniform sampler2D txBuffer;\n"
-
-				"void main(){\n"
-				"		fragColor = texture(txBuffer, co);\n"
-				"}\n";
-
-			fs = compileShader(source, GL_FRAGMENT_SHADER);
-		}
-
-		program = glCreateProgram();
-		glAttachShader(program, vs);
-		glAttachShader(program, fs);
-		glLinkProgram(program);
-
-		glDetachShader(program, vs);
-		glDetachShader(program, fs);
-		glDeleteShader(vs);
-		glDeleteShader(fs);
-	}
-
-	void createVAO(){
-		GLfloat vertices[] = {
-			-1, 1, 0,  0, 0,
-			 1, 1, 0,  1, 0,
-			 1,-1, 0,	 1, 1,
-			-1,-1, 0,  0, 1
-		};
-
-		GLuint indices[] = {
-			0, 1, 2,
-			2, 3, 0
-		};
-
-		glGenBuffers(1, &vertexBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-		glGenVertexArrays(1, &vertexArray);
-		glBindVertexArray(vertexArray);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), 0);
-		glEnableVertexAttribArray(0);
-
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(3*sizeof(GLfloat)));
-		glEnableVertexAttribArray(1);
-
-
-		glGenBuffers(1, &indexBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	}
-
-
-	GLFWwindow* window;
-	pt5::View& view;
-
-	GLuint vs;
-	GLuint fs;
-	GLuint program;
-
-	GLuint vertexBuffer;
-	GLuint vertexArray;
-	GLuint indexBuffer;
+const std::vector<py::tuple> uint3_dtype{
+	py::make_tuple("x", "<i4"),
+	py::make_tuple("y", "<i4"),
+	py::make_tuple("z", "<i4")
 };
 
 
@@ -248,11 +76,6 @@ PYBIND11_MODULE(core, m) {
 					{(int)self.size().x*4*sizeof(float), 4*sizeof(float), sizeof(float)}
 					);
 			});
-
-	py::class_<Window>(m, "Window_cpp")
-		.def(py::init<View&>())
-		.def("draw", &Window::draw)
-		.def_property_readonly("hasWindow", &Window::hasWindow);
 
 
 	py::class_<PathTracerState>(m, "PathTracer")
@@ -297,14 +120,30 @@ PYBIND11_MODULE(core, m) {
 		.def_property("emission", PROPERTY_FLOAT3(Material, emission));
 
 
+	PYBIND11_NUMPY_DTYPE(float3, x, y, z);
+	PYBIND11_NUMPY_DTYPE(uint3, x, y, z);
+	PYBIND11_NUMPY_DTYPE(Vertex, p, n);
+	PYBIND11_NUMPY_DTYPE(Face, vertices, smooth, material);
+
+	m.attr("Vertex_dtype") = std::vector<py::tuple>{
+		py::make_tuple("p", float3_dtype),
+		py::make_tuple("n", float3_dtype)
+	};
+
+	m.attr("Face_dtype") = std::vector<py::tuple>{
+		py::make_tuple("vertices", uint3_dtype),
+		py::make_tuple("smooth", "i1"),
+		py::make_tuple("material", "<i4")
+	};
+
 	py::class_<TriangleMesh>(m, "TriangleMesh")
 		.def(py::init([](
-			py::array_t<float>& v,
-			py::array_t<float>& n,
-			py::array_t<uint32_t>& f,
-			py::array_t<bool>& smooth,
-			py::array_t<uint32_t>& mIdx,
-			py::array_t<uint32_t>& mSlt)
+			const py::array_t<float>& v,
+			const py::array_t<float>& n,
+			const py::array_t<uint32_t>& f,
+			const py::array_t<bool>& smooth,
+			const py::array_t<uint32_t>& mIdx,
+			const py::array_t<uint32_t>& mSlt)
 		{
 			return TriangleMesh(
 				std::vector<float3>( (float3*)v.data(0,0), (float3*)v.data(0,0)+v.shape(0) ),
@@ -313,7 +152,18 @@ PYBIND11_MODULE(core, m) {
 				toSTDVector(smooth),
 				toSTDVector(mIdx),
 				toSTDVector(mSlt));
+		}))
+		.def(py::init([](
+			const py::array_t<Vertex>& v,
+			const py::array_t<Face>& f,
+			const py::array_t<uint32_t>& m)
+		{
+			return TriangleMesh(
+				toSTDVector(v),
+				toSTDVector(f),
+				toSTDVector(m));
 		}));
+
 
 	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});
 

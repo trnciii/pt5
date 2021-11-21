@@ -51,8 +51,8 @@ extern "C" __global__ void __closesthit__radiance(){
 	float3 ng = normalize(cross(v1.p-v0.p, v2.p-v0.p));
 	float3 n = face.smooth? normalize((1-u-v)*v0.n + u*v1.n + v*v2.n) : ng;
 
-	ng = faceforward(ng, wi, ng);
 	n = faceforward(n, wi, ng);
+	ng = faceforward(ng, wi, ng);
 
 	float3 tangent;
 	float3 binromal;

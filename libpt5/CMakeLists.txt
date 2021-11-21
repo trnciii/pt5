@@ -17,6 +17,13 @@ macro(cuda_compile_and_embed output_var cuda_file)
 endmacro()
 
 
+# gl
+if( POLICY CMP0072 )
+  cmake_policy(SET CMP0072 NEW)
+endif()
+
+find_package(OpenGL REQUIRED)
+
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # kind of fPIC
 
