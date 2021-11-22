@@ -9,10 +9,12 @@ class PT5Properties(bpy.types.PropertyGroup):
 
 	spp_final: IntProperty(
 		default = 1000,
+		min = 1,
 	)
 
 	spp_viewport: IntProperty(
 		default = 100,
+		min = 1,
 	)
 
 
