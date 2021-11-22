@@ -1,6 +1,9 @@
-use_dummy = False
+import importlib
 
-if use_dummy:
-	from .core_dummy import *
-else:
+if importlib.util.find_spec(".core", package='pt5.core'):
 	from .core import *
+else:
+	print('pt5 using dummy core')
+	from .core_dummy import *
+
+del importlib
