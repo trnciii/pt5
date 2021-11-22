@@ -1,9 +1,24 @@
 import pt5
 
 import numpy as np
-import matplotlib.pyplot as plt
 import bpy
-import os, sys, threading
+import threading
+
+
+def addImage(name, data):
+	images = bpy.data.images
+
+	data = np.maximum(0, np.minimum(1, data))
+
+	if name in images:
+		images.remove(images[name])
+
+	im = images.new(name = name, width = data.shape[1], height = data.shape[0])
+	im.colorspace_settings.name = 'Linear'
+	im.use_view_as_render = True
+	im.pixels = np.flipud(data).flatten()
+
+	return im
 
 
 def main():
@@ -15,9 +30,6 @@ def main():
 	view = pt5.View(width, height)
 	view.clear([0.4, 0.4, 0.4, 0.4])
 
-	if '--background' not in sys.argv:
-		window = pt5.Window_py(view)
-
 
 	pt = pt5.PathTracer()
 	pt.setScene(pt5.scene.createSceneFromBlender())
@@ -26,17 +38,12 @@ def main():
 
 
 	pt.render(view, 1000, camera)
-	if not '--background' in sys.argv:
-		window.draw(pt)
-
 	pt5.cuda_sync()
 
 	view.downloadImage()
-	pixels = np.minimum(1, np.maximum(0, view.pixels**0.4))
 
-
-	os.makedirs('result', exist_ok=True)
-	plt.imsave('result/out_blender.png', pixels)
+	image = addImage('pt5 result', view.pixels)
+	image.save_render('result/out_blender.png')
 
 
 th = threading.Thread(target=main)

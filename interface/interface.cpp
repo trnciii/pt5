@@ -27,7 +27,8 @@ namespace py = pybind11;
 
 template <typename T>
 std::vector<T> toSTDVector(const py::array_t<T>& x){
-	return std::vector<T>(x.data(0), x.data(0)+x.size());
+	if(x.size()==0) return std::vector<T>(0);
+	else return std::vector<T>(x.data(0), x.data(0)+x.size());
 }
 
 const std::vector<py::tuple> float3_dtype{

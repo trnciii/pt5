@@ -215,13 +215,22 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			for(int materialCount=0; materialCount<mesh.materialSlots.size(); materialCount++){
+			std::vector<Material> materials;
+			if(mesh.materialSlots.size()==0)
+				materials.push_back(Material());
+			else{
+				for(int i=0; i<mesh.materialSlots.size(); i++){
+					materials.push_back(scene.materials[mesh.materialSlots[i]]);
+				}
+			}
+
+			for(int i=0; i<materials.size(); i++){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
 					(Vertex*)vertexBuffers[objectCount].d_pointer(),
 					(Face*)indexBuffers[objectCount].d_pointer(),
-					scene.materials[mesh.materialSlots[materialCount]]
+					materials[i]
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
@@ -257,14 +266,14 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 
 	for(int i=0; i<meshes.size(); i++){
 		const TriangleMesh& mesh = meshes[i];
+		const int materialSize = mesh.materialSlots.size()? mesh.materialSlots.size() : 1;
 
 		vertexBuffers[i].alloc_and_upload(mesh.vertices, stream);
 		d_vertices[i] = vertexBuffers[i].d_pointer() + offsetof(Vertex, p);
 
 		indexBuffers[i].alloc_and_upload(mesh.indices, stream);
 
-		triangleInputFlags[i] = std::vector<uint32_t>(mesh.materialSlots.size(), OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
-
+		triangleInputFlags[i] = std::vector<uint32_t>(materialSize, OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
 
 		triangleInput[i] = {};
 			triangleInput[i].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
@@ -280,7 +289,7 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
 
 			triangleInput[i].triangleArray.flags = triangleInputFlags[i].data();
-			triangleInput[i].triangleArray.numSbtRecords = mesh.materialSlots.size();
+			triangleInput[i].triangleArray.numSbtRecords = materialSize;
 			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = indexBuffers[i].d_pointer() + offsetof(Face, material);
 			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
 			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(Face);
@@ -402,8 +411,6 @@ PathTracerState::~PathTracerState(){
 
 
 void PathTracerState::render(const View& view, uint spp, Camera camera){
-	std::cout <<"launch kernel" <<std::endl;
-
 	launchParams.image.size = view.size();
 	launchParams.image.pixels = view.bufferPtr();
 	launchParams.spp = spp;
