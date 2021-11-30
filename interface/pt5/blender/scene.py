@@ -171,6 +171,7 @@ def setObjects(scene):
 
 				faces = np.array([(
 						tuple(p.vertices[:3]),
+						tuple(p.loop_indices[:3]),
 						(p.use_smooth),
 						(p.material_index))
 						for p in mesh.polygons
@@ -178,9 +179,13 @@ def setObjects(scene):
 					dtype=core.Face_dtype
 				)
 
+				uv = np.array(
+					[data.uv.to_tuple() for data in mesh.uv_layers.active.data],
+					dtype = core.float2_dtype)
+
 				mtls = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
-				meshes.append(core.TriangleMesh(verts, faces, mtls))
+				meshes.append(core.TriangleMesh(verts, faces, uv, mtls))
 
 		except:
 			print(obj.name)
