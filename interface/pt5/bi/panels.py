@@ -87,12 +87,37 @@ classes = (
 )
 
 
+# RenderEngines also need to tell UI Panels that they are compatible with.
+# We recommend to enable all panels marked as BLENDER_RENDER, and then
+# exclude any panels that are replaced by custom panels registered by the
+# render engine, or that are not supported.
+def get_panels():
+	exclude_panels = {
+		'VIEWLAYER_PT_filter',
+		'VIEWLAYER_PT_layer_passes',
+	}
+
+	panels = []
+	for panel in bpy.types.Panel.__subclasses__():
+		if hasattr(panel, 'COMPAT_ENGINES') and 'BLENDER_RENDER' in panel.COMPAT_ENGINES:
+			if panel.__name__ not in exclude_panels:
+				panels.append(panel)
+
+	return panels
+
 
 def register():
 	for c in classes:
 		bpy.utils.register_class(c)
 
+	for panel in get_panels():
+		panel.COMPAT_ENGINES.add('PT5')
+
 
 def unregister():
 	for c in classes:
 		bpy.utils.unregister_class(c)
+
+	for panel in get_panels():
+		if 'PT5' in panel.COMPAT_ENGINES:
+			panel.COMPAT_ENGINES.remove('PT5')
