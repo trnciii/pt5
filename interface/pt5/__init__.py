@@ -10,11 +10,11 @@ bl_info = {
 
 import importlib
 if importlib.util.find_spec("bpy"):
-	print('import blender interface')
-	from .bi import *
+	print('import pt5.blender module')
+	from .blender import scene
 
 	def register():
-		from .bi import engine, panels, props
+		from .blender import engine, panels, props
 
 		engine.register()
 		panels.register()
@@ -22,7 +22,7 @@ if importlib.util.find_spec("bpy"):
 
 
 	def unregister():
-		from .bi import engine, panels, props
+		from .blender import engine, panels, props
 
 		engine.unregister()
 		panels.unregister()
