@@ -1,5 +1,7 @@
 import bpy
 import bmesh
+from bpy_extras.node_utils import find_node_input
+
 import numpy as np
 from .. import core
 import traceback
@@ -56,34 +58,51 @@ def setBackground(scene):
 				scene.background = frm.inputs[0].default_value[:3]
 
 
+def create_material_diffuse(x, y, z):
+	m = core.Material()
+	m.emission = 0,0,0
+	m.albedo = x,y,z
+	return m
+
+def create_material_emit(x,y,z, strength = 1):
+	m = core.Material()
+	m.emission = x, y, z
+	m.emission *= strength
+	m.albedo = 0,0,0
+	return m
+
+
 def perseMaterial(mtl):
-	if mtl.node_tree and mtl.grease_pencil == None:
-		for l in mtl.node_tree.links:
-			if type(l.to_node) is bpy.types.ShaderNodeOutputMaterial:
-				if l.to_node.is_active_output and l.to_socket.name == 'Surface':
-					shader_node = l.from_node
+	if mtl.grease_pencil:
+		return create_material_diffuse(0,0,0)
 
-					m_pt5 = core.Material()
 
-					if shader_node.type == 'EMISSION':
-						m_pt5.albedo = [0,0,0]
-						m_pt5.emission = shader_node.inputs[0].default_value[:3]
-						m_pt5.emission *= shader_node.inputs[1].default_value
+	if not mtl.use_nodes:
+		return create_material_diffuse(*mtl.diffuse_color[:3])
 
-					elif shader_node.type == 'BSDF_DIFFUSE':
-						m_pt5.albedo = shader_node.inputs[0].default_value[:3]
-						m_pt5.emission = [0,0,0]
 
-					else:
-						m_pt5.albedo = shader_node.inputs[0].default_value[:3]
-						m_pt5.emission = [0,0,0]
+	output = mtl.node_tree.get_output_node('CYCLES')
+	if not output:
+		return create_material_diffuse(0,0,0)
 
-					return m_pt5
+	socket = find_node_input(output, 'Surface')
+	filtered = [l.from_node for l in mtl.node_tree.links if l.to_socket == socket]
+	if not len(filtered) > 0:
+		return create_material_diffuse(0,0,0)
 
-	black = core.Material()
-	black.albedo = [0,0,0]
-	black.emission = [0,0,0]
-	return black
+
+	shader_node = filtered[0]
+	inputs = shader_node.inputs
+
+	if shader_node.type == 'EMISSION':
+		return create_material_emit(*inputs[0].default_value[:3],	inputs[1].default_value)
+
+	elif shader_node.type == 'BSDF_DIFFUSE':
+		return create_material_diffuse(*inputs[0].default_value[:3])
+
+	else:
+		return create_material_diffuse(*inputs[0].default_value[:3])
+
 
 
 def setMaterials(scene):
