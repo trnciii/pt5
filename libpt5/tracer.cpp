@@ -210,9 +210,14 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 	// hitgroup
 	{
+		uvBuffers.resize(scene.meshes.size());
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for(int objectCount=0; objectCount<scene.meshes.size(); objectCount++){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
+
+			uvBuffers[objectCount].alloc_and_upload(mesh.uv, stream);
+
+
 			int rayTypeCount = 1;
 
 			std::vector<Material> materials;
@@ -230,6 +235,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 				HitgroupSBTData data = {
 					(Vertex*)vertexBuffers[objectCount].d_pointer(),
 					(Face*)indexBuffers[objectCount].d_pointer(),
+					(float2*)uvBuffers[objectCount].d_pointer(),
 					materials[i]
 				};
 
@@ -253,6 +259,8 @@ void PathTracerState::destroySBT(){
 	raygenRecordBuffer.free(stream);
 	missRecordBuffer.free(stream);
 	hitgroupRecordsBuffer.free(stream);
+	for(auto& buffer : uvBuffers)
+		buffer.free(stream);
 }
 
 

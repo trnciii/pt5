@@ -201,6 +201,7 @@ private:
 
 	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
+	std::vector<CUDABuffer> uvBuffers;
 
 	cudaEvent_t finishEvent;
 };

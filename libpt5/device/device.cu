@@ -45,9 +45,14 @@ extern "C" __global__ void __closesthit__radiance(){
 	const Vertex& v1 = sbtData.vertices[face.vertices.y];
 	const Vertex& v2 = sbtData.vertices[face.vertices.z];
 
+	const float2& tx0 = sbtData.uv[face.uv.x];
+	const float2& tx1 = sbtData.uv[face.uv.y];
+	const float2& tx2 = sbtData.uv[face.uv.z];
+
 	const Material& mtl = sbtData.material;
 
 	const float3 p = (1-u-v)*v0.p + u*v1.p + v*v2.p;
+	const float2 txcoord = (1-u-v)*tx0 + u*tx1 + v*tx2;
 	float3 ng = normalize(cross(v1.p-v0.p, v2.p-v0.p));
 	float3 n = face.smooth? normalize((1-u-v)*v0.n + u*v1.n + v*v2.n) : ng;
 
@@ -70,8 +75,11 @@ extern "C" __global__ void __closesthit__radiance(){
 
 
 	payload.pContinue = max(mtl.albedo.x, max(mtl.albedo.y, mtl.albedo.z));
-	payload.emission = mtl.emission;
-	payload.albedo = mtl.albedo;
+	// payload.emission = mtl.emission;
+	// payload.albedo = mtl.albedo;
+	payload.emission = make_float3(txcoord, 0);
+	payload.albedo = make_float3(0,0,0);
+
 	payload.ray_o = p + 0.001*ng;
 	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*n;
 }
