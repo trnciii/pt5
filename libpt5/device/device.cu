@@ -75,11 +75,8 @@ extern "C" __global__ void __closesthit__radiance(){
 
 
 	payload.pContinue = max(mtl.albedo.x, max(mtl.albedo.y, mtl.albedo.z));
-	// payload.emission = mtl.emission;
-	// payload.albedo = mtl.albedo;
-	payload.emission = make_float3(txcoord, 0);
-	payload.albedo = make_float3(0,0,0);
-
+	payload.emission = mtl.emission;
+	payload.albedo = mtl.albedo;
 	payload.ray_o = p + 0.001*ng;
 	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*n;
 }
