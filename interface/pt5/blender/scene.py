@@ -48,14 +48,28 @@ def getViewAsCamera(context, dim):
 
 
 def setBackground(scene):
-	tree = bpy.data.worlds['World'].node_tree
+	world = bpy.context.scene.world
 
-	for l in tree.links:
-		to = l.to_node
-		frm = l.from_node
-		if type(to) is bpy.types.ShaderNodeOutputWorld:
-			if to.is_active_output and l.to_socket.name == 'Surface':
-				scene.background = frm.inputs[0].default_value[:3]
+	if not (world.use_nodes and world.node_tree):
+		scene.background = world.color
+		return
+
+	output = world.node_tree.get_output_node('CYCLES')
+	if not output:
+		scene.background = world.color
+		return
+
+	socket = find_node_input(output, 'Surface')
+	filtered = [l.from_node for l in world.node_tree.links if l.to_socket == socket]
+	if not (len(filtered)>0 and filtered[0].type == 'BACKGROUND'):
+		scene.background = [0,0,0]
+		return
+
+
+	params = filtered[0].inputs
+	scene.background = params[0].default_value[:3]
+	scene.background *= params[1].default_value
+	return
 
 
 def create_material_diffuse(x, y, z):
@@ -91,17 +105,17 @@ def perseMaterial(mtl):
 		return create_material_diffuse(0,0,0)
 
 
-	shader_node = filtered[0]
-	inputs = shader_node.inputs
+	nodetype = filtered[0].type
+	params = filtered[0].inputs
 
-	if shader_node.type == 'EMISSION':
-		return create_material_emit(*inputs[0].default_value[:3],	inputs[1].default_value)
+	if nodetype == 'EMISSION':
+		return create_material_emit(*params[0].default_value[:3],	params[1].default_value)
 
-	elif shader_node.type == 'BSDF_DIFFUSE':
-		return create_material_diffuse(*inputs[0].default_value[:3])
+	elif nodetype == 'BSDF_DIFFUSE':
+		return create_material_diffuse(*params[0].default_value[:3])
 
 	else:
-		return create_material_diffuse(*inputs[0].default_value[:3])
+		return create_material_diffuse(*params[0].default_value[:3])
 
 
 
