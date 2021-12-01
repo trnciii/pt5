@@ -88,6 +88,8 @@ PYBIND11_MODULE(core, m) {
 
 	py::class_<Scene>(m, "Scene")
 		.def(py::init<>())
+		.def("upload", [](Scene& self){self.upload(0);})
+		.def("free", [](Scene& self){self.free(0);})
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("meshes", &Scene::meshes)
 		.def_property("background", PROPERTY_FLOAT3(Scene, background));

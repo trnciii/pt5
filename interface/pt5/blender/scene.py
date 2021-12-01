@@ -200,4 +200,5 @@ def createSceneFromBlender():
 	setBackground(scene)
 	setMaterials(scene)
 	setObjects(scene)
+	scene.upload()
 	return scene

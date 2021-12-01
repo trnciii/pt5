@@ -54,11 +54,4 @@ struct TriangleMesh{
 	:vertices(v), indices(f), uv(u), materialSlots(m){}
 };
 
-
-struct Scene{
-	float3 background = {0.4, 0.4, 0.4};
-	std::vector<TriangleMesh> meshes;
-	std::vector<Material> materials;
-};
-
 }

@@ -112,6 +112,65 @@ struct CUDABuffer {
 };
 
 
+class Scene{
+	std::vector<CUDABuffer> vertexBuffers;
+	std::vector<CUDABuffer> indexBuffers;
+	std::vector<CUDABuffer> uvBuffers;
+	bool allocated = false;
+
+public:
+
+	float3 background = {0.4, 0.4, 0.4};
+	std::vector<TriangleMesh> meshes;
+	std::vector<Material> materials;
+
+
+	~Scene(){
+		if(allocated) free(0);
+	}
+
+	void upload(CUstream stream){
+		assert(allocated == false);
+
+		vertexBuffers.resize(meshes.size());
+		indexBuffers.resize(meshes.size());
+		uvBuffers.resize(meshes.size());
+
+		for(int i=0; i<meshes.size(); i++){
+			vertexBuffers[i].alloc_and_upload(meshes[i].vertices, stream);
+			indexBuffers[i].alloc_and_upload(meshes[i].indices, stream);
+			uvBuffers[i].alloc_and_upload(meshes[i].uv, stream);
+		}
+
+		allocated = true;
+	}
+
+	void free(CUstream stream){
+		assert(allocated == true);
+		for(auto& buffer : vertexBuffers) buffer.free(stream);
+		for(auto& buffer : indexBuffers) buffer.free(stream);
+		for(auto& buffer : uvBuffers) buffer.free(stream);
+
+		allocated = false;
+	}
+
+	CUdeviceptr vertices_d_pointer(size_t i) const{
+		assert(allocated);
+		return vertexBuffers[i].d_pointer();
+	}
+
+	CUdeviceptr indices_d_pointer(size_t i) const{
+		assert(allocated);
+		return indexBuffers[i].d_pointer();
+	}
+
+	CUdeviceptr uv_d_pointer(size_t i) const{
+		assert(allocated);
+		return uvBuffers[i].d_pointer();
+	}
+
+};
+
 
 class View{
 public:
@@ -163,7 +222,7 @@ private:
 	void createProgramGroups();
 	void createPipeline();
 
-	void buildAccel(const std::vector<TriangleMesh>&);
+	void buildAccel(const Scene&);
 	void buildSBT(const Scene& scene);
 
 	void destroyAccel();
@@ -198,10 +257,6 @@ private:
 
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
-
-	std::vector<CUDABuffer> vertexBuffers;
-	std::vector<CUDABuffer> indexBuffers;
-	std::vector<CUDABuffer> uvBuffers;
 
 	cudaEvent_t finishEvent;
 };

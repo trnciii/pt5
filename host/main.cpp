@@ -114,6 +114,8 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 
 	scene.meshes.push_back(pt5::TriangleMesh(v_box, f_box, uv_box, mSlot_box));
 	scene.meshes.push_back(pt5::TriangleMesh(v_light, f_light, uv_light, {3}));
+
+	scene.upload(0);
 }
 
 
