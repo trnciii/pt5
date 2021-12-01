@@ -1,7 +1,6 @@
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "pt5.hpp"
-
 #include <optix_function_table_definition.h>
+#include <iostream>
 
 extern "C" char embedded_ptx_code[];
 

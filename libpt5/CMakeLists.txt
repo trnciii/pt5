@@ -40,6 +40,8 @@ add_library(pt5
 	LaunchParams.h
 	scene.hpp
 	view.cpp
+	CUDABuffer.hpp
+	optix.hpp
 	)
 
 target_link_libraries(pt5
