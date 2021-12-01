@@ -84,7 +84,7 @@ def createScene(scene, camera):
 			np.array(
 				[(tuple(i),tuple(i),	False, m) for i, m in zip(indices, mIDs0)],
 				dtype=pt5.Face_dtype),
-			np.array([tuple(x) for x in uv0], dtype = pt5.float2_dtype),
+			uv0,
 			mSlots0),
 
 		pt5.TriangleMesh(
@@ -94,7 +94,7 @@ def createScene(scene, camera):
 			np.array(
 				[(tuple(i), tuple(i), False, m) for i, m in zip(indices, mIDs1)],
 				dtype = pt5.Face_dtype),
-			np.array([tuple(x) for x in uv1], dtype = pt5.float2_dtype),
+			uv1,
 			mSlots1)
 	]
 

@@ -162,26 +162,27 @@ def setObjects(scene):
 			if mesh and len(mesh.polygons)>0:
 				mat = obj.matrix_world
 				verts = np.array([(
-						tuple(mat@v.co),
-						tuple((mat@v.normal - mat.to_translation()).normalized()))
-						for v in mesh.vertices
-					],
+					tuple(mat@v.co),
+					tuple((mat@v.normal - mat.to_translation()).normalized()))
+					for v in mesh.vertices],
 					dtype=core.Vertex_dtype
 				)
 
 				faces = np.array([(
-						tuple(p.vertices[:3]),
-						tuple(p.loop_indices[:3]),
-						(p.use_smooth),
-						(p.material_index))
-						for p in mesh.polygons
-					],
+					tuple(p.vertices[:3]),
+					tuple(p.loop_indices[:3]),
+					(p.use_smooth),
+					(p.material_index))
+					for p in mesh.polygons],
 					dtype=core.Face_dtype
 				)
 
-				uv = np.array(
-					[data.uv.to_tuple() for data in mesh.uv_layers.active.data],
-					dtype = core.float2_dtype)
+				if mesh.uv_layers.active:
+					uv = np.array(
+						[data.uv for data in mesh.uv_layers.active.data])
+				else:
+					uv = np.array(
+						[[0,0] for i in range(sum([p.loop_total for p in mesh.polygons]))])
 
 				mtls = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 

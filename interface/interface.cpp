@@ -126,11 +126,6 @@ PYBIND11_MODULE(core, m) {
 	PYBIND11_NUMPY_DTYPE(Vertex, p, n);
 	PYBIND11_NUMPY_DTYPE(Face, vertices, uv, smooth, material);
 
-	m.attr("float2_dtype") = std::vector<py::tuple>{
-		py::make_tuple("x", "<f4"),
-		py::make_tuple("y", "<f4")
-	};
-
 	m.attr("Vertex_dtype") = std::vector<py::tuple>{
 		py::make_tuple("p", float3_dtype),
 		py::make_tuple("n", float3_dtype)
@@ -147,13 +142,13 @@ PYBIND11_MODULE(core, m) {
 		.def(py::init([](
 			const py::array_t<Vertex>& v,
 			const py::array_t<Face>& f,
-			const py::array_t<float2>& uv,
+			const py::array_t<float>& uv,
 			const py::array_t<uint32_t>& m)
 		{
 			return TriangleMesh(
 				toSTDVector(v),
 				toSTDVector(f),
-				toSTDVector(uv),
+				std::vector<float2>((float2*)uv.data(0,0), (float2*)uv.data(0,0)+uv.shape(0)),
 				toSTDVector(m));
 		}));
 
