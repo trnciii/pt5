@@ -1,6 +1,12 @@
-#include "pt5.hpp"
+#include "tracer.hpp"
 #include <optix_function_table_definition.h>
 #include <iostream>
+#include <vector>
+
+#include "optix.hpp"
+#include "view.hpp"
+#include "scene.hpp"
+
 
 extern "C" char embedded_ptx_code[];
 
@@ -8,21 +14,9 @@ extern "C" char embedded_ptx_code[];
 namespace pt5{
 
 
-template <typename T>
-struct Record{
-	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-	T data;
-};
-
-using RaygenRecord = Record<RaygenSBTData>;
-using MissRecord = Record<MissSBTData>;
-using HitgroupRecord = Record<HitgroupSBTData>;
-
-
 void context_log_callback(unsigned int level, const char *tag, const char *message, void *){
-	fprintf( stderr, "[%2d][%12s]: %s\n", (int)level, tag, message );
+  fprintf( stderr, "[%2d][%12s]: %s\n", (int)level, tag, message );
 }
-
 
 
 void PathTracerState::createContext(){
