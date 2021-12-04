@@ -56,10 +56,6 @@ private:
 	OptixShaderBindingTable sbt = {};
 
 
-	LaunchParams launchParams;
-	CUDABuffer launchParamsBuffer;
-
-
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
 

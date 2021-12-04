@@ -393,12 +393,13 @@ PathTracerState::~PathTracerState(){
 
 
 void PathTracerState::render(const View& view, uint spp, Camera camera){
-	launchParams.image.size = view.size();
-	launchParams.image.pixels = view.bufferPtr();
-	launchParams.spp = spp;
-	launchParams.camera = camera;
+	launchParams params;
+	params.image.size = view.size();
+	params.image.pixels = view.bufferPtr();
+	params.spp = spp;
+	params.camera = camera;
 
-	launchParamsBuffer.alloc_and_upload(launchParams, stream);
+	CUDABuffer buffer.alloc_and_upload(params, stream);
 
 
 	cudaEventCreate(&finishEvent);
@@ -406,14 +407,14 @@ void PathTracerState::render(const View& view, uint spp, Camera camera){
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
 		stream,
-		launchParamsBuffer.d_pointer(),
-		launchParamsBuffer.sizeInBytes,
+		buffer.d_pointer(),
+		buffer.sizeInBytes,
 		&sbt,
-		launchParams.image.size.x,
-		launchParams.image.size.y,
+		params.image.size.x,
+		params.image.size.y,
 		1));
 
-	launchParamsBuffer.free(stream);
+	buffer.free(stream);
 	cudaEventRecord(finishEvent, stream);
 }
 
