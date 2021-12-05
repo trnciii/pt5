@@ -393,13 +393,14 @@ PathTracerState::~PathTracerState(){
 
 
 void PathTracerState::render(const View& view, uint spp, Camera camera){
-	launchParams params;
+	LaunchParams params;
 	params.image.size = view.size();
 	params.image.pixels = view.bufferPtr();
 	params.spp = spp;
 	params.camera = camera;
 
-	CUDABuffer buffer.alloc_and_upload(params, stream);
+	CUDABuffer buffer;
+	buffer.alloc_and_upload(params, stream);
 
 
 	cudaEventCreate(&finishEvent);
