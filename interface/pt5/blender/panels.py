@@ -1,6 +1,10 @@
 import bpy
 from bpy_extras.node_utils import find_node_input
-from cycles.ui import *
+from cycles.ui import (
+	CYCLES_MATERIAL_PT_surface,
+	CYCLES_WORLD_PT_surface,
+	CYCLES_PT_context_material
+)
 
 
 
