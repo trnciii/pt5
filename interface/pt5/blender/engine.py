@@ -44,13 +44,11 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		self.size_x = int(scene.render.resolution_x * scale)
 		self.size_y = int(scene.render.resolution_y * scale)
 
-		# Fill the render result with a flat color. The framebuffer is
-		# defined as a list of pixels, each pixel itself being a list of
-		# R,G,B,A values.
-
 		view = pt5.View(self.size_x, self.size_y)
 
-		self.tracer.setScene(pt5.scene.createSceneFromBlender())
+		exclude = [o for o in scene.objects if o.hide_render]
+
+		self.tracer.setScene(pt5.scene.createSceneFromBlender(scene, exclude))
 		camera = pt5.scene.createCameraFromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
@@ -74,8 +72,10 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		view3d = context.space_data
 		scene = depsgraph.scene
 
+		exclude = [o for o in scene.objects if o.hide_get()]
+
 		self.tracer.removeScene()
-		self.tracer.setScene(pt5.scene.createSceneFromBlender())
+		self.tracer.setScene(pt5.scene.createSceneFromBlender(scene, exclude))
 
 
 		if not self.scene_data:

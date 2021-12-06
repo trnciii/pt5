@@ -47,29 +47,24 @@ def getViewAsCamera(context, dim):
 	return camera
 
 
-def setBackground(scene):
-	world = bpy.context.scene.world
+def getBackground(scene):
+	world = scene.world
 
 	if not (world.use_nodes and world.node_tree):
-		scene.background = world.color
-		return
+		return  world.color
 
 	output = world.node_tree.get_output_node('CYCLES')
 	if not output:
-		scene.background = world.color
-		return
+		return world.color
 
 	socket = find_node_input(output, 'Surface')
 	filtered = [l.from_node for l in world.node_tree.links if l.to_socket == socket]
 	if not (len(filtered)>0 and filtered[0].type == 'BACKGROUND'):
-		scene.background = [0,0,0]
-		return
+		return  [0,0,0]
 
 
 	params = filtered[0].inputs
-	scene.background = params[0].default_value[:3]
-	scene.background *= params[1].default_value
-	return
+	return np.array(params[0].default_value[:3]) * params[1].default_value
 
 
 def create_material_diffuse(x, y, z):
@@ -119,7 +114,7 @@ def perseMaterial(mtl):
 
 
 
-def setMaterials(scene):
+def getMaterials():
 	materials = []
 
 	for m in bpy.data.materials.values():
@@ -134,7 +129,7 @@ def setMaterials(scene):
 			print(m.name)
 			traceback.print_exc()
 
-	scene.materials = materials
+	return materials
 
 
 def getTriangles(obj):
@@ -152,7 +147,8 @@ def getTriangles(obj):
 		bm.to_mesh(mesh)
 		bm.free()
 
-		return mesh
+		if len(mesh.polygons)>0: return mesh
+		else: return None
 
 	except:
 		print('error: failed to evaluate object as mesh')
@@ -160,7 +156,7 @@ def getTriangles(obj):
 		return None
 
 
-def geometries():
+def drawable(scene, hide = None):
 	types = [
 		'MESH',
 		'CURVE',
@@ -180,51 +176,50 @@ def geometries():
 		# 'SPEAKER'
 	]
 
-	return [o for o in bpy.data.objects.values()
+	return [o for o in scene.objects.values()
 		if o.type in types
+		and (o not in hide)
 		and not (o.type=='META' and '.' in o.name)
 	]
 
 
-def setObjects(scene):
-	meshes = []
+def toTriangleMesh(obj):
+	try:
+		mesh = getTriangles(obj)
 
-	for obj in geometries():
-		try:
-			mesh = getTriangles(obj)
-			if mesh and len(mesh.polygons)>0:
-				mat = obj.matrix_world
-				verts = np.array([(
-						tuple(mat@v.co),
-						tuple((mat@v.normal - mat.to_translation()).normalized()))
-						for v in mesh.vertices
-					],
-					dtype=core.Vertex_dtype
-				)
+		if not mesh: return None
 
-				faces = np.array([(
-						tuple(p.vertices[:3]),
-						(p.use_smooth),
-						(p.material_index))
-						for p in mesh.polygons
-					],
-					dtype=core.Face_dtype
-				)
+		mat = obj.matrix_world
+		verts = np.array([(
+				tuple(mat@v.co),
+				tuple((mat@v.normal - mat.to_translation()).normalized()))
+				for v in mesh.vertices
+			],
+			dtype=core.Vertex_dtype
+		)
 
-				mtls = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
+		faces = np.array([(
+				tuple(p.vertices[:3]),
+				(p.use_smooth),
+				(p.material_index))
+				for p in mesh.polygons
+			],
+			dtype=core.Face_dtype
+		)
 
-				meshes.append(core.TriangleMesh(verts, faces, mtls))
+		mtls = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
-		except:
-			print(obj.name)
-			traceback.print_exc()
+		return core.TriangleMesh(verts, faces, mtls)
 
-	scene.meshes = meshes
+	except:
+		print(obj.name)
+		traceback.print_exc()
+		return None
 
 
-def createSceneFromBlender():
-	scene = core.Scene()
-	setBackground(scene)
-	setMaterials(scene)
-	setObjects(scene)
-	return scene
+def createSceneFromBlender(scene, hide = None):
+	ret = core.Scene()
+	ret.background = getBackground(scene)
+	ret.materials = getMaterials()
+	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(scene, hide)] if m]
+	return ret
