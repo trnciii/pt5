@@ -1,4 +1,5 @@
 from .core import *
+from . import dtype
 
 # setup to work with blender
 

@@ -31,19 +31,6 @@ std::vector<T> toSTDVector(const py::array_t<T>& x){
 	else return std::vector<T>(x.data(0), x.data(0)+x.size());
 }
 
-const std::vector<py::tuple> float3_dtype{
-	py::make_tuple("x", "<f4"),
-	py::make_tuple("y", "<f4"),
-	py::make_tuple("z", "<f4")
-};
-
-const std::vector<py::tuple> uint3_dtype{
-	py::make_tuple("x", "<i4"),
-	py::make_tuple("y", "<i4"),
-	py::make_tuple("z", "<i4")
-};
-
-
 
 PYBIND11_MODULE(core, m) {
 	using namespace pt5;
@@ -126,17 +113,6 @@ PYBIND11_MODULE(core, m) {
 	PYBIND11_NUMPY_DTYPE(Vertex, p, n);
 	PYBIND11_NUMPY_DTYPE(Face, vertices, uv, smooth, material);
 
-	m.attr("Vertex_dtype") = std::vector<py::tuple>{
-		py::make_tuple("p", float3_dtype),
-		py::make_tuple("n", float3_dtype)
-	};
-
-	m.attr("Face_dtype") = std::vector<py::tuple>{
-		py::make_tuple("vertices", uint3_dtype),
-		py::make_tuple("uv", uint3_dtype),
-		py::make_tuple("smooth", "i1"),
-		py::make_tuple("material", "<i4")
-	};
 
 	py::class_<TriangleMesh>(m, "TriangleMesh")
 		.def(py::init([](

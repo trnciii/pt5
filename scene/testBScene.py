@@ -22,9 +22,10 @@ def addImage(name, data):
 
 
 def main():
-	scale = bpy.context.scene.render.resolution_percentage/100
-	width = int(bpy.context.scene.render.resolution_x*scale)
-	height = int(bpy.context.scene.render.resolution_y*scale)
+	scene = bpy.context.scene
+	scale = scene.render.resolution_percentage/100
+	width = int(scene.render.resolution_x*scale)
+	height = int(scene.render.resolution_y*scale)
 
 
 	view = pt5.View(width, height)
@@ -32,9 +33,9 @@ def main():
 
 
 	pt = pt5.PathTracer()
-	pt.setScene(pt5.scene.createSceneFromBlender())
+	pt.setScene(pt5.scene.createSceneFromBlender(scene))
 
-	camera = pt5.scene.createCameraFromObject(bpy.context.scene.camera)
+	camera = pt5.scene.createCameraFromObject(scene.camera)
 
 
 	pt.render(view, 1000, camera)

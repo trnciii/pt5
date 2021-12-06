@@ -2,10 +2,9 @@ import bpy
 import bmesh
 from bpy_extras.node_utils import find_node_input
 
+from .. import core, dtype
 import numpy as np
-from .. import core
 import traceback
-import time
 
 
 def autoFocalLen(lens, film, x, y):
@@ -156,7 +155,7 @@ def getTriangles(obj):
 		return None
 
 
-def drawable(scene, hide = None):
+def drawable(scene, hide = []):
 	types = [
 		'MESH',
 		'CURVE',
@@ -195,7 +194,7 @@ def toTriangleMesh(obj):
 				tuple((mat@v.normal - mat.to_translation()).normalized()))
 				for v in mesh.vertices
 			],
-			dtype=core.Vertex_dtype
+			dtype=dtype.Vertex_dtype
 		)
 
 		faces = np.array([(
@@ -204,7 +203,7 @@ def toTriangleMesh(obj):
 			(p.use_smooth),
 			(p.material_index))
 			for p in mesh.polygons],
-			dtype=core.Face_dtype
+			dtype=dtype.Face_dtype
 		)
 
 		if mesh.uv_layers.active:
@@ -224,7 +223,7 @@ def toTriangleMesh(obj):
 		return None
 
 
-def createSceneFromBlender(scene, hide = None):
+def createSceneFromBlender(scene, hide = []):
 	ret = core.Scene()
 	ret.background = getBackground(scene)
 	ret.materials = getMaterials()
