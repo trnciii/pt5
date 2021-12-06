@@ -221,9 +221,9 @@ void PathTracerState::buildSBT(const Scene& scene){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
-					(Vertex*)scene.vertices_d_pointer(objectCount),
-					(Face*)scene.indices_d_pointer(objectCount),
-					(float2*)scene.uv_d_pointer(objectCount),
+					(Vertex*)sceneBuffer.vertices(objectCount),
+					(Face*)sceneBuffer.indices(objectCount),
+					(float2*)sceneBuffer.uv(objectCount),
 					materials[i]
 				};
 
@@ -250,17 +250,16 @@ void PathTracerState::destroySBT(){
 }
 
 
-void PathTracerState::buildAccel(const Scene& scene){
-	std::vector<OptixBuildInput> triangleInput(scene.meshes.size());
-	std::vector<std::vector<uint32_t>> triangleInputFlags(scene.meshes.size());
-	std::vector<CUdeviceptr> d_vertices(scene.meshes.size());
+void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
+	std::vector<OptixBuildInput> triangleInput(meshes.size());
+	std::vector<std::vector<uint32_t>> triangleInputFlags(meshes.size());
+	std::vector<CUdeviceptr> d_vertices(meshes.size());
 
-	for(int i=0; i<scene.meshes.size(); i++){
-		const TriangleMesh& mesh = scene.meshes[i];
+	for(int i=0; i<meshes.size(); i++){
+		const TriangleMesh& mesh = meshes[i];
 		const int materialSize = mesh.materialSlots.size()? mesh.materialSlots.size() : 1;
 
-		d_vertices[i] = scene.vertices_d_pointer(i) + offsetof(Vertex, p);
-
+		d_vertices[i] = sceneBuffer.vertices(i) + offsetof(Vertex, p);
 		triangleInputFlags[i] = std::vector<uint32_t>(materialSize, OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
 
 		triangleInput[i] = {};
@@ -273,12 +272,12 @@ void PathTracerState::buildAccel(const Scene& scene){
 
 			triangleInput[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
 			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.indices.size();
-			triangleInput[i].triangleArray.indexBuffer = scene.indices_d_pointer(i) + offsetof(Face, vertices);
+			triangleInput[i].triangleArray.indexBuffer = sceneBuffer.indices(i) + offsetof(Face, vertices);
 			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
 
 			triangleInput[i].triangleArray.flags = triangleInputFlags[i].data();
 			triangleInput[i].triangleArray.numSbtRecords = materialSize;
-			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = scene.indices_d_pointer(i) + offsetof(Face, material);
+			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = sceneBuffer.indices(i) + offsetof(Face, material);
 			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
 			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(Face);
 	}
@@ -295,7 +294,7 @@ void PathTracerState::buildAccel(const Scene& scene){
 		context,
 		&accelOptions,
 		triangleInput.data(),
-		(int)scene.meshes.size(),
+		(int)meshes.size(),
 		&blasBufferSizes));
 
 
@@ -320,7 +319,7 @@ void PathTracerState::buildAccel(const Scene& scene){
 		0,
 		&accelOptions,
 		triangleInput.data(),
-		(int)scene.meshes.size(),
+		(int)meshes.size(),
 		tempBuffer.d_pointer(), tempBuffer.sizeInBytes,
 		outputBuffer.d_pointer(), outputBuffer.sizeInBytes,
 		&asHandle,
@@ -367,11 +366,13 @@ PathTracerState::PathTracerState(){
 }
 
 void PathTracerState::setScene(const Scene& scene){
-	buildAccel(scene);
+	sceneBuffer.upload(scene, stream);
+	buildAccel(scene.meshes);
 	buildSBT(scene);
 }
 
 void PathTracerState::removeScene(){
+	sceneBuffer.free(stream);
 	destroyAccel();
 	destroySBT();
 }
