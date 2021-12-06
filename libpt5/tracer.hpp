@@ -17,7 +17,7 @@ public:
 	void setScene(const Scene& scene);
 	void removeScene();
 
-	void render(const View& view, uint spp, Camera camera);
+	void render(const View& view, uint spp, const Camera& camera);
 
 	bool running() const;
 

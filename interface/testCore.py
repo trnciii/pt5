@@ -128,7 +128,7 @@ def main(background):
 	view.downloadImage()
 
 	os.makedirs('result', exist_ok=True)
-	plt.imsave('result/out_py.png', view.pixels)
+	plt.imsave('result/out_py.png', np.maximum(0, np.minimum(1, view.pixels)))
 
 
 main(background='--background' in sys.argv)

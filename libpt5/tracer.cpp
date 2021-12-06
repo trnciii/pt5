@@ -392,7 +392,7 @@ PathTracerState::~PathTracerState(){
 
 
 
-void PathTracerState::render(const View& view, uint spp, Camera camera){
+void PathTracerState::render(const View& view, uint spp, const Camera& camera){
 	LaunchParams params;
 	params.image.size = view.size();
 	params.image.pixels = view.bufferPtr();
