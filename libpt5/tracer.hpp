@@ -27,7 +27,7 @@ private:
 	void createProgramGroups();
 	void createPipeline();
 
-	void buildAccel(const Scene&);
+	void buildAccel(const std::vector<TriangleMesh>& meshes);
 	void buildSBT(const Scene& scene);
 
 	void destroyAccel();
@@ -58,6 +58,10 @@ private:
 
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
+
+	std::vector<CUDABuffer> vertexBuffers;
+	std::vector<CUDABuffer> indexBuffers;
+	std::vector<CUDABuffer> uvBuffers;
 
 	cudaEvent_t finishEvent;
 };

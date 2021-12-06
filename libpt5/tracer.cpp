@@ -203,9 +203,14 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 	// hitgroup
 	{
+		uvBuffers.resize(scene.meshes.size());
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for(int objectCount=0; objectCount<scene.meshes.size(); objectCount++){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
+
+			uvBuffers[objectCount].alloc_and_upload(mesh.uv, stream);
+
+
 			int rayTypeCount = 1;
 
 			std::vector<Material> materials;
@@ -221,9 +226,9 @@ void PathTracerState::buildSBT(const Scene& scene){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
-					(Vertex*)scene.vertices_d_pointer(objectCount),
-					(Face*)scene.indices_d_pointer(objectCount),
-					(float2*)scene.uv_d_pointer(objectCount),
+					(Vertex*)vertexBuffers[objectCount].d_pointer(),
+					(Face*)indexBuffers[objectCount].d_pointer(),
+					(float2*)uvBuffers[objectCount].d_pointer(),
 					materials[i]
 				};
 
@@ -247,19 +252,27 @@ void PathTracerState::destroySBT(){
 	raygenRecordBuffer.free(stream);
 	missRecordBuffer.free(stream);
 	hitgroupRecordsBuffer.free(stream);
+	for(auto& buffer : uvBuffers)
+		buffer.free(stream);
 }
 
 
-void PathTracerState::buildAccel(const Scene& scene){
-	std::vector<OptixBuildInput> triangleInput(scene.meshes.size());
-	std::vector<std::vector<uint32_t>> triangleInputFlags(scene.meshes.size());
-	std::vector<CUdeviceptr> d_vertices(scene.meshes.size());
+void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
+	vertexBuffers.resize(meshes.size());
+	indexBuffers.resize(meshes.size());
 
-	for(int i=0; i<scene.meshes.size(); i++){
-		const TriangleMesh& mesh = scene.meshes[i];
+	std::vector<OptixBuildInput> triangleInput(meshes.size());
+	std::vector<std::vector<uint32_t>> triangleInputFlags(meshes.size());
+	std::vector<CUdeviceptr> d_vertices(meshes.size());
+
+	for(int i=0; i<meshes.size(); i++){
+		const TriangleMesh& mesh = meshes[i];
 		const int materialSize = mesh.materialSlots.size()? mesh.materialSlots.size() : 1;
 
-		d_vertices[i] = scene.vertices_d_pointer(i) + offsetof(Vertex, p);
+		vertexBuffers[i].alloc_and_upload(mesh.vertices, stream);
+		d_vertices[i] = vertexBuffers[i].d_pointer() + offsetof(Vertex, p);
+
+		indexBuffers[i].alloc_and_upload(mesh.indices, stream);
 
 		triangleInputFlags[i] = std::vector<uint32_t>(materialSize, OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
 
@@ -273,12 +286,12 @@ void PathTracerState::buildAccel(const Scene& scene){
 
 			triangleInput[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
 			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.indices.size();
-			triangleInput[i].triangleArray.indexBuffer = scene.indices_d_pointer(i) + offsetof(Face, vertices);
+			triangleInput[i].triangleArray.indexBuffer = indexBuffers[i].d_pointer() + offsetof(Face, vertices);
 			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
 
 			triangleInput[i].triangleArray.flags = triangleInputFlags[i].data();
 			triangleInput[i].triangleArray.numSbtRecords = materialSize;
-			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = scene.indices_d_pointer(i) + offsetof(Face, material);
+			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = indexBuffers[i].d_pointer() + offsetof(Face, material);
 			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
 			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(Face);
 	}
@@ -295,7 +308,7 @@ void PathTracerState::buildAccel(const Scene& scene){
 		context,
 		&accelOptions,
 		triangleInput.data(),
-		(int)scene.meshes.size(),
+		(int)meshes.size(),
 		&blasBufferSizes));
 
 
@@ -320,7 +333,7 @@ void PathTracerState::buildAccel(const Scene& scene){
 		0,
 		&accelOptions,
 		triangleInput.data(),
-		(int)scene.meshes.size(),
+		(int)meshes.size(),
 		tempBuffer.d_pointer(), tempBuffer.sizeInBytes,
 		outputBuffer.d_pointer(), outputBuffer.sizeInBytes,
 		&asHandle,
@@ -354,6 +367,12 @@ void PathTracerState::buildAccel(const Scene& scene){
 
 void PathTracerState::destroyAccel(){
 	asBuffer.free(stream);
+
+	for(int  i=0; i<vertexBuffers.size(); i++)
+		vertexBuffers[i].free(stream);
+
+	for(int i=0; i<indexBuffers.size(); i++)
+		indexBuffers[i].free(stream);
 }
 
 
@@ -367,7 +386,7 @@ PathTracerState::PathTracerState(){
 }
 
 void PathTracerState::setScene(const Scene& scene){
-	buildAccel(scene);
+	buildAccel(scene.meshes);
 	buildSBT(scene);
 }
 

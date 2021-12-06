@@ -76,7 +76,7 @@ def createScene(scene, camera):
 	mSlots1 = [0,1,2,3]
 
 
-	scene.meshes = [
+	meshes = [
 		pt5.TriangleMesh(
 			np.array(
 				[(tuple(v), tuple(n)) for v, n in zip(verts0, normals)],
@@ -98,7 +98,7 @@ def createScene(scene, camera):
 			mSlots1)
 	]
 
-	scene.upload()
+	scene.meshes = meshes
 
 
 
