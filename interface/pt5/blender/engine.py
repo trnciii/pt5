@@ -43,10 +43,10 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		scene = depsgraph.scene
 		scale = scene.render.resolution_percentage / 100.0
-		self.size_x = int(scene.render.resolution_x * scale)
-		self.size_y = int(scene.render.resolution_y * scale)
+		width = int(scene.render.resolution_x * scale)
+		height = int(scene.render.resolution_y * scale)
 
-		view = pt5.View(self.size_x, self.size_y)
+		view = pt5.View(width, height)
 
 		exclude = [o for o in scene.objects if o.hide_render]
 
@@ -60,7 +60,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
 
 		# Here we write the pixel values to the RenderResult
-		result = self.begin_result(0, 0, self.size_x, self.size_y)
+		result = self.begin_result(0, 0, width, height)
 		layer = result.layers[0].passes["Combined"]
 		layer.rect = rect
 		self.end_result(result)
@@ -127,29 +127,26 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		if not self.draw_data or self.draw_data.dimensions != dimensions:
 			print('resize')
-			self.view = pt5.View(*dimensions)
-			self.draw_data = CustomDrawData(dimensions, self.view)
+			self.draw_data = CustomDrawData(dimensions)
 
-
-		self.camera = pt5.scene.getViewAsCamera(context, dimensions)
-
-		self.tracer.render(self.view, scene.pt5.spp_viewport, self.camera)
+		camera = pt5.scene.getViewAsCamera(context, dimensions)
+		self.tracer.render(self.draw_data.view, scene.pt5.spp_viewport, camera)
 		pt5.cuda_sync()
 
 		self.draw_data.draw()
 
 
 class CustomDrawData:
-	def __init__(self, dimensions, view):
+	def __init__(self, dimensions):
 		self.dimensions = dimensions
-		width, height = dimensions
-
-		self.view = view
+		self.view = pt5.View(*dimensions)
 		self.view.createGLTexture()
 
 		self.shader = gpu.shader.from_builtin('2D_IMAGE')
+
+		w, h = dimensions
 		self.batch = batch_for_shader(self.shader, 'TRI_FAN', {
-			'pos':((0,0), (width, 0), (width, height), (0, height)),
+			'pos':((0,0), (w, 0), (w, h), (0, h)),
 			'texCoord': ((0,1), (1,1), (1,0), (0,0))
 		})
 
