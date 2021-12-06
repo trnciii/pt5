@@ -120,10 +120,11 @@ PYBIND11_MODULE(core, m) {
 		.def_property("emission", PROPERTY_FLOAT3(Material, emission));
 
 
+	PYBIND11_NUMPY_DTYPE(float2, x, y);
 	PYBIND11_NUMPY_DTYPE(float3, x, y, z);
 	PYBIND11_NUMPY_DTYPE(uint3, x, y, z);
 	PYBIND11_NUMPY_DTYPE(Vertex, p, n);
-	PYBIND11_NUMPY_DTYPE(Face, vertices, smooth, material);
+	PYBIND11_NUMPY_DTYPE(Face, vertices, uv, smooth, material);
 
 	m.attr("Vertex_dtype") = std::vector<py::tuple>{
 		py::make_tuple("p", float3_dtype),
@@ -132,35 +133,22 @@ PYBIND11_MODULE(core, m) {
 
 	m.attr("Face_dtype") = std::vector<py::tuple>{
 		py::make_tuple("vertices", uint3_dtype),
+		py::make_tuple("uv", uint3_dtype),
 		py::make_tuple("smooth", "i1"),
 		py::make_tuple("material", "<i4")
 	};
 
 	py::class_<TriangleMesh>(m, "TriangleMesh")
 		.def(py::init([](
-			const py::array_t<float>& v,
-			const py::array_t<float>& n,
-			const py::array_t<uint32_t>& f,
-			const py::array_t<bool>& smooth,
-			const py::array_t<uint32_t>& mIdx,
-			const py::array_t<uint32_t>& mSlt)
-		{
-			return TriangleMesh(
-				std::vector<float3>( (float3*)v.data(0,0), (float3*)v.data(0,0)+v.shape(0) ),
-				std::vector<float3>( (float3*)n.data(0,0), (float3*)n.data(0,0)+n.shape(0) ),
-				std::vector<uint3>( (uint3*)f.data(0,0), (uint3*)f.data(0,0)+f.shape(0)),
-				toSTDVector(smooth),
-				toSTDVector(mIdx),
-				toSTDVector(mSlt));
-		}))
-		.def(py::init([](
 			const py::array_t<Vertex>& v,
 			const py::array_t<Face>& f,
+			const py::array_t<float>& uv,
 			const py::array_t<uint32_t>& m)
 		{
 			return TriangleMesh(
 				toSTDVector(v),
 				toSTDVector(f),
+				std::vector<float2>((float2*)uv.data(0,0), (float2*)uv.data(0,0)+uv.shape(0)),
 				toSTDVector(m));
 		}));
 

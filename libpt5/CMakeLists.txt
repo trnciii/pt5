@@ -35,10 +35,14 @@ cuda_compile_and_embed(embedded_ptx_code
 
 add_library(pt5
 	${embedded_ptx_code}
-	tracer.cpp
-	pt5.hpp
+	CUDABuffer.hpp
 	LaunchParams.h
+	optix.hpp
 	scene.hpp
+	tracer.hpp
+	tracer.cpp
+	vector_math.h
+	view.hpp
 	view.cpp
 	)
 

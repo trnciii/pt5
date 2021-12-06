@@ -199,17 +199,24 @@ def toTriangleMesh(obj):
 		)
 
 		faces = np.array([(
-				tuple(p.vertices[:3]),
-				(p.use_smooth),
-				(p.material_index))
-				for p in mesh.polygons
-			],
+			tuple(p.vertices[:3]),
+			tuple(p.loop_indices[:3]),
+			(p.use_smooth),
+			(p.material_index))
+			for p in mesh.polygons],
 			dtype=core.Face_dtype
 		)
 
+		if mesh.uv_layers.active:
+			uv = np.array(
+				[data.uv for data in mesh.uv_layers.active.data])
+		else:
+			uv = np.array(
+				[[0,0] for i in range(sum([p.loop_total for p in mesh.polygons]))])
+
 		mtls = [bpy.data.materials.find(k) for k in mesh.materials.keys()]
 
-		return core.TriangleMesh(verts, faces, mtls)
+		return core.TriangleMesh(verts, faces, uv, mtls)
 
 	except:
 		print(obj.name)

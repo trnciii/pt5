@@ -1,5 +1,6 @@
-#define GLAD_GL_IMPLEMENTATION
-#include "pt5.hpp"
+#include "view.hpp"
+#include "optix.hpp"
+#include <iostream>
 
 namespace pt5{
 

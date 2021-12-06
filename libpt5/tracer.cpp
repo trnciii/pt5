@@ -1,7 +1,12 @@
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "pt5.hpp"
-
+#include "tracer.hpp"
 #include <optix_function_table_definition.h>
+#include <iostream>
+#include <vector>
+
+#include "optix.hpp"
+#include "view.hpp"
+#include "scene.hpp"
+
 
 extern "C" char embedded_ptx_code[];
 
@@ -9,21 +14,9 @@ extern "C" char embedded_ptx_code[];
 namespace pt5{
 
 
-template <typename T>
-struct Record{
-	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-	T data;
-};
-
-using RaygenRecord = Record<RaygenSBTData>;
-using MissRecord = Record<MissSBTData>;
-using HitgroupRecord = Record<HitgroupSBTData>;
-
-
 void context_log_callback(unsigned int level, const char *tag, const char *message, void *){
-	fprintf( stderr, "[%2d][%12s]: %s\n", (int)level, tag, message );
+  fprintf( stderr, "[%2d][%12s]: %s\n", (int)level, tag, message );
 }
-
 
 
 void PathTracerState::createContext(){
@@ -228,8 +221,9 @@ void PathTracerState::buildSBT(const Scene& scene){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
-					(Vertex*)vertexBuffers[objectCount].d_pointer(),
-					(Face*)indexBuffers[objectCount].d_pointer(),
+					(Vertex*)sceneBuffer.vertices(objectCount),
+					(Face*)sceneBuffer.indices(objectCount),
+					(float2*)sceneBuffer.uv(objectCount),
 					materials[i]
 				};
 
@@ -257,9 +251,6 @@ void PathTracerState::destroySBT(){
 
 
 void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
-	vertexBuffers.resize(meshes.size());
-	indexBuffers.resize(meshes.size());
-
 	std::vector<OptixBuildInput> triangleInput(meshes.size());
 	std::vector<std::vector<uint32_t>> triangleInputFlags(meshes.size());
 	std::vector<CUdeviceptr> d_vertices(meshes.size());
@@ -268,11 +259,7 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 		const TriangleMesh& mesh = meshes[i];
 		const int materialSize = mesh.materialSlots.size()? mesh.materialSlots.size() : 1;
 
-		vertexBuffers[i].alloc_and_upload(mesh.vertices, stream);
-		d_vertices[i] = vertexBuffers[i].d_pointer() + offsetof(Vertex, p);
-
-		indexBuffers[i].alloc_and_upload(mesh.indices, stream);
-
+		d_vertices[i] = sceneBuffer.vertices(i) + offsetof(Vertex, p);
 		triangleInputFlags[i] = std::vector<uint32_t>(materialSize, OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
 
 		triangleInput[i] = {};
@@ -285,12 +272,12 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 
 			triangleInput[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
 			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.indices.size();
-			triangleInput[i].triangleArray.indexBuffer = indexBuffers[i].d_pointer() + offsetof(Face, vertices);
+			triangleInput[i].triangleArray.indexBuffer = sceneBuffer.indices(i) + offsetof(Face, vertices);
 			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
 
 			triangleInput[i].triangleArray.flags = triangleInputFlags[i].data();
 			triangleInput[i].triangleArray.numSbtRecords = materialSize;
-			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = indexBuffers[i].d_pointer() + offsetof(Face, material);
+			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = sceneBuffer.indices(i) + offsetof(Face, material);
 			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
 			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(Face);
 	}
@@ -366,12 +353,6 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 
 void PathTracerState::destroyAccel(){
 	asBuffer.free(stream);
-
-	for(int  i=0; i<vertexBuffers.size(); i++)
-		vertexBuffers[i].free(stream);
-
-	for(int i=0; i<indexBuffers.size(); i++)
-		indexBuffers[i].free(stream);
 }
 
 
@@ -385,11 +366,13 @@ PathTracerState::PathTracerState(){
 }
 
 void PathTracerState::setScene(const Scene& scene){
+	sceneBuffer.upload(scene, stream);
 	buildAccel(scene.meshes);
 	buildSBT(scene);
 }
 
 void PathTracerState::removeScene(){
+	sceneBuffer.free(stream);
 	destroyAccel();
 	destroySBT();
 }
@@ -410,13 +393,15 @@ PathTracerState::~PathTracerState(){
 
 
 
-void PathTracerState::render(const View& view, uint spp, Camera camera){
-	launchParams.image.size = view.size();
-	launchParams.image.pixels = view.bufferPtr();
-	launchParams.spp = spp;
-	launchParams.camera = camera;
+void PathTracerState::render(const View& view, uint spp, const Camera& camera){
+	LaunchParams params;
+	params.image.size = view.size();
+	params.image.pixels = view.bufferPtr();
+	params.spp = spp;
+	params.camera = camera;
 
-	launchParamsBuffer.alloc_and_upload(launchParams, stream);
+	CUDABuffer buffer;
+	buffer.alloc_and_upload(params, stream);
 
 
 	cudaEventCreate(&finishEvent);
@@ -424,14 +409,14 @@ void PathTracerState::render(const View& view, uint spp, Camera camera){
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
 		stream,
-		launchParamsBuffer.d_pointer(),
-		launchParamsBuffer.sizeInBytes,
+		buffer.d_pointer(),
+		buffer.sizeInBytes,
 		&sbt,
-		launchParams.image.size.x,
-		launchParams.image.size.y,
+		params.image.size.x,
+		params.image.size.y,
 		1));
 
-	launchParamsBuffer.free(stream);
+	buffer.free(stream);
 	cudaEventRecord(finishEvent, stream);
 }
 

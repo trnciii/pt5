@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <vector>
 #include "vector_math.h"
 
@@ -28,6 +29,7 @@ struct Vertex{
 
 struct Face{
 	uint3 vertices;
+	uint3 uv;
 	bool smooth = true;
 	uint32_t material;
 };
@@ -40,6 +42,7 @@ struct Material{
 struct TriangleMesh{
 	std::vector<Vertex> vertices;
 	std::vector<Face> indices;
+	std::vector<float2> uv;
 	std::vector<uint32_t> materialSlots;
 
 	TriangleMesh(){}
@@ -47,36 +50,9 @@ struct TriangleMesh{
 	TriangleMesh(
 		const std::vector<Vertex>& v,
 		const std::vector<Face>& f,
+		const std::vector<float2>& u,
 		const std::vector<uint32_t>& m)
-	:vertices(v), indices(f), materialSlots(m){}
-
-	TriangleMesh(
-		const std::vector<float3>& v,
-		const std::vector<float3>& n,
-		const std::vector<uint3>& f,
-		const std::vector<bool>& smooth,
-		const std::vector<uint32_t>& mIdx,
-		const std::vector<uint32_t>& mSlt)
-	:materialSlots(mSlt)
-	{
-		assert(v.size() == n.size());
-		assert((f.size() == mIdx.size())
-			&& (f.size() == smooth.size()));
-
-		vertices.resize(v.size());
-		indices.resize(f.size());
-
-		for(int i=0; i<v.size(); i++){
-			vertices[i].p = v[i];
-			vertices[i].n = n[i];
-		}
-
-		for(int i=0; i<f.size(); i++){
-			indices[i].vertices = f[i];
-			indices[i].material = mIdx[i];
-			indices[i].smooth = smooth[i];
-		}
-	}
+	:vertices(v), indices(f), uv(u), materialSlots(m){}
 };
 
 

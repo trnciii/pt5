@@ -50,6 +50,17 @@ def createScene(scene, camera):
 		[0, -1, 0]
 	]
 
+	uv0 = np.array([
+		[0.0, 1.0],
+		[0.0, 0.5],
+		[0.5, 0.5],
+		[0.5, 1.0],
+		[1.0, 1.0],
+		[1.0, 0.5]
+	])
+
+	uv1 = uv0 - [0, 0.5]
+
 	indices = [
 		[0, 1, 2],
 		[2, 3, 0],
@@ -67,22 +78,24 @@ def createScene(scene, camera):
 
 	meshes = [
 		pt5.TriangleMesh(
-			np.array([(
-				tuple(v),
-				tuple(n))
-				for v, n in zip(verts0, normals)],
-				dtype=pt5.Vertex_dtype
-			),
-			np.array([(
-				tuple(i),
-				False,
-				m)
-				for i, m in zip(indices, mIDs0)],
-				dtype=pt5.Face_dtype
-			),
+			np.array(
+				[(tuple(v), tuple(n)) for v, n in zip(verts0, normals)],
+				dtype=pt5.Vertex_dtype),
+			np.array(
+				[(tuple(i),tuple(i),	False, m) for i, m in zip(indices, mIDs0)],
+				dtype=pt5.Face_dtype),
+			uv0,
 			mSlots0),
 
-		pt5.TriangleMesh(verts1, normals, indices, [False]*len(indices), mIDs1, mSlots1)
+		pt5.TriangleMesh(
+			np.array(
+				[(tuple(v), tuple(n)) for v, n in zip(verts1, normals)],
+				dtype = pt5.Vertex_dtype),
+			np.array(
+				[(tuple(i), tuple(i), False, m) for i, m in zip(indices, mIDs1)],
+				dtype = pt5.Face_dtype),
+			uv1,
+			mSlots1)
 	]
 
 	scene.meshes = meshes
@@ -115,7 +128,7 @@ def main(background):
 	view.downloadImage()
 
 	os.makedirs('result', exist_ok=True)
-	plt.imsave('result/out_py.png', view.pixels)
+	plt.imsave('result/out_py.png', np.maximum(0, np.minimum(1, view.pixels)))
 
 
 main(background='--background' in sys.argv)
