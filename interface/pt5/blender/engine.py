@@ -2,6 +2,8 @@
 
 import bpy
 import bgl
+import gpu
+from gpu_extras.batch import batch_for_shader
 
 import pt5
 import numpy as np
@@ -123,11 +125,6 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 			border = (0, 0, 1, 1)
 
 
-		# Bind shader that converts from scene linear to display space,
-		bgl.glEnable(bgl.GL_BLEND)
-		bgl.glBlendFunc(bgl.GL_ONE, bgl.GL_ONE_MINUS_SRC_ALPHA)
-		self.bind_display_space_shader(scene)
-
 		if not self.draw_data or self.draw_data.dimensions != dimensions:
 			print('resize')
 			self.view = pt5.View(*dimensions)
@@ -141,70 +138,32 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		self.draw_data.draw()
 
-		self.unbind_display_space_shader()
-		bgl.glDisable(bgl.GL_BLEND)
-
 
 class CustomDrawData:
 	def __init__(self, dimensions, view):
-		# Generate dummy float image buffer
 		self.dimensions = dimensions
 		width, height = dimensions
 
 		self.view = view
 		self.view.createGLTexture()
 
-		# Bind shader that converts from scene linear to display space,
-		# use the scene's color management settings.
-		shader_program = bgl.Buffer(bgl.GL_INT, 1)
-		bgl.glGetIntegerv(bgl.GL_CURRENT_PROGRAM, shader_program)
-
-		# Generate vertex array
-		self.vertex_array = bgl.Buffer(bgl.GL_INT, 1)
-		bgl.glGenVertexArrays(1, self.vertex_array)
-		bgl.glBindVertexArray(self.vertex_array[0])
-
-		texturecoord_location = bgl.glGetAttribLocation(shader_program[0], "texCoord")
-		position_location = bgl.glGetAttribLocation(shader_program[0], "pos")
-
-		bgl.glEnableVertexAttribArray(texturecoord_location)
-		bgl.glEnableVertexAttribArray(position_location)
-
-		# Generate geometry buffers for drawing textured quad
-		position = [0.0, 0.0, width, 0.0, width, height, 0.0, height]
-		position = bgl.Buffer(bgl.GL_FLOAT, len(position), position)
-		texcoord = [0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
-		texcoord = bgl.Buffer(bgl.GL_FLOAT, len(texcoord), texcoord)
-
-		self.vertex_buffer = bgl.Buffer(bgl.GL_INT, 2)
-
-		bgl.glGenBuffers(2, self.vertex_buffer)
-		bgl.glBindBuffer(bgl.GL_ARRAY_BUFFER, self.vertex_buffer[0])
-		bgl.glBufferData(bgl.GL_ARRAY_BUFFER, 32, position, bgl.GL_STATIC_DRAW)
-		bgl.glVertexAttribPointer(position_location, 2, bgl.GL_FLOAT, bgl.GL_FALSE, 0, None)
-
-		bgl.glBindBuffer(bgl.GL_ARRAY_BUFFER, self.vertex_buffer[1])
-		bgl.glBufferData(bgl.GL_ARRAY_BUFFER, 32, texcoord, bgl.GL_STATIC_DRAW)
-		bgl.glVertexAttribPointer(texturecoord_location, 2, bgl.GL_FLOAT, bgl.GL_FALSE, 0, None)
-
-		bgl.glBindBuffer(bgl.GL_ARRAY_BUFFER, 0)
-		bgl.glBindVertexArray(0)
+		self.shader = gpu.shader.from_builtin('2D_IMAGE')
+		self.batch = batch_for_shader(self.shader, 'TRI_FAN', {
+			'pos':((0,0), (width, 0), (width, height), (0, height)),
+			'texCoord': ((0,1), (1,1), (1,0), (0,0))
+		})
 
 	def __del__(self):
-		bgl.glDeleteBuffers(2, self.vertex_buffer)
-		bgl.glDeleteVertexArrays(1, self.vertex_array)
 		self.view.destroyGLTexture()
 
 	def draw(self):
 		self.view.updateGLTexture()
 
+		self.shader.bind()
 		bgl.glActiveTexture(bgl.GL_TEXTURE0)
 		bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.view.GLTexture)
-		bgl.glBindVertexArray(self.vertex_array[0])
-		bgl.glDrawArrays(bgl.GL_TRIANGLE_FAN, 0, 4)
-		bgl.glBindVertexArray(0)
-		bgl.glBindTexture(bgl.GL_TEXTURE_2D, 0)
-
+		self.shader.uniform_int('image', 0)
+		self.batch.draw(self.shader)
 
 
 def register():
