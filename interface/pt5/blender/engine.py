@@ -2,6 +2,8 @@
 
 import bpy
 import bgl
+import gpu
+from gpu_extras.batch import batch_for_shader
 
 import pt5
 import numpy as np
@@ -41,17 +43,15 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		scene = depsgraph.scene
 		scale = scene.render.resolution_percentage / 100.0
-		self.size_x = int(scene.render.resolution_x * scale)
-		self.size_y = int(scene.render.resolution_y * scale)
+		width = int(scene.render.resolution_x * scale)
+		height = int(scene.render.resolution_y * scale)
 
-		# Fill the render result with a flat color. The framebuffer is
-		# defined as a list of pixels, each pixel itself being a list of
-		# R,G,B,A values.
+		view = pt5.View(width, height)
 
-		view = pt5.View(self.size_x, self.size_y)
+		exclude = [o for o in scene.objects if o.hide_render]
 
-		self.tracer.setScene(pt5.scene.createSceneFromBlender())
-		camera = pt5.scene.createCameraFromObject(scene.camera)
+		self.tracer.setScene(pt5.scene.create(scene, exclude))
+		camera = pt5.scene.camera.fromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
 		pt5.cuda_sync()
@@ -60,7 +60,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
 
 		# Here we write the pixel values to the RenderResult
-		result = self.begin_result(0, 0, self.size_x, self.size_y)
+		result = self.begin_result(0, 0, width, height)
 		layer = result.layers[0].passes["Combined"]
 		layer.rect = rect
 		self.end_result(result)
@@ -74,8 +74,10 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		view3d = context.space_data
 		scene = depsgraph.scene
 
+		exclude = [o for o in scene.objects if o.hide_get()]
+
 		self.tracer.removeScene()
-		self.tracer.setScene(pt5.scene.createSceneFromBlender())
+		self.tracer.setScene(pt5.scene.create(scene, exclude))
 
 
 		if not self.scene_data:
@@ -123,123 +125,48 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 			border = (0, 0, 1, 1)
 
 
-		# Bind shader that converts from scene linear to display space,
-		bgl.glEnable(bgl.GL_BLEND)
-		bgl.glBlendFunc(bgl.GL_ONE, bgl.GL_ONE_MINUS_SRC_ALPHA)
-		self.bind_display_space_shader(scene)
-
 		if not self.draw_data or self.draw_data.dimensions != dimensions:
 			print('resize')
-			self.view = pt5.View(*dimensions)
-			self.draw_data = CustomDrawData(dimensions, self.view)
+			self.draw_data = CustomDrawData(dimensions)
 
-
-		self.camera = pt5.scene.getViewAsCamera(context, dimensions)
-
-		self.tracer.render(self.view, scene.pt5.spp_viewport, self.camera)
+		camera = pt5.scene.camera.fromView(context, dimensions)
+		self.tracer.render(self.draw_data.view, scene.pt5.spp_viewport, camera)
 		pt5.cuda_sync()
 
 		self.draw_data.draw()
 
-		self.unbind_display_space_shader()
-		bgl.glDisable(bgl.GL_BLEND)
-
 
 class CustomDrawData:
-	def __init__(self, dimensions, view):
-		# Generate dummy float image buffer
+	def __init__(self, dimensions):
 		self.dimensions = dimensions
-		width, height = dimensions
-
-		self.view = view
+		self.view = pt5.View(*dimensions)
 		self.view.createGLTexture()
 
-		# Bind shader that converts from scene linear to display space,
-		# use the scene's color management settings.
-		shader_program = bgl.Buffer(bgl.GL_INT, 1)
-		bgl.glGetIntegerv(bgl.GL_CURRENT_PROGRAM, shader_program)
+		self.shader = gpu.shader.from_builtin('2D_IMAGE')
 
-		# Generate vertex array
-		self.vertex_array = bgl.Buffer(bgl.GL_INT, 1)
-		bgl.glGenVertexArrays(1, self.vertex_array)
-		bgl.glBindVertexArray(self.vertex_array[0])
-
-		texturecoord_location = bgl.glGetAttribLocation(shader_program[0], "texCoord")
-		position_location = bgl.glGetAttribLocation(shader_program[0], "pos")
-
-		bgl.glEnableVertexAttribArray(texturecoord_location)
-		bgl.glEnableVertexAttribArray(position_location)
-
-		# Generate geometry buffers for drawing textured quad
-		position = [0.0, 0.0, width, 0.0, width, height, 0.0, height]
-		position = bgl.Buffer(bgl.GL_FLOAT, len(position), position)
-		texcoord = [0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
-		texcoord = bgl.Buffer(bgl.GL_FLOAT, len(texcoord), texcoord)
-
-		self.vertex_buffer = bgl.Buffer(bgl.GL_INT, 2)
-
-		bgl.glGenBuffers(2, self.vertex_buffer)
-		bgl.glBindBuffer(bgl.GL_ARRAY_BUFFER, self.vertex_buffer[0])
-		bgl.glBufferData(bgl.GL_ARRAY_BUFFER, 32, position, bgl.GL_STATIC_DRAW)
-		bgl.glVertexAttribPointer(position_location, 2, bgl.GL_FLOAT, bgl.GL_FALSE, 0, None)
-
-		bgl.glBindBuffer(bgl.GL_ARRAY_BUFFER, self.vertex_buffer[1])
-		bgl.glBufferData(bgl.GL_ARRAY_BUFFER, 32, texcoord, bgl.GL_STATIC_DRAW)
-		bgl.glVertexAttribPointer(texturecoord_location, 2, bgl.GL_FLOAT, bgl.GL_FALSE, 0, None)
-
-		bgl.glBindBuffer(bgl.GL_ARRAY_BUFFER, 0)
-		bgl.glBindVertexArray(0)
+		w, h = dimensions
+		self.batch = batch_for_shader(self.shader, 'TRI_FAN', {
+			'pos':((0,0), (w, 0), (w, h), (0, h)),
+			'texCoord': ((0,1), (1,1), (1,0), (0,0))
+		})
 
 	def __del__(self):
-		bgl.glDeleteBuffers(2, self.vertex_buffer)
-		bgl.glDeleteVertexArrays(1, self.vertex_array)
 		self.view.destroyGLTexture()
 
 	def draw(self):
 		self.view.updateGLTexture()
 
+		self.shader.bind()
 		bgl.glActiveTexture(bgl.GL_TEXTURE0)
 		bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.view.GLTexture)
-		bgl.glBindVertexArray(self.vertex_array[0])
-		bgl.glDrawArrays(bgl.GL_TRIANGLE_FAN, 0, 4)
-		bgl.glBindVertexArray(0)
-		bgl.glBindTexture(bgl.GL_TEXTURE_2D, 0)
-
-
-# RenderEngines also need to tell UI Panels that they are compatible with.
-# We recommend to enable all panels marked as BLENDER_RENDER, and then
-# exclude any panels that are replaced by custom panels registered by the
-# render engine, or that are not supported.
-def get_panels():
-	exclude_panels = {
-		'VIEWLAYER_PT_filter',
-		'VIEWLAYER_PT_layer_passes',
-	}
-
-	panels = []
-	for panel in bpy.types.Panel.__subclasses__():
-		if hasattr(panel, 'COMPAT_ENGINES') and 'BLENDER_RENDER' in panel.COMPAT_ENGINES:
-			if panel.__name__ not in exclude_panels:
-				panels.append(panel)
-
-	return panels
+		self.shader.uniform_int('image', 0)
+		self.batch.draw(self.shader)
 
 
 def register():
 	# Register the RenderEngine
 	bpy.utils.register_class(CustomRenderEngine)
 
-	for panel in get_panels():
-		panel.COMPAT_ENGINES.add('PT5')
-
 
 def unregister():
 	bpy.utils.unregister_class(CustomRenderEngine)
-
-	for panel in get_panels():
-		if 'PT5' in panel.COMPAT_ENGINES:
-			panel.COMPAT_ENGINES.remove('PT5')
-
-
-if __name__ == "__main__":
-	register()
