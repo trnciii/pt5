@@ -3,6 +3,7 @@ import pt5
 import numpy as np
 import bpy
 import threading
+import sys, os
 
 
 def addImage(name, data):
@@ -21,7 +22,7 @@ def addImage(name, data):
 	return im
 
 
-def main():
+def main(out):
 	scale = bpy.context.scene.render.resolution_percentage/100
 	width = int(bpy.context.scene.render.resolution_x*scale)
 	height = int(bpy.context.scene.render.resolution_y*scale)
@@ -43,10 +44,17 @@ def main():
 	view.downloadImage()
 
 	image = addImage('pt5 result', view.pixels)
-	image.save_render('result/out_blender.png')
+	image.save_render(out)
 
 
-th = threading.Thread(target=main)
+if ('-o' in sys.argv):
+	out = sys.argv[sys.argv.index('-o')+1]
+	if os.path.splitext(out)[1] == '':
+		out += '.png'
+else:
+	out = 'result/blender_script.png'
+
+th = threading.Thread(target=main, kwargs={'out':out})
 th.start()
 th.join()
 del th

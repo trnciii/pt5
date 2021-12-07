@@ -102,7 +102,7 @@ def createScene(scene, camera):
 
 
 
-def main(background):
+def main(out, background):
 	w, h = 1200, 800
 
 	view = pt5.View(w,h)
@@ -127,8 +127,15 @@ def main(background):
 
 	view.downloadImage()
 
-	os.makedirs('result', exist_ok=True)
-	plt.imsave('result/out_py.png', np.maximum(0, np.minimum(1, view.pixels)))
+	os.makedirs(os.path.dirname(out), exist_ok=True)
+	plt.imsave(out, np.maximum(0, np.minimum(1, view.pixels)))
 
 
-main(background='--background' in sys.argv)
+if ('-o' in sys.argv):
+	out = sys.argv[sys.argv.index('-o')+1]
+	if os.path.splitext(out)[1] == '':
+		out += '.png'
+else:
+	out = 'result/python.png'
+
+main(out = out, background='--background' in sys.argv)

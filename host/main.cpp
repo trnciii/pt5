@@ -13,6 +13,16 @@
 
 
 void writeImage(const std::string& filename, const pt5::View& view){
+
+	{
+		std::filesystem::path parent = std::filesystem::path(filename).parent_path();
+		if(!( std::filesystem::exists(parent) && std::filesystem::is_directory(parent) )
+			&& parent != ""){
+			assert(std::filesystem::create_directory(parent));
+			std::cout <<"created directory " <<parent <<std::endl;
+		}
+	}
+
 	const int w = view.size().x;
 	const int h = view.size().y;
 
@@ -27,6 +37,7 @@ void writeImage(const std::string& filename, const pt5::View& view){
 	}
 
 	stbi_write_png(filename.c_str(), w, h, 4, color.data(), w*sizeof(uint32_t));
+	std::cout <<"image saved as " <<filename <<std::endl;
 }
 
 
@@ -117,16 +128,17 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 }
 
 
-bool hasArg(int argc, char* argv[], const std::string& key){
-	for(int i=0; i<argc; i++){
-		if(std::string(argv[i]) == key)
-			return true;
+int main(int argc, char* _argv[]){
+	bool background = false;
+	std::string out = "result/c++.png";
+	{
+		std::vector<std::string> argv(_argv, _argv+argc);
+		background = std::find(argv.begin(), argv.end(), "--background") != argv.end();
+		auto o = std::find(argv.begin(), argv.end(), "-o");
+		if(o++ < argv.end()) out = *o;
+
+		if(std::find(out.begin(), out.end(), '.') == out.end()) out += ".png";
 	}
-	return false;
-}
-
-
-int main(int argc, char* argv[]){
 
 	const int width = 1024;
 	const int height = 1024;
@@ -134,7 +146,7 @@ int main(int argc, char* argv[]){
 	pt5::View view(width, height);
 
 	GLFWwindow* window = nullptr;
-	if(!hasArg(argc, argv, "--background") && glfwInit()){
+	if(!background && glfwInit()){
 		window = glfwCreateWindow(width, height, "pt5 view", NULL, NULL);
 		if(!window) glfwTerminate();
 		else{
@@ -198,14 +210,7 @@ int main(int argc, char* argv[]){
 
 	view.downloadImage();
 
-	std::string outDir("result");
-	if(!( std::filesystem::exists(outDir) && std::filesystem::is_directory(outDir) )){
-		std::cout <<"created directory " <<outDir <<std::endl;
-		assert(std::filesystem::create_directory(outDir));
-	}
-
-	writeImage(outDir+"/out_c++.png", view);
-	std::cout <<"image saved" <<std::endl;
+	writeImage(out, view);
 
 	return 0;
 }
