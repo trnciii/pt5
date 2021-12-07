@@ -1,5 +1,5 @@
 import pt5
-from pt5.window import Window as Window
+from pt5.window import Window
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -80,20 +80,20 @@ def createScene(scene, camera):
 		pt5.TriangleMesh(
 			np.array(
 				[(tuple(v), tuple(n)) for v, n in zip(verts0, normals)],
-				dtype=pt5.Vertex_dtype),
+				dtype=pt5.dtype.Vertex_dtype),
 			np.array(
 				[(tuple(i),tuple(i),	False, m) for i, m in zip(indices, mIDs0)],
-				dtype=pt5.Face_dtype),
+				dtype=pt5.dtype.Face_dtype),
 			uv0,
 			mSlots0),
 
 		pt5.TriangleMesh(
 			np.array(
 				[(tuple(v), tuple(n)) for v, n in zip(verts1, normals)],
-				dtype = pt5.Vertex_dtype),
+				dtype = pt5.dtype.Vertex_dtype),
 			np.array(
 				[(tuple(i), tuple(i), False, m) for i, m in zip(indices, mIDs1)],
-				dtype = pt5.Face_dtype),
+				dtype = pt5.dtype.Face_dtype),
 			uv1,
 			mSlots1)
 	]
