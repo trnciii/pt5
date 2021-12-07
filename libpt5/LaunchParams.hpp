@@ -1,7 +1,9 @@
 #pragma once
 
 #include "vector_math.h"
-#include "scene.hpp"
+#include "mesh.hpp"
+#include "material.h"
+#include "camera.hpp"
 
 namespace pt5{
 

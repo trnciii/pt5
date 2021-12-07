@@ -145,11 +145,12 @@ PYBIND11_MODULE(core, m) {
 			const py::array_t<float>& uv,
 			const py::array_t<uint32_t>& m)
 		{
-			return TriangleMesh(
+			return (TriangleMesh){
 				toSTDVector(v),
 				toSTDVector(f),
 				std::vector<float2>((float2*)uv.data(0,0), (float2*)uv.data(0,0)+uv.shape(0)),
-				toSTDVector(m));
+				toSTDVector(m)
+			};
 		}));
 
 

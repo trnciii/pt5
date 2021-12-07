@@ -3,63 +3,64 @@
 #include <stdint.h>
 #include <vector>
 #include "vector_math.h"
+#include "CUDABuffer.hpp"
+#include "mesh.hpp"
 
 namespace pt5{
 
-struct Camera{
-	float3 position = {0,0,0};
-	float3 toWorld[3] = {{1,0,0}, {0,1,0}, {0,0,1}};
-	float focalLength = 1;
-
-	__device__ float3 view(float x, float y){
-		float3 rayDir = make_float3(x, y, -focalLength);
-		return normalize(make_float3(
-			dot(toWorld[0], rayDir),
-			dot(toWorld[1], rayDir),
-			dot(toWorld[2], rayDir)));
-	}
-
-};
-
-
-struct Vertex{
-	float3 p;
-	float3 n;
-};
-
-struct Face{
-	uint3 vertices;
-	uint3 uv;
-	bool smooth = true;
-	uint32_t material;
-};
-
-struct Material{
-	float3 albedo = {0.6, 0.6, 0.6};
-	float3 emission = {0, 0, 0};
-};
-
-struct TriangleMesh{
-	std::vector<Vertex> vertices;
-	std::vector<Face> indices;
-	std::vector<float2> uv;
-	std::vector<uint32_t> materialSlots;
-
-	TriangleMesh(){}
-
-	TriangleMesh(
-		const std::vector<Vertex>& v,
-		const std::vector<Face>& f,
-		const std::vector<float2>& u,
-		const std::vector<uint32_t>& m)
-	:vertices(v), indices(f), uv(u), materialSlots(m){}
-};
-
+struct Material;
 
 struct Scene{
 	float3 background = {0.4, 0.4, 0.4};
 	std::vector<TriangleMesh> meshes;
 	std::vector<Material> materials;
 };
+
+
+class SceneBuffer{
+	std::vector<CUDABuffer> vertexBuffers;
+	std::vector<CUDABuffer> indexBuffers;
+	std::vector<CUDABuffer> uvBuffers;
+
+public:
+	~SceneBuffer(){assert(allocated() == 0);}
+
+	inline uint32_t allocated() const{
+		assert((vertexBuffers.size() == indexBuffers.size())
+			&& (vertexBuffers.size() == uvBuffers.size()));
+		return vertexBuffers.size();
+	}
+
+	void upload(const Scene& scene, CUstream stream){
+		vertexBuffers.resize(scene.meshes.size());
+		indexBuffers.resize(scene.meshes.size());
+		uvBuffers.resize(scene.meshes.size());
+
+		for(int i=0; i<scene.meshes.size(); i++){
+			vertexBuffers[i].alloc_and_upload(scene.meshes[i].vertices, stream);
+			indexBuffers[i].alloc_and_upload(scene.meshes[i].indices, stream);
+			uvBuffers[i].alloc_and_upload(scene.meshes[i].uv, stream);
+		}
+
+		cudaStreamSynchronize(stream);
+	}
+
+	void free(CUstream stream){
+		for(CUDABuffer& buffer : vertexBuffers)buffer.free(stream);
+		for(CUDABuffer& buffer : indexBuffers)buffer.free(stream);
+		for(CUDABuffer& buffer : uvBuffers)buffer.free(stream);
+
+		cudaStreamSynchronize(stream);
+		vertexBuffers.clear();
+		indexBuffers.clear();
+		uvBuffers.clear();
+	};
+
+	inline CUdeviceptr vertices(int i) const{return vertexBuffers[i].d_pointer();}
+	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
+	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
+
+};
+
 
 }

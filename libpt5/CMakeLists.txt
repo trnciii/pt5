@@ -35,8 +35,11 @@ cuda_compile_and_embed(embedded_ptx_code
 
 add_library(pt5
 	${embedded_ptx_code}
+	camera.hpp
 	CUDABuffer.hpp
-	LaunchParams.h
+	LaunchParams.hpp
+	material.h
+	mesh.hpp
 	optix.hpp
 	scene.hpp
 	tracer.hpp

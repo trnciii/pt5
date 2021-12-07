@@ -2,8 +2,8 @@
 #include <stdint.h>
 
 #include "../vector_math.h"
-#include "../LaunchParams.h"
-#include "../scene.hpp"
+#include "../LaunchParams.hpp"
+#include "../material.h"
 #include "util.cuh"
 #include "math.cuh"
 
