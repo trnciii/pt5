@@ -33,9 +33,9 @@ def main():
 
 
 	pt = pt5.PathTracer()
-	pt.setScene(pt5.scene.createSceneFromBlender(scene))
+	pt.setScene(pt5.scene.create(scene))
 
-	camera = pt5.scene.createCameraFromObject(scene.camera)
+	camera = pt5.scene.camera.fromObject(scene.camera)
 
 
 	pt.render(view, 1000, camera)

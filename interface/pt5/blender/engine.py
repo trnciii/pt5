@@ -50,8 +50,8 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		exclude = [o for o in scene.objects if o.hide_render]
 
-		self.tracer.setScene(pt5.scene.createSceneFromBlender(scene, exclude))
-		camera = pt5.scene.createCameraFromObject(scene.camera)
+		self.tracer.setScene(pt5.scene.create(scene, exclude))
+		camera = pt5.scene.camera.fromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
 		pt5.cuda_sync()
@@ -77,7 +77,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		exclude = [o for o in scene.objects if o.hide_get()]
 
 		self.tracer.removeScene()
-		self.tracer.setScene(pt5.scene.createSceneFromBlender(scene, exclude))
+		self.tracer.setScene(pt5.scene.create(scene, exclude))
 
 
 		if not self.scene_data:
@@ -129,7 +129,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 			print('resize')
 			self.draw_data = CustomDrawData(dimensions)
 
-		camera = pt5.scene.getViewAsCamera(context, dimensions)
+		camera = pt5.scene.camera.fromView(context, dimensions)
 		self.tracer.render(self.draw_data.view, scene.pt5.spp_viewport, camera)
 		pt5.cuda_sync()
 
