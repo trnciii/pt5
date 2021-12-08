@@ -29,6 +29,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON) # kind of fPIC
 
 cuda_compile_and_embed(embedded_ptx_code
 	device/device.cu
+	device/intersection.cuh
 	device/deviceutil.cuh
 	device/math.cuh
 	)

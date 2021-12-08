@@ -4,6 +4,7 @@
 #include "../vector_math.h"
 #include "../LaunchParams.hpp"
 #include "../material.h"
+#include "intersection.cuh"
 #include "util.cuh"
 #include "math.cuh"
 
@@ -28,66 +29,36 @@ struct PaylaodData{
 };
 
 
-
 extern "C" __global__ void __closesthit__radiance(){
 	PaylaodData& payload = *(PaylaodData*)getPRD<PaylaodData>();
 	const HitgroupSBTData& sbtData = *(HitgroupSBTData*)optixGetSbtDataPointer();
 
 	const int primID = optixGetPrimitiveIndex();
-	const Face& face = sbtData.faces[primID];
+	Intersection is = make_intersection(sbtData, primID);
 
-	const float3 wi = -optixGetWorldRayDirection();
-
-	const float u = optixGetTriangleBarycentrics().x;
-	const float v = optixGetTriangleBarycentrics().y;
-
-	const Vertex& v0 = sbtData.vertices[face.vertices.x];
-	const Vertex& v1 = sbtData.vertices[face.vertices.y];
-	const Vertex& v2 = sbtData.vertices[face.vertices.z];
-
-	const float2& tx0 = sbtData.uv[face.uv.x];
-	const float2& tx1 = sbtData.uv[face.uv.y];
-	const float2& tx2 = sbtData.uv[face.uv.z];
-
-	const Material& mtl = sbtData.material;
-
-	const float3 p = (1-u-v)*v0.p + u*v1.p + v*v2.p;
-	const float2 txcoord = (1-u-v)*tx0 + u*tx1 + v*tx2;
-	float3 ng = normalize(cross(v1.p-v0.p, v2.p-v0.p));
-	float3 n = face.smooth? normalize((1-u-v)*v0.n + u*v1.n + v*v2.n) : ng;
-
-	n = faceforward(n, wi, ng);
-	ng = faceforward(ng, wi, ng);
 
 	float3 tangent;
 	float3 binromal;
-	if(fabs(n.x) > fabs(n.z)){
-		binromal = make_float3(-n.y, n.x, 0);
+	if(fabs(is.n.x) > fabs(is.n.z)){
+		binromal = make_float3(-is.n.y, is.n.x, 0);
 	}
 	else{
-		binromal = make_float3(0, -n.z, n.y);
+		binromal = make_float3(0, -is.n.z, is.n.y);
 	}
 
 	binromal = normalize(binromal);
-	tangent = cross(binromal, n);
+	tangent = cross(binromal, is.n);
 
 	float3 ray_d = sample_cosine_hemisphere(payload.rng.uniform(), payload.rng.uniform());
 
 
-	float3 color;
-	if(mtl.texture>0){
-		color = make_float3(tex2D<float4>(mtl.texture, txcoord.x, txcoord.y));
-	}
-	else{
-		color = mtl.albedo;
-	}
-
-
-	payload.pContinue = max(mtl.albedo.x, max(mtl.albedo.y, mtl.albedo.z));
-	payload.emission = mtl.emission;
-	payload.albedo = color;
-	payload.ray_o = p + 0.001*ng;
-	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*n;
+	payload.pContinue = max(is.material.albedo.x, max(is.material.albedo.y, is.material.albedo.z));
+	payload.emission = is.material.emission;
+	payload.albedo = (is.material.texture>0)?
+		make_float3(tex2D<float4>(is.material.texture, is.uv.x, is.uv.y))
+		: is.material.albedo;
+	payload.ray_o = is.p + 0.001*is.ng;
+	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*is.n;
 }
 
 
