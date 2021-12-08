@@ -77,6 +77,7 @@ PYBIND11_MODULE(core, m) {
 		.def(py::init<>())
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("meshes", &Scene::meshes)
+		.def_readwrite("textures", &Scene::textures)
 		.def_property("background", PROPERTY_FLOAT3(Scene, background));
 
 
@@ -104,7 +105,21 @@ PYBIND11_MODULE(core, m) {
 	py::class_<Material>(m, "Material")
 		.def(py::init<>())
 		.def_property("albedo", PROPERTY_FLOAT3(Material, albedo))
-		.def_property("emission", PROPERTY_FLOAT3(Material, emission));
+		.def_property("emission", PROPERTY_FLOAT3(Material, emission))
+		.def_readwrite("texture", &Material::texture);
+
+
+	py::class_<Texture>(m, "Texture")
+		.def(py::init([](const py::array_t<float>& data){
+			assert(data.ndim() == 3);
+			assert(data.shape(2) == 4);
+			return (Texture){
+				{data.shape(1), data.shape(0)},
+				std::vector<float4>(
+					(float4*)data.data(0,0,0),
+					(float4*)data.data(0,0,0) + (data.shape(0)*data.shape(1)))
+			};
+		}));
 
 
 	PYBIND11_NUMPY_DTYPE(float2, x, y);

@@ -8,6 +8,6 @@ def create(scene, hide = []):
 
 	ret = core.Scene()
 	ret.background = getBackground(scene)
-	ret.materials = getMaterials()
+	ret.materials, ret.textures = getMaterials()
 	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(scene, hide)] if m]
 	return ret

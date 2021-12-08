@@ -1,6 +1,7 @@
 import bpy
 from bpy_extras.node_utils import find_node_input
 import numpy as np
+import traceback
 from ... import core
 
 def getBackground(scene):
@@ -23,21 +24,32 @@ def getBackground(scene):
 	return np.array(params[0].default_value[:3]) * params[1].default_value
 
 
-def create_material_diffuse(x, y, z):
+def create_material_diffuse(x, y, z, texture = 0):
 	m = core.Material()
 	m.emission = 0,0,0
 	m.albedo = x,y,z
+	m.texture = texture
 	return m
 
-def create_material_emit(x,y,z, strength = 1):
+def create_material_emit(x,y,z, strength = 1, texture = 0):
 	m = core.Material()
 	m.emission = x, y, z
 	m.emission *= strength
 	m.albedo = 0,0,0
+	m.texture = texture
 	return m
 
 
-def perseMaterial(mtl):
+def findImageTexture(tree, socket):
+	filtered = [l.from_node for l in tree.links if l.to_socket == socket]
+	if not (len(filtered)>0 and filtered[0].type == 'TEX_IMAGE'):
+		return None
+
+	image = filtered[0].image
+	return core.Texture(np.array(image.pixels).reshape((image.size[1], image.size[0], 4)))
+
+
+def perseMaterial(mtl, textures):
 	if mtl.grease_pencil:
 		return create_material_diffuse(0,0,0)
 
@@ -59,23 +71,37 @@ def perseMaterial(mtl):
 	nodetype = filtered[0].type
 	params = filtered[0].inputs
 
+	texture = findImageTexture(mtl.node_tree, params[0])
+	tx_index = 0
+	if texture:
+		textures.append(texture)
+		tx_index = len(textures)
+
 	if nodetype == 'EMISSION':
-		return create_material_emit(*params[0].default_value[:3],	params[1].default_value)
+		return create_material_emit(
+			*params[0].default_value[:3],
+			strength = params[1].default_value,
+			texture = tx_index)
 
 	elif nodetype == 'BSDF_DIFFUSE':
-		return create_material_diffuse(*params[0].default_value[:3])
+		return create_material_diffuse(
+			*params[0].default_value[:3],
+			texture = tx_index)
 
 	else:
-		return create_material_diffuse(*params[0].default_value[:3])
+		return create_material_diffuse(
+			*params[0].default_value[:3],
+			texture = tx_index)
 
 
 
 def getMaterials():
+	textures = []
 	materials = []
 
 	for m in bpy.data.materials.values():
 		try:
-			materials.append(perseMaterial(m))
+			materials.append(perseMaterial(m, textures))
 		except:
 			magenta = core.Material()
 			magenta.albedo
@@ -85,5 +111,5 @@ def getMaterials():
 			print(m.name)
 			traceback.print_exc()
 
-	return materials
+	return materials, textures
 
