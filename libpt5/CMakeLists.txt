@@ -42,6 +42,7 @@ add_library(pt5
 	mesh.hpp
 	optix.hpp
 	scene.hpp
+	texture.hpp
 	tracer.hpp
 	tracer.cpp
 	vector_math.h

@@ -5,15 +5,18 @@
 #include "vector_math.h"
 #include "CUDABuffer.hpp"
 #include "mesh.hpp"
+#include "texture.hpp"
 
 namespace pt5{
 
 struct Material;
 
+
 struct Scene{
 	float3 background = {0.4, 0.4, 0.4};
 	std::vector<TriangleMesh> meshes;
 	std::vector<Material> materials;
+	std::vector<Texture> textures;
 };
 
 
@@ -21,6 +24,7 @@ class SceneBuffer{
 	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
 	std::vector<CUDABuffer> uvBuffers;
+	std::vector<CUDATexture> textures;
 
 public:
 	~SceneBuffer(){assert(allocated() == 0);}
@@ -30,6 +34,7 @@ public:
 			&& (vertexBuffers.size() == uvBuffers.size()));
 		return vertexBuffers.size();
 	}
+
 
 	void upload(const Scene& scene, CUstream stream){
 		vertexBuffers.resize(scene.meshes.size());
@@ -41,6 +46,12 @@ public:
 			indexBuffers[i].alloc_and_upload(scene.meshes[i].indices, stream);
 			uvBuffers[i].alloc_and_upload(scene.meshes[i].uv, stream);
 		}
+
+
+		textures.resize(scene.textures.size());
+
+		for(int i=0; i<scene.textures.size(); i++)
+			textures[i].upload(scene.textures[i]);
 
 		cudaStreamSynchronize(stream);
 	}
@@ -54,6 +65,11 @@ public:
 		vertexBuffers.clear();
 		indexBuffers.clear();
 		uvBuffers.clear();
+
+
+		for(CUDATexture& texture : textures)texture.free();
+		CUDA_SYNC_CHECK();
+		textures.clear();
 	};
 
 	inline CUdeviceptr vertices(int i) const{return vertexBuffers[i].d_pointer();}
