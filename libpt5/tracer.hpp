@@ -1,12 +1,12 @@
 #pragma once
 
 #include "CUDABuffer.hpp"
-#include "LaunchParams.hpp"
 #include "mesh.hpp"
 #include "scene.hpp"
 
 namespace pt5{
 
+struct Camera;
 class View;
 
 class PathTracerState{

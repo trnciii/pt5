@@ -42,6 +42,7 @@ add_library(pt5
 	material.h
 	mesh.hpp
 	optix.hpp
+	sbt.hpp
 	scene.cpp
 	scene.hpp
 	texture.hpp

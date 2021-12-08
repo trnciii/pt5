@@ -3,6 +3,7 @@
 
 #include "../vector_math.h"
 #include "../LaunchParams.hpp"
+#include "../sbt.hpp"
 #include "../material.h"
 #include "intersection.cuh"
 #include "util.cuh"

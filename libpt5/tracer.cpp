@@ -6,6 +6,9 @@
 #include "optix.hpp"
 #include "view.hpp"
 #include "scene.hpp"
+#include "camera.hpp"
+#include "LaunchParams.hpp"
+#include "sbt.hpp"
 
 
 extern "C" char embedded_ptx_code[];
