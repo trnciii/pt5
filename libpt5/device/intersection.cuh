@@ -3,11 +3,13 @@
 #include <optix_device.h>
 
 #include "../vector_math.h"
-#include "../mesh.hpp"
+#include "../sbt.hpp"
 #include "math.cuh"
 
 
 namespace pt5{
+
+class Material;
 
 struct Intersection{
 	float3 p;

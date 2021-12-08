@@ -102,7 +102,7 @@ PYBIND11_MODULE(core, m) {
 		.def_readwrite("focalLength", &Camera::focalLength);
 
 
-	py::class_<Material>(m, "Material")
+	py::class_<Material, std::shared_ptr<Material>>(m, "Material")
 		.def(py::init<>())
 		.def_property("albedo", PROPERTY_FLOAT3(Material, albedo))
 		.def_property("emission", PROPERTY_FLOAT3(Material, emission))

@@ -1,19 +1,21 @@
 #pragma once
 
-#include <stdint.h>
 #include <vector>
+#include <memory>
 #include "vector_math.h"
 #include "CUDABuffer.hpp"
-#include "mesh.hpp"
 #include "texture.hpp"
-#include "material.h"
+
 
 namespace pt5{
+
+struct Material;
+struct TriangleMesh;
 
 struct Scene{
 	float3 background = {0.4, 0.4, 0.4};
 	std::vector<TriangleMesh> meshes;
-	std::vector<Material> materials;
+	std::vector<std::shared_ptr<Material>> materials;
 	std::vector<Texture> textures;
 };
 
@@ -27,7 +29,7 @@ class SceneBuffer{
 
 	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
 	void upload_textures(const std::vector<Texture>&, CUstream);
-	void upload_materials(const std::vector<Material>&, CUstream);
+	void upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream);
 
 	void free_meshes(CUstream stream);
 	void free_textures(CUstream stream);

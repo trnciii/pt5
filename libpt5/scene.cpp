@@ -1,4 +1,7 @@
 #include "scene.hpp"
+#include "material.h"
+#include "mesh.hpp"
+
 
 namespace pt5{
 
@@ -51,10 +54,10 @@ void SceneBuffer::free_textures(CUstream stream){
 	textures.clear();
 }
 
-void SceneBuffer::upload_materials(const std::vector<Material>& materials, CUstream stream){
+void SceneBuffer::upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream){
 	materialBuffers.resize(materials.size());
 	for(int i=0; i<materials.size(); i++)
-		materialBuffers[i].alloc_and_upload(materials[i], stream);
+		materialBuffers[i].alloc_and_upload(*materials[i], stream);
 	cudaStreamSynchronize(stream);
 }
 

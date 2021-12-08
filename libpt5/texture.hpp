@@ -1,7 +1,6 @@
 #pragma once
 
 #include "optix.hpp"
-#include <iostream>
 
 namespace pt5{
 

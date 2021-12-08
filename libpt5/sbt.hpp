@@ -2,9 +2,10 @@
 
 #include "vector_math.h"
 #include "mesh.hpp"
-#include "material.h"
 
 namespace pt5{
+
+struct Material;
 
 struct RaygenSBTData{
 	OptixTraversableHandle traversable;
