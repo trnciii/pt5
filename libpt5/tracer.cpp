@@ -208,23 +208,23 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			std::vector<Material> materials;
+			std::vector<CUdeviceptr> d_materials;
 			if(mesh.materialSlots.size()==0)
-				materials.push_back(Material());
+				d_materials.push_back((CUdeviceptr)nullptr);
 			else{
 				for(int i=0; i<mesh.materialSlots.size(); i++){
-					materials.push_back(scene.materials[mesh.materialSlots[i]]);
+					d_materials.push_back(sceneBuffer.materials(mesh.materialSlots[i]));
 				}
 			}
 
-			for(int i=0; i<materials.size(); i++){
+			for(CUdeviceptr m : d_materials){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					materials[i]
+					(Material*)m
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));

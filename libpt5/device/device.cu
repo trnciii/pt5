@@ -34,7 +34,7 @@ extern "C" __global__ void __closesthit__radiance(){
 	const HitgroupSBTData& sbtData = *(HitgroupSBTData*)optixGetSbtDataPointer();
 
 	const int primID = optixGetPrimitiveIndex();
-	Intersection is = make_intersection(sbtData, primID);
+	const Intersection is = make_intersection(sbtData, primID);
 
 
 	float3 tangent;
@@ -51,12 +51,14 @@ extern "C" __global__ void __closesthit__radiance(){
 
 	float3 ray_d = sample_cosine_hemisphere(payload.rng.uniform(), payload.rng.uniform());
 
+	const Material mtl_default;
+	const Material& mtl = (is.material)? *is.material : mtl_default;
 
-	payload.pContinue = max(is.material.albedo.x, max(is.material.albedo.y, is.material.albedo.z));
-	payload.emission = is.material.emission;
-	payload.albedo = (is.material.texture>0)?
-		make_float3(tex2D<float4>(is.material.texture, is.uv.x, is.uv.y))
-		: is.material.albedo;
+	payload.pContinue = max(mtl.albedo.x, max(mtl.albedo.y, mtl.albedo.z));
+	payload.emission = mtl.emission;
+	payload.albedo = (mtl.texture>0)?
+		make_float3(tex2D<float4>(mtl.texture, is.uv.x, is.uv.y))
+		: mtl.albedo;
 	payload.ray_o = is.p + 0.001*is.ng;
 	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*is.n;
 }

@@ -19,7 +19,7 @@ struct HitgroupSBTData{
 	Vertex* vertices;
 	Face* faces;
 	float2* uv;
-	Material material;
+	Material* material;
 };
 
 template <typename T>

@@ -15,7 +15,7 @@ struct Intersection{
 	float3 ng;
 	float2 parametric;
 	float2 uv;
-	Material material;
+	Material* material;
 	float3 wo;
 };
 
