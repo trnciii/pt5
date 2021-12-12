@@ -38,6 +38,7 @@ private:
 	CUstream stream;
 
 	OptixModule module;
+	OptixModule module_material;
 
 	OptixPipeline pipeline;
 	OptixPipelineCompileOptions pipelineCompileOptions = {};
@@ -52,6 +53,9 @@ private:
 
 	OptixProgramGroup hitgroupProgramGroup;
 	CUDABuffer hitgroupRecordsBuffer;
+
+	std::vector<OptixProgramGroup> materialProgramGroups;
+	CUDABuffer materialRecordBuffer;
 
 	OptixShaderBindingTable sbt = {};
 

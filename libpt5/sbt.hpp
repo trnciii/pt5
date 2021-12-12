@@ -32,4 +32,9 @@ using RaygenRecord = Record<RaygenSBTData>;
 using MissRecord = Record<MissSBTData>;
 using HitgroupRecord = Record<HitgroupSBTData>;
 
+struct NullRecord{
+	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+};
+
+
 }

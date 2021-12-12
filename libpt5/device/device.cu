@@ -13,7 +13,6 @@ namespace pt5{
 
 extern "C" __constant__ LaunchParams launchParams;
 
-
 enum {
 	SURFACE_RAY_TYPE=0,
 	RAY_TYPE_COUNT
@@ -35,7 +34,10 @@ extern "C" __global__ void __closesthit__radiance(){
 	const HitgroupSBTData& sbtData = *(HitgroupSBTData*)optixGetSbtDataPointer();
 
 	const int primID = optixGetPrimitiveIndex();
-	const Intersection is = make_intersection(sbtData, primID);
+	Intersection is = make_intersection(sbtData, primID);
+
+	Material mtl_default;
+	if(!is.material) is.material = &mtl_default;
 
 
 	float3 tangent;
@@ -50,16 +52,12 @@ extern "C" __global__ void __closesthit__radiance(){
 	binromal = normalize(binromal);
 	tangent = cross(binromal, is.n);
 
-	float3 ray_d = sample_cosine_hemisphere(payload.rng.uniform(), payload.rng.uniform());
+	float3 ray_d = optixDirectCall<float3, float, float, const Intersection&>(2, payload.rng.uniform(), payload.rng.uniform(), is);
 
-	const Material mtl_default;
-	const Material& mtl = (is.material)? *is.material : mtl_default;
 
-	payload.pContinue = max(mtl.albedo.x, max(mtl.albedo.y, mtl.albedo.z));
-	payload.emission = mtl.emission;
-	payload.albedo = (mtl.texture>0)?
-		make_float3(tex2D<float4>(mtl.texture, is.uv.x, is.uv.y))
-		: mtl.albedo;
+	payload.emission = optixDirectCall<float3, const Intersection&>(1, is);
+	payload.albedo = optixDirectCall<float3, const Intersection&>(0, is);
+	payload.pContinue = max(payload.albedo.x, max(payload.albedo.y, payload.albedo.z));
 	payload.ray_o = is.p + 0.001*is.ng;
 	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*is.n;
 }
