@@ -14,13 +14,15 @@ __device__ float3 sample_cosine_hemisphere(float u1, float u2){
 }
 
 extern "C" __device__ float3 __direct_callable__albedo(const Intersection& is){
-	return (is.material->texture>0)?
-		make_float3(tex2D<float4>(is.material->texture, is.uv.x, is.uv.y))
-		: is.material->albedo;
+	Material* material = (Material*)is.materialData;
+	return (material->texture>0)?
+		make_float3(tex2D<float4>(material->texture, is.uv.x, is.uv.y))
+		: material->albedo;
 }
 
 extern "C" __device__ float3 __direct_callable__emission(const Intersection& is){
-	return is.material->emission;
+	Material* material = (Material*)is.materialData;
+	return material->emission;
 }
 
 extern "C" __device__ float3 __direct_callable__sample_direction(float u0, float u1, const Intersection& is){

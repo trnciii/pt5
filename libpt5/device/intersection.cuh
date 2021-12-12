@@ -17,7 +17,7 @@ struct Intersection{
 	float3 ng;
 	float2 parametric;
 	float2 uv;
-	Material* material;
+	CUdeviceptr materialData;
 	float3 wo;
 };
 
@@ -50,7 +50,7 @@ __device__ Intersection make_intersection(const HitgroupSBTData& sbtData, int pr
 	is.n = faceforward(is.n, is.wo, is.ng);
 	is.ng = faceforward(is.ng, is.wo, is.ng);
 
-	is.material = sbtData.material;
+	is.materialData = sbtData.material.data;
 
 	return is;
 }

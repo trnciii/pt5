@@ -37,7 +37,7 @@ extern "C" __global__ void __closesthit__radiance(){
 	Intersection is = make_intersection(sbtData, primID);
 
 	Material mtl_default;
-	if(!is.material) is.material = &mtl_default;
+	if(!is.materialData) is.materialData = (CUdeviceptr)&mtl_default;
 
 
 	float3 tangent;
@@ -52,11 +52,11 @@ extern "C" __global__ void __closesthit__radiance(){
 	binromal = normalize(binromal);
 	tangent = cross(binromal, is.n);
 
-	float3 ray_d = optixDirectCall<float3, float, float, const Intersection&>(2, payload.rng.uniform(), payload.rng.uniform(), is);
+	float3 ray_d = optixDirectCall<float3, float, float, const Intersection&>(sbtData.material.dc_sample_direction_id, payload.rng.uniform(), payload.rng.uniform(), is);
 
 
-	payload.emission = optixDirectCall<float3, const Intersection&>(1, is);
-	payload.albedo = optixDirectCall<float3, const Intersection&>(0, is);
+	payload.emission = optixDirectCall<float3, const Intersection&>(sbtData.material.dc_emission_id, is);
+	payload.albedo = optixDirectCall<float3, const Intersection&>(sbtData.material.dc_albedo_id, is);
 	payload.pContinue = max(payload.albedo.x, max(payload.albedo.y, payload.albedo.z));
 	payload.ray_o = is.p + 0.001*is.ng;
 	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*is.n;

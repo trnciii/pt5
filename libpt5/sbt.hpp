@@ -15,11 +15,18 @@ struct MissSBTData{
 	float3 background;
 };
 
+struct MaterialSBTData{
+	CUdeviceptr data;
+	int dc_albedo_id;
+	int dc_emission_id;
+	int dc_sample_direction_id;
+};
+
 struct HitgroupSBTData{
 	Vertex* vertices;
 	Face* faces;
 	float2* uv;
-	Material* material;
+	MaterialSBTData material;
 };
 
 template <typename T>

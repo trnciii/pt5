@@ -288,7 +288,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					(Material*)m
+					(MaterialSBTData){m, 0, 1, 2}
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
