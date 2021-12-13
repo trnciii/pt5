@@ -5,6 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include <filesystem>
+#include <chrono>
 
 #include <GLFW/glfw3.h>
 
@@ -194,10 +195,22 @@ int main(int argc, char* _argv[]){
 
 	pt5::Scene scene;
 	pt5::Camera camera;
+
+	auto t0 = std::chrono::system_clock::now();
+
 	createScene(scene, camera);
+
+	auto t1 = std::chrono::system_clock::now();
+	std::cout <<"Time for scene creation: "
+		<<std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count() <<"us" <<std::endl;
 
 	pt5::PathTracerState tracer;
 	tracer.setScene(scene);
+
+	auto t2 = std::chrono::system_clock::now();
+	std::cout <<"Time for tracer construction and scene uploading: "
+		<<std::chrono::duration_cast<std::chrono::microseconds>(t2-t1).count() <<"us" <<std::endl;
+
 
 	tracer.render(view, 1000, camera);
 
@@ -234,7 +247,9 @@ int main(int argc, char* _argv[]){
 	};
 
 	CUDA_SYNC_CHECK();
-	std::cout <<"rendered" <<std::endl;
+	auto t3 = std::chrono::system_clock::now();
+	std::cout <<"Time for rendering: "
+		<<std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() <<"ms" <<std::endl;
 
 	view.downloadImage();
 
