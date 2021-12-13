@@ -6,10 +6,10 @@
 #include "CUDABuffer.hpp"
 #include "texture.hpp"
 #include "sbt.hpp"
+#include "material/type.hpp"
 
 namespace pt5{
 
-struct Material;
 struct TriangleMesh;
 
 struct Scene{
@@ -25,7 +25,7 @@ class SceneBuffer{
 	std::vector<CUDABuffer> indexBuffers;
 	std::vector<CUDABuffer> uvBuffers;
 	std::vector<CUDATexture> textures;
-	std::vector<CUDABuffer> materialBuffers;
+	std::vector<std::pair<CUDABuffer, MaterialType>> materialBuffers;
 	CUDABuffer materialBuffer_default;
 
 	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
@@ -44,11 +44,11 @@ public:
 	inline CUdeviceptr vertices(int i) const{return vertexBuffers[i].d_pointer();}
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
-	inline CUdeviceptr materials(int i) const{return materialBuffers[i].d_pointer();}
+	inline CUdeviceptr materials(int i) const{return materialBuffers[i].first.d_pointer();}
 	inline CUdeviceptr material_default() const{return materialBuffer_default.d_pointer();}
 	inline MaterialSBTData materialData(int i)const{
-		int type = 0;
-		return (MaterialSBTData){materials(i), type, type+1, type+2};
+		int offset = 3*static_cast<int>(materialBuffers[i].second);
+		return (MaterialSBTData){materials(i), offset, offset+1, offset+2};
 	}
 	inline MaterialSBTData materialData_default()const{
 		return (MaterialSBTData){material_default(), 0, 1, 2};

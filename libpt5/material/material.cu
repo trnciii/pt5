@@ -1,8 +1,8 @@
 #include <optix_device.h>
 
 #include "../vector_math.h"
-#include "intersection.cuh"
-#include "../material.h"
+#include "../kernel/intersection.cuh"
+#include "data.h"
 
 namespace pt5{
 
@@ -16,10 +16,10 @@ __device__ float3 sample_cosine_hemisphere(float u1, float u2){
 
 
 extern "C" __device__ float3 __direct_callable__diffuse_albedo(const Intersection& is){
-	Material* material = (Material*)is.materialData;
+	MTLData_Diffuse* material = (MTLData_Diffuse*)is.materialData;
 	return (material->texture>0)?
 		make_float3(tex2D<float4>(material->texture, is.uv.x, is.uv.y))
-		: material->albedo;
+		: material->color;
 }
 
 extern "C" __device__ float3 __direct_callable__diffuse_emission(const Intersection& is){
@@ -38,10 +38,10 @@ extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersecti
 }
 
 extern "C" __device__ float3 __direct_callable__emission_emission(const Intersection& is){
-	Material* material = (Material*)is.materialData;
+	MTLData_Emission* material = (MTLData_Emission*)is.materialData;
 	return (material->texture>0)?
 		make_float3(tex2D<float4>(material->texture, is.uv.x, is.uv.y))
-		: material->emission;
+		: material->color;
 }
 
 extern "C" __device__ float3 __direct_callable__emission_sample_direction(float u0, float u1, const Intersection& is){

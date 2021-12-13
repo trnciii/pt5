@@ -1,7 +1,6 @@
 #include "scene.hpp"
-#include "material.h"
 #include "mesh.hpp"
-
+#include "material/data.h"
 
 namespace pt5{
 
@@ -56,17 +55,20 @@ void SceneBuffer::free_textures(CUstream stream){
 
 void SceneBuffer::upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream){
 	materialBuffers.resize(materials.size());
-	for(int i=0; i<materials.size(); i++)
-		materialBuffers[i].alloc_and_upload(*materials[i], stream);
+	for(int i=0; i<materials.size(); i++){
+		const std::shared_ptr<Material>& m = materials[i];
+		materialBuffers[i].first.alloc_and_upload(m->ptr(), m->size(), stream);
+		materialBuffers[i].second = m->type();
+	}
 
-	Material material_default;
+	MTLData_Diffuse material_default;
 	materialBuffer_default.alloc_and_upload(material_default, stream);
 
 	cudaStreamSynchronize(stream);
 }
 
 void SceneBuffer::free_materials(CUstream stream){
-	for(CUDABuffer& buffer : materialBuffers)buffer.free(stream);
+	for(auto& buffer : materialBuffers)buffer.first.free(stream);
 	materialBuffer_default.free(stream);
 	cudaStreamSynchronize(stream);
 	materialBuffers.clear();

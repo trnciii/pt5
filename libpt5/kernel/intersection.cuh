@@ -9,8 +9,6 @@
 
 namespace pt5{
 
-class Material;
-
 struct Intersection{
 	float3 p;
 	float3 n;

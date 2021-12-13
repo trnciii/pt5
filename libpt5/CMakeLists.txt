@@ -27,17 +27,19 @@ find_package(OpenGL REQUIRED)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # kind of fPIC
 
-cuda_compile_and_embed(embedded_ptx_code device/device.cu)
-cuda_compile_and_embed(embedded_ptx_material device/material.cu)
+cuda_compile_and_embed(embedded_ptx_kernel kernel/kernel.cu)
+cuda_compile_and_embed(embedded_ptx_material material/material.cu)
 
 add_library(pt5
-	${embedded_ptx_code}
+	${embedded_ptx_kernel}
 	${embedded_ptx_material}
+
+	material/data.h
+	material/type.hpp
 
 	camera.hpp
 	CUDABuffer.hpp
 	LaunchParams.hpp
-	material.h
 	mesh.hpp
 	optix.hpp
 	sbt.hpp

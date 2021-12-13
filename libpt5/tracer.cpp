@@ -11,7 +11,7 @@
 #include "sbt.hpp"
 
 
-extern "C" char embedded_ptx_code[];
+extern "C" char embedded_ptx_kernel[];
 extern "C" char embedded_ptx_material[];
 
 
@@ -67,7 +67,7 @@ void PathTracerState::createModule(){
 	pipelineLinkOptions.maxTraceDepth = 2;
 
 	{
-		const std::string ptxCode = embedded_ptx_code;
+		const std::string ptxCode = embedded_ptx_kernel;
 
 		char log[2048];
 		size_t sizeoflog = sizeof(log);
