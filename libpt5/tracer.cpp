@@ -274,7 +274,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 			std::vector<CUdeviceptr> d_materials;
 			if(mesh.materialSlots.size()==0)
-				d_materials.push_back((CUdeviceptr)nullptr);
+				d_materials.push_back(sceneBuffer.material_default());
 			else{
 				for(int i=0; i<mesh.materialSlots.size(); i++){
 					d_materials.push_back(sceneBuffer.materials(mesh.materialSlots[i]));

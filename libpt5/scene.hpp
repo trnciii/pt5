@@ -26,6 +26,7 @@ class SceneBuffer{
 	std::vector<CUDABuffer> uvBuffers;
 	std::vector<CUDATexture> textures;
 	std::vector<CUDABuffer> materialBuffers;
+	CUDABuffer materialBuffer_default;
 
 	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
 	void upload_textures(const std::vector<Texture>&, CUstream);
@@ -44,6 +45,7 @@ public:
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 	inline CUdeviceptr materials(int i) const{return materialBuffers[i].d_pointer();}
+	inline CUdeviceptr material_default() const{return materialBuffer_default.d_pointer();}
 };
 
 

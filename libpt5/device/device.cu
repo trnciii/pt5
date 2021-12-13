@@ -36,9 +36,6 @@ extern "C" __global__ void __closesthit__radiance(){
 	const int primID = optixGetPrimitiveIndex();
 	Intersection is = make_intersection(sbtData, primID);
 
-	Material mtl_default;
-	if(!is.materialData) is.materialData = (CUdeviceptr)&mtl_default;
-
 
 	float3 tangent;
 	float3 binromal;

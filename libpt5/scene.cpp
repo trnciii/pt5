@@ -58,12 +58,18 @@ void SceneBuffer::upload_materials(const std::vector<std::shared_ptr<Material>>&
 	materialBuffers.resize(materials.size());
 	for(int i=0; i<materials.size(); i++)
 		materialBuffers[i].alloc_and_upload(*materials[i], stream);
+
+	Material material_default;
+	materialBuffer_default.alloc_and_upload(material_default, stream);
+
 	cudaStreamSynchronize(stream);
 }
 
 void SceneBuffer::free_materials(CUstream stream){
 	for(CUDABuffer& buffer : materialBuffers)buffer.free(stream);
+	materialBuffer_default.free(stream);
 	cudaStreamSynchronize(stream);
+	materialBuffers.clear();
 }
 
 
