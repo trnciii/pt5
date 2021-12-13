@@ -23,6 +23,12 @@ void context_log_callback(unsigned int level, const char *tag, const char *messa
 }
 
 
+const std::vector<std::string> material_types{
+	"diffuse",
+	"emission",
+};
+
+
 void PathTracerState::createContext(){
 	const int deviceID = 0;
 	CUcontext cudaContext;
@@ -178,15 +184,15 @@ void PathTracerState::createProgramGroups(){
 
 
 	{ // direct callable
-		std::vector<std::string> names = {
-			"__direct_callable__albedo",
-			"__direct_callable__emission",
-			"__direct_callable__sample_direction"
-		};
+		std::vector<std::string> names;
+		for(const std::string& type : material_types){
+			names.push_back("__direct_callable__" + type + "_albedo");
+			names.push_back("__direct_callable__" + type + "_emission");
+			names.push_back("__direct_callable__" + type + "_sample_direction");
+		}
 
 		std::vector<OptixProgramGroupDesc> descs;
-
-		for(std::string& name : names){
+		for(const std::string& name : names){
 			OptixProgramGroupDesc desc;
 				desc.kind  = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
 				desc.flags = OPTIX_PROGRAM_GROUP_FLAGS_NONE;
@@ -272,23 +278,23 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			std::vector<CUdeviceptr> d_materials;
+			std::vector<MaterialSBTData> materialData;
 			if(mesh.materialSlots.size()==0)
-				d_materials.push_back(sceneBuffer.material_default());
+				materialData.push_back(sceneBuffer.materialData_default());
 			else{
 				for(int i=0; i<mesh.materialSlots.size(); i++){
-					d_materials.push_back(sceneBuffer.materials(mesh.materialSlots[i]));
+					materialData.push_back(sceneBuffer.materialData(mesh.materialSlots[i]));
 				}
 			}
 
-			for(CUdeviceptr m : d_materials){
+			for(const MaterialSBTData& m : materialData){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					(MaterialSBTData){m, 0, 1, 2}
+					m
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
@@ -307,7 +313,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 	{ // material
 		std::vector<NullRecord> materialRecords;
-		for(int i=0; i<3; i++){
+		for(int i=0; i<3*material_types.size(); i++){
 			NullRecord rec;
 			OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
 			materialRecords.push_back(rec);

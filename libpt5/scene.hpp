@@ -5,7 +5,7 @@
 #include "vector_math.h"
 #include "CUDABuffer.hpp"
 #include "texture.hpp"
-
+#include "sbt.hpp"
 
 namespace pt5{
 
@@ -46,6 +46,13 @@ public:
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 	inline CUdeviceptr materials(int i) const{return materialBuffers[i].d_pointer();}
 	inline CUdeviceptr material_default() const{return materialBuffer_default.d_pointer();}
+	inline MaterialSBTData materialData(int i)const{
+		int type = 0;
+		return (MaterialSBTData){materials(i), type, type+1, type+2};
+	}
+	inline MaterialSBTData materialData_default()const{
+		return (MaterialSBTData){material_default(), 0, 1, 2};
+	}
 };
 
 

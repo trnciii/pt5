@@ -5,7 +5,6 @@
 
 namespace pt5{
 
-struct Material;
 
 struct RaygenSBTData{
 	OptixTraversableHandle traversable;

@@ -13,20 +13,40 @@ __device__ float3 sample_cosine_hemisphere(float u1, float u2){
 	return make_float3(r*cos(u2), r*sin(u2), z);
 }
 
-extern "C" __device__ float3 __direct_callable__albedo(const Intersection& is){
+
+
+extern "C" __device__ float3 __direct_callable__diffuse_albedo(const Intersection& is){
 	Material* material = (Material*)is.materialData;
 	return (material->texture>0)?
 		make_float3(tex2D<float4>(material->texture, is.uv.x, is.uv.y))
 		: material->albedo;
 }
 
-extern "C" __device__ float3 __direct_callable__emission(const Intersection& is){
-	Material* material = (Material*)is.materialData;
-	return material->emission;
+extern "C" __device__ float3 __direct_callable__diffuse_emission(const Intersection& is){
+	return make_float3(0);
 }
 
-extern "C" __device__ float3 __direct_callable__sample_direction(float u0, float u1, const Intersection& is){
+extern "C" __device__ float3 __direct_callable__diffuse_sample_direction(float u0, float u1, const Intersection& is){
 	return sample_cosine_hemisphere(u0, u1);
 }
+
+
+
+
+extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersection& is){
+	return make_float3(0);
+}
+
+extern "C" __device__ float3 __direct_callable__emission_emission(const Intersection& is){
+	Material* material = (Material*)is.materialData;
+	return (material->texture>0)?
+		make_float3(tex2D<float4>(material->texture, is.uv.x, is.uv.y))
+		: material->emission;
+}
+
+extern "C" __device__ float3 __direct_callable__emission_sample_direction(float u0, float u1, const Intersection& is){
+	return make_float3(0);
+}
+
 
 }
