@@ -147,7 +147,7 @@ PYBIND11_MODULE(core, m) {
 			assert(data.ndim() == 3);
 			assert(data.shape(2) == 4);
 			return (Texture){
-				{data.shape(1), data.shape(0)},
+				{static_cast<uint>(data.shape(1)), static_cast<uint>(data.shape(0))},
 				std::vector<float4>(
 					(float4*)data.data(),
 					(float4*)data.data() + (data.shape(0)*data.shape(1)))
