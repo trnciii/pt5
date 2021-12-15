@@ -42,9 +42,7 @@ PYBIND11_MODULE(core, m) {
 		.def("destroyGLTexture", &View::destroyGLTexture)
 		.def("updateGLTexture", &View::updateGLTexture)
 		.def("clear", [](View& self, py::array_t<float> c){
-			auto r = c.unchecked<1>();
-			assert(r.shape(0) == 4);
-			self.clear(make_float4(r(0), r(1), r(2), r(3)));
+			self.clear(make_float4(*c.data(0), *c.data(1), *c.data(2), *c.data(3)));
 		})
 		.def_property_readonly("GLTexture", &View::GLTexture)
 		.def_property_readonly("hasGLTexture", &View::hasGLTexture)
@@ -128,13 +126,17 @@ PYBIND11_MODULE(core, m) {
 
 	py::class_<MTLData_Diffuse>(m, "MTLData_Diffuse")
 		.def(py::init<>())
-		// .def(py::init([](const py::array_t<float>& c, uint32_t t){
-		// }))
+		.def(py::init([](const py::array_t<float>& c, uint32_t t=0){
+			return MTLData_Diffuse{make_float3(*c.data(0), *c.data(1), *c.data(2)), t};
+		}))
 		.def_property("color", PROPERTY_FLOAT3(MTLData_Diffuse, color))
 		.def_readwrite("texture", &MTLData_Diffuse::texture);
 
 	py::class_<MTLData_Emission>(m, "MTLData_Emission")
 		.def(py::init<>())
+		.def(py::init([](const py::array_t<float>& c, uint32_t t=0){
+			return MTLData_Emission{make_float3(*c.data(0), *c.data(1), *c.data(2)), t};
+		}))
 		.def_property("color", PROPERTY_FLOAT3(MTLData_Emission, color))
 		.def_readwrite("texture", &MTLData_Emission::texture);
 

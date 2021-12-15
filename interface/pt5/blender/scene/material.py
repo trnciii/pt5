@@ -24,19 +24,6 @@ def getBackground(scene):
 	return np.array(params[0].default_value[:3]) * params[1].default_value
 
 
-def create_material_diffuse(x, y, z, texture = 0):
-	m = core.MTLData_Diffuse()
-	m.color = x,y,z
-	m.texture = texture
-	return m
-
-def create_material_emit(x,y,z, strength = 1, texture = 0):
-	m = core.MTLData_Emission()
-	m.color = x, y, z
-	m.color *= strength
-	m.texture = texture
-	return m
-
 
 def findImageTexture(tree, socket):
 	filtered = [l.from_node for l in tree.links if l.to_socket == socket]
@@ -49,21 +36,21 @@ def findImageTexture(tree, socket):
 
 def perseMaterial(mtl, textures):
 	if mtl.grease_pencil:
-		return create_material_diffuse(0,0,0)
+		return core.MTLData_Diffuse([0,0,0], 0)
 
 
 	if not mtl.use_nodes:
-		return create_material_diffuse(*mtl.diffuse_color[:3])
+		return core.MTLData_Diffuse(mtl.diffuse_color[:3], 0)
 
 
 	output = mtl.node_tree.get_output_node('CYCLES')
 	if not output:
-		return create_material_diffuse(0,0,0)
+		return core.MTLData_Diffuse([0,0,0], 0)
 
 	socket = find_node_input(output, 'Surface')
 	filtered = [l.from_node for l in mtl.node_tree.links if l.to_socket == socket]
 	if not len(filtered) > 0:
-		return create_material_diffuse(0,0,0)
+		return core.MTLData_Diffuse([0,0,0], 0)
 
 
 	nodetype = filtered[0].type
@@ -76,20 +63,13 @@ def perseMaterial(mtl, textures):
 		tx_index = len(textures)
 
 	if nodetype == 'EMISSION':
-		return create_material_emit(
-			*params[0].default_value[:3],
-			strength = params[1].default_value,
-			texture = tx_index)
+		return core.MTLData_Emission(np.array(params[0].default_value[:3])*params[1].default_value, tx_index)
 
 	elif nodetype == 'BSDF_DIFFUSE':
-		return create_material_diffuse(
-			*params[0].default_value[:3],
-			texture = tx_index)
+		return core.MTLData_Diffuse(params[0].default_value[:3], tx_index)
 
 	else:
-		return create_material_diffuse(
-			*params[0].default_value[:3],
-			texture = tx_index)
+		return core.MTLData_Diffuse(params[0].default_value[:3], tx_index)
 
 
 
@@ -101,7 +81,7 @@ def getMaterials():
 		try:
 			materials.append(perseMaterial(m, textures))
 		except:
-			materials.append(create_material_emit(1,0,1))
+			materials.append(core.MTLData_Emission([1,0,1],0))
 
 			print(m.name)
 			traceback.print_exc()
