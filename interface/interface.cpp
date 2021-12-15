@@ -179,5 +179,6 @@ PYBIND11_MODULE(core, m) {
 
 
 	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});
+	m.def("linear_to_sRGB", py::vectorize(linear_to_sRGB));
 
 }
