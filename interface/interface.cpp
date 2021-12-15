@@ -143,16 +143,29 @@ PYBIND11_MODULE(core, m) {
 
 
 	py::class_<Texture>(m, "Texture")
-		.def(py::init([](const py::array_t<float>& data){
+		.def(py::init([](const py::array_t<float>& data, const py::kwargs& kw){
 			assert(data.ndim() == 3);
 			assert(data.shape(2) == 4);
-			return (Texture){
+
+			Texture t{
 				{static_cast<uint>(data.shape(1)), static_cast<uint>(data.shape(0))},
 				std::vector<float4>(
 					(float4*)data.data(),
 					(float4*)data.data() + (data.shape(0)*data.shape(1)))
 			};
-		}));
+
+			if(kw.contains("interpolation"))
+				t.interpolation(kw["interpolation"].cast<std::string>());
+
+			if(kw.contains("extension"))
+				t.extension(kw["extension"].cast<std::string>());
+
+			return t;
+		}))
+		.def("interpolation", &Texture::interpolation)
+		.def("extension", [](Texture& self, const std::string& s){
+			self.extension(s, make_float4(0));
+		});
 
 
 	PYBIND11_NUMPY_DTYPE(float2, x, y);

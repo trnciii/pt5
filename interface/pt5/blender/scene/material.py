@@ -30,8 +30,12 @@ def findImageTexture(tree, socket):
 	if not (len(filtered)>0 and filtered[0].type == 'TEX_IMAGE'):
 		return None
 
-	image = filtered[0].image
-	return core.Texture(np.array(image.pixels).reshape((image.size[1], image.size[0], 4)))
+	node = filtered[0]
+	image = node.image
+	return core.Texture(
+		np.array(image.pixels).reshape((image.size[1], image.size[0], 4)),
+		interpolation = node.interpolation,
+		extension = node.extension)
 
 
 def perseMaterial(mtl, textures):

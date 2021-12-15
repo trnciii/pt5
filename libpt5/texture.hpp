@@ -7,6 +7,44 @@ namespace pt5{
 struct Texture{
 	uint2 size;
 	std::vector<float4> pixels;
+	cudaTextureDesc desc;
+
+	Texture(const uint2& s, const std::vector<float4>& p)
+	:size(s), pixels(p){
+		desc.addressMode[0] = desc.addressMode[1] = cudaAddressModeWrap;
+		desc.filterMode = cudaFilterModeLinear;
+		desc.normalizedCoords = 1;
+		desc.maxAnisotropy = 1;
+		desc.maxMipmapLevelClamp = 99;
+		desc.minMipmapLevelClamp = 0;
+		desc.mipmapFilterMode = cudaFilterModePoint;
+	}
+
+	void interpolation(const std::string& s){
+		if(s == "Linear")
+			desc.filterMode = cudaFilterModeLinear;
+		if(s == "Closest")
+			desc.filterMode = cudaFilterModePoint;
+		else
+			std::cout <<s <<" not found in ('Linear', 'Closest')." <<std::endl;
+	}
+
+	void extension(const std::string& s, float4 c = {0,0,0,0}){
+		if(s == "REPEAT")
+			desc.addressMode[0] = desc.addressMode[1] = cudaAddressModeWrap;
+		if(s == "CLIP"){
+			desc.addressMode[0] = desc.addressMode[1] = cudaAddressModeBorder;
+			desc.borderColor[0] = c.x;
+			desc.borderColor[1] = c.y;
+			desc.borderColor[2] = c.z;
+			desc.borderColor[3] = c.w;
+		}
+		else if(s == "EXTEND")
+			desc.addressMode[0] = desc.addressMode[1] = cudaAddressModeClamp;
+		else
+			std::cout <<s <<" not found in ('REPEAT', 'EXTEND', 'CLIP')" <<std::endl;
+	}
+
 };
 
 
@@ -32,20 +70,8 @@ public:
 			resDesc.resType = cudaResourceTypeArray;
 			resDesc.res.array.array = cudaTextureData;
 
-		cudaTextureDesc textureDesc = {};
-			textureDesc.addressMode[0] = cudaAddressModeWrap;
-			textureDesc.addressMode[1] = cudaAddressModeWrap;
-			textureDesc.filterMode = cudaFilterModeLinear;
-			// textureDesc.readMode = cudaReadModeNormalizedFloat;
-			textureDesc.normalizedCoords = 1;
-			textureDesc.maxAnisotropy = 1;
-			textureDesc.maxMipmapLevelClamp = 99;
-			textureDesc.minMipmapLevelClamp = 0;
-			textureDesc.mipmapFilterMode = cudaFilterModePoint;
-			textureDesc.borderColor[0] = 1.0f;
-			textureDesc.sRGB = 2;
 
-		CUDA_CHECK(cudaCreateTextureObject(&cudaTexture, &resDesc, &textureDesc, nullptr));
+		CUDA_CHECK(cudaCreateTextureObject(&cudaTexture, &resDesc, &texture.desc, nullptr));
 	}
 
 	void free(){
