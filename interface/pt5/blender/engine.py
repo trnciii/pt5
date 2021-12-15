@@ -14,7 +14,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 	# RenderEngine; define its internal name, visible name and capabilities.
 	bl_idname = "PT5"
 	bl_label = "pt5"
-	bl_use_preview = True
+	bl_use_preview = False
 	bl_use_shading_nodes_custom = False
 
 	# Init is called whenever a new render engine instance is created. Multiple

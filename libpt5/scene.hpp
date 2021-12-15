@@ -1,19 +1,22 @@
 #pragma once
 
-#include <stdint.h>
 #include <vector>
+#include <memory>
 #include "vector_math.h"
 #include "CUDABuffer.hpp"
-#include "mesh.hpp"
+#include "texture.hpp"
+#include "sbt.hpp"
+#include "material/type.hpp"
 
 namespace pt5{
 
-struct Material;
+struct TriangleMesh;
 
 struct Scene{
 	float3 background = {0.4, 0.4, 0.4};
 	std::vector<TriangleMesh> meshes;
-	std::vector<Material> materials;
+	std::vector<std::shared_ptr<Material>> materials;
+	std::vector<Texture> textures;
 };
 
 
@@ -21,45 +24,35 @@ class SceneBuffer{
 	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
 	std::vector<CUDABuffer> uvBuffers;
+	std::vector<CUDATexture> textures;
+	std::vector<std::pair<CUDABuffer, MaterialType>> materialBuffers;
+	CUDABuffer materialBuffer_default;
+
+	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
+	void upload_textures(const std::vector<Texture>&, CUstream);
+	void upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream);
+
+	void free_meshes(CUstream stream);
+	void free_textures(CUstream stream);
+	void free_materials(CUstream stream);
 
 public:
-	~SceneBuffer(){assert(allocated() == 0);}
 
-	inline uint32_t allocated() const{
-		assert((vertexBuffers.size() == indexBuffers.size())
-			&& (vertexBuffers.size() == uvBuffers.size()));
-		return vertexBuffers.size();
-	}
-
-	void upload(const Scene& scene, CUstream stream){
-		vertexBuffers.resize(scene.meshes.size());
-		indexBuffers.resize(scene.meshes.size());
-		uvBuffers.resize(scene.meshes.size());
-
-		for(int i=0; i<scene.meshes.size(); i++){
-			vertexBuffers[i].alloc_and_upload(scene.meshes[i].vertices, stream);
-			indexBuffers[i].alloc_and_upload(scene.meshes[i].indices, stream);
-			uvBuffers[i].alloc_and_upload(scene.meshes[i].uv, stream);
-		}
-
-		cudaStreamSynchronize(stream);
-	}
-
-	void free(CUstream stream){
-		for(CUDABuffer& buffer : vertexBuffers)buffer.free(stream);
-		for(CUDABuffer& buffer : indexBuffers)buffer.free(stream);
-		for(CUDABuffer& buffer : uvBuffers)buffer.free(stream);
-
-		cudaStreamSynchronize(stream);
-		vertexBuffers.clear();
-		indexBuffers.clear();
-		uvBuffers.clear();
-	};
+	void upload(const Scene& scene, CUstream stream);
+	void free(CUstream stream);
 
 	inline CUdeviceptr vertices(int i) const{return vertexBuffers[i].d_pointer();}
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
-
+	inline CUdeviceptr materials(int i) const{return materialBuffers[i].first.d_pointer();}
+	inline CUdeviceptr material_default() const{return materialBuffer_default.d_pointer();}
+	inline MaterialSBTData materialData(int i)const{
+		int offset = 3*static_cast<int>(materialBuffers[i].second);
+		return (MaterialSBTData){materials(i), offset, offset+1, offset+2};
+	}
+	inline MaterialSBTData materialData_default()const{
+		return (MaterialSBTData){material_default(), 0, 1, 2};
+	}
 };
 
 

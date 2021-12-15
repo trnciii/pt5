@@ -45,6 +45,12 @@ struct CUDABuffer {
 		upload(&t, 1, stream);
 	}
 
+	void alloc_and_upload(const void* data, size_t size, CUstream stream){
+		assert(d_ptr == nullptr);
+		alloc(size, stream);
+		CUDA_CHECK(cudaMemcpyAsync(d_ptr, data, size, cudaMemcpyHostToDevice, stream));
+	}
+
 	template<typename T>
 	void upload(const T *t, size_t count, CUstream stream)
 	{

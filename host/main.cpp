@@ -43,89 +43,117 @@ void writeImage(const std::string& filename, const pt5::View& view){
 
 
 void createScene(pt5::Scene& scene, pt5::Camera& camera){
-	camera.position = {0, -5, 2};
-	camera.toWorld[0] = {1, 0, 0};
-	camera.toWorld[1] = {0, 0,-1};
-	camera.toWorld[2] = {0, 1, 0};
-	camera.focalLength = 2.3;
+	{
+		camera.position = {0, -5, 2};
+		camera.toWorld[0] = {1, 0, 0};
+		camera.toWorld[1] = {0, 0,-1};
+		camera.toWorld[2] = {0, 1, 0};
+		camera.focalLength = 2.3;
+	}
 
 
 	scene.background = make_float3(0.2, 0, 0.4);
 
+	{
+		std::vector<float4> pixels(128*128);
+		for(int i=0; i<pixels.size(); i++){
+			float x = (i%128)/(float)128;
+			float y = (i/128)/(float)128;
+			if(x*x + y*y < 1)
+				pixels[i] = make_float4(x, y, 0.5, 1);
+			else
+				pixels[i] = make_float4(0, x, y, 1);
+
+			x = x*2-1;
+			y = y*2-1;
+			if(x*x + y*y < 6-4*1.4142135)
+				pixels[i] += make_float4(1, 1, 0, 1);
+		}
+
+		scene.textures = {
+			{{128, 128}, pixels},
+		};
+	}
+
 
 	scene.materials = {
-		// albedo, emission
-		{{0.8, 0.8, 0.8}, {0, 0, 0}}, // white
-		{{0.8, 0.2, 0.2}, {0, 0, 0}},	// red
-		{{0.2, 0.8, 0.2}, {0, 0, 0}}, // green
-		{{  0,   0,   0}, {10, 10, 10}}  // light
+		pt5::abstract_material(pt5::MTLData_Diffuse({{0.8, 0.8, 0.8}, 0})),
+		pt5::abstract_material(pt5::MTLData_Diffuse({{0.8, 0.2, 0.2}, 1})),
+		pt5::abstract_material(pt5::MTLData_Diffuse({{0.2, 0.8, 0.2}, 0})),
+		pt5::abstract_material(pt5::MTLData_Emission({{10, 10, 10}, 0}))
 	};
 
 
-	std::vector<pt5::Vertex> v_box = {
-		// coord, normal
-		{{-2, 4, 0}, { 0.5773, 0.5773, 0.5773}},
-		{{-2, 0, 0}, { 0.7071, 0.0000, 0.7071}},
-		{{ 2, 0, 0}, {-0.7071, 0.0000, 0.7071}},
-		{{ 2, 4, 0}, {-0.5773,-0.5773, 0.5773}},
+	{
+		std::vector<pt5::Vertex> v_box = {
+			// coord, normal
+			{{-2, 4, 0}, { 0.5773, 0.5773, 0.5773}},
+			{{-2, 0, 0}, { 0.7071, 0.0000, 0.7071}},
+			{{ 2, 0, 0}, {-0.7071, 0.0000, 0.7071}},
+			{{ 2, 4, 0}, {-0.5773,-0.5773, 0.5773}},
 
-		{{-2, 4, 4}, { 0.5773,-0.5773, -0.5773}},
-		{{-2, 0, 4}, { 0.7071, 0.0000, -0.7071}},
-		{{ 2, 0, 4}, {-0.7071, 0.0000, -0.7071}},
-		{{ 2, 4, 4}, {-0.5773,-0.5773, -0.5773}},
-	};
+			{{-2, 4, 4}, { 0.5773,-0.5773, -0.5773}},
+			{{-2, 0, 4}, { 0.7071, 0.0000, -0.7071}},
+			{{ 2, 0, 4}, {-0.7071, 0.0000, -0.7071}},
+			{{ 2, 4, 4}, {-0.5773,-0.5773, -0.5773}},
+		};
 
-	std::vector<float2> uv_box = {
-		{0.2500, 0.0001},
-		{0.2501, 0.5000},
-		{0.0001, 0.2501},
-		{0.5000, 0.2501},
+		std::vector<float2> uv_box = {
+			{0.2500, 0.0001},
+			{0.2501, 0.5000},
+			{0.0001, 0.2501},
+			{0.5000, 0.2501},
 
-		{0.5000, 0.7499},
-		{0.7500, 0.9999},
-		{0.0001, 0.7500},
-		{0.9999, 0.2500},
+			{0.5000, 0.7499},
+			{0.7500, 0.9999},
+			{0.0001, 0.7500},
+			{0.9999, 0.2500},
 
-		{0.7499, 0.5000},
-		{0.9999, 0.7499},
-		{0.2501, 0.9999},
-		{0.7499, 0.0001},
-	};
+			{0.7499, 0.5000},
+			{0.9999, 0.7499},
+			{0.2501, 0.9999},
+			{0.7499, 0.0001},
 
-	std::vector<pt5::Face> f_box = {
-		// verts, smooth, mtl
-		{{0,1,2}, { 1, 2, 0}, false, 0}, {{2,3,0}, { 0, 3, 1}, false, 0}, // floor
-		{{5,1,0}, {10, 6, 1}, false, 1}, {{0,4,5}, { 1, 4,10}, false, 1}, // left
-		{{4,0,3}, { 4, 1, 3}, false, 0}, {{3,7,4}, { 3, 8, 4}, false, 0}, // back
-		{{7,3,2}, { 8, 3,11}, false, 2}, {{2,6,7}, {11, 7, 8}, false, 2}, // right
-		{{5,4,7}, { 5, 4, 8}, false, 0}, {{7,6,5}, { 8, 9, 5}, false, 0}, // roof
-	};
+			{0, 0},
+			{0, 1},
+			{1, 1},
+			{1, 0}
+		};
 
-	std::vector<uint32_t> mSlot_box = {0,1,2};
+		std::vector<pt5::Face> f_box = {
+			// verts, smooth, mtl
+			{{0,1,2}, { 1, 2, 0}, false, 0}, {{2,3,0}, { 0, 3, 1}, false, 0}, // floor
+			{{5,1,0}, {15,12,13}, false, 1}, {{0,4,5}, {13,14,15}, false, 1}, // left
+			{{4,0,3}, { 4, 1, 3}, false, 0}, {{3,7,4}, { 3, 8, 4}, false, 0}, // back
+			{{7,3,2}, { 8, 3,11}, false, 2}, {{2,6,7}, {11, 7, 8}, false, 2}, // right
+			{{5,4,7}, { 5, 4, 8}, false, 0}, {{7,6,5}, { 8, 9, 5}, false, 0}, // roof
+		};
 
-
-	std::vector<pt5::Vertex> v_light = {
-		{{-0.5, 1.5, 3.95}, {0,0,-1}},
-		{{-0.5, 2.5, 3.95}, {0,0,-1}},
-		{{ 0.5, 2.5, 3.95}, {0,0,-1}},
-		{{ 0.5, 1.5, 3.95}, {0,0,-1}},
-	};
-
-	std::vector<pt5::Face> f_light = {
-		{{0,1,2}, {0,1,2}, false, 0},
-		{{2,3,0}, {2,3,0}, false, 0},
-	};
-
-	std::vector<float2> uv_light = {
-		{0, 0},
-		{0, 1},
-		{1, 1},
-		{1, 0}
-	};
+		std::vector<uint32_t> mSlot_box = {0,1,2};
 
 
-	scene.meshes.push_back({v_box, f_box, uv_box, mSlot_box});
-	scene.meshes.push_back({v_light, f_light, uv_light, {3}});
+		std::vector<pt5::Vertex> v_light = {
+			{{-0.5, 1.5, 3.95}, {0,0,-1}},
+			{{-0.5, 2.5, 3.95}, {0,0,-1}},
+			{{ 0.5, 2.5, 3.95}, {0,0,-1}},
+			{{ 0.5, 1.5, 3.95}, {0,0,-1}},
+		};
+
+		std::vector<pt5::Face> f_light = {
+			{{0,1,2}, {0,1,2}, false, 0},
+			{{2,3,0}, {2,3,0}, false, 0},
+		};
+
+		std::vector<float2> uv_light = {
+			{0, 0},
+			{0, 1},
+			{1, 1},
+			{1, 0}
+		};
+
+		scene.meshes.push_back({v_box, f_box, uv_box, mSlot_box});
+		scene.meshes.push_back({v_light, f_light, uv_light, {3}});
+	}
 }
 
 

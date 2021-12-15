@@ -6,9 +6,13 @@
 #include "optix.hpp"
 #include "view.hpp"
 #include "scene.hpp"
+#include "camera.hpp"
+#include "LaunchParams.hpp"
+#include "sbt.hpp"
 
 
-extern "C" char embedded_ptx_code[];
+extern "C" char embedded_ptx_kernel[];
+extern "C" char embedded_ptx_material[];
 
 
 namespace pt5{
@@ -17,6 +21,12 @@ namespace pt5{
 void context_log_callback(unsigned int level, const char *tag, const char *message, void *){
   fprintf( stderr, "[%2d][%12s]: %s\n", (int)level, tag, message );
 }
+
+
+const std::vector<std::string> material_types{
+	"diffuse",
+	"emission",
+};
 
 
 void PathTracerState::createContext(){
@@ -56,22 +66,43 @@ void PathTracerState::createModule(){
 
 	pipelineLinkOptions.maxTraceDepth = 2;
 
-	const std::string ptxCode = embedded_ptx_code;
+	{
+		const std::string ptxCode = embedded_ptx_kernel;
 
-	char log[2048];
-	size_t sizeoflog = sizeof(log);
-	OPTIX_CHECK(optixModuleCreateFromPTX(
-		context,
-		&moduleCompileOptions,
-		&pipelineCompileOptions,
-		ptxCode.c_str(), ptxCode.size(),
-		log, &sizeoflog,
-		&module
+		char log[2048];
+		size_t sizeoflog = sizeof(log);
+		OPTIX_CHECK(optixModuleCreateFromPTX(
+			context,
+			&moduleCompileOptions,
+			&pipelineCompileOptions,
+			ptxCode.c_str(), ptxCode.size(),
+			log, &sizeoflog,
+			&module
 		));
-	if(sizeoflog > 1)
-		std::cout <<"log = " <<log <<std::endl;
+		if(sizeoflog > 1)
+			std::cout <<"log = " <<log <<std::endl;
+	}
+		std::cout <<"created kernel module" <<std::endl;
 
-	std::cout <<"created module" <<std::endl;
+	{ // direct callables for material
+		const std::string ptxCode = embedded_ptx_material;
+
+		char log[2048];
+		size_t sizeoflog = sizeof(log);
+
+		OPTIX_CHECK(optixModuleCreateFromPTX(
+			context,
+			&moduleCompileOptions,
+			&pipelineCompileOptions,
+			ptxCode.c_str(), ptxCode.size(),
+			log, &sizeoflog,
+			&module_material
+		));
+		if(sizeoflog > 1)
+			std::cout <<"log = " <<log <<std::endl;
+		std::cout <<"created material module" <<std::endl;
+	}
+
 }
 
 
@@ -150,15 +181,54 @@ void PathTracerState::createProgramGroups(){
 
 		std::cout <<"created hitgroup programs" <<std::endl;
 	}
+
+
+	{ // direct callable
+		std::vector<std::string> names;
+		for(const std::string& type : material_types){
+			names.push_back("__direct_callable__" + type + "_albedo");
+			names.push_back("__direct_callable__" + type + "_emission");
+			names.push_back("__direct_callable__" + type + "_sample_direction");
+		}
+
+		std::vector<OptixProgramGroupDesc> descs;
+		for(const std::string& name : names){
+			OptixProgramGroupDesc desc;
+				desc.kind  = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
+				desc.flags = OPTIX_PROGRAM_GROUP_FLAGS_NONE;
+				desc.callables.moduleDC            = module_material;
+				desc.callables.entryFunctionNameDC = name.c_str();
+			descs.push_back(desc);
+		}
+
+		materialProgramGroups.resize(descs.size());
+
+		char log[2048];
+		size_t sizeoflog = sizeof(log);
+		OPTIX_CHECK(optixProgramGroupCreate(
+			context,
+			descs.data(),
+			descs.size(),
+			&options,
+			log, &sizeoflog,
+			materialProgramGroups.data()
+			));
+
+		if(sizeoflog>1)
+			std::cout <<"log = " <<log <<std::endl;
+
+		std::cout <<"created material programs" <<std::endl;
+	}
 }
 
 
 void PathTracerState::createPipeline(){
-	OptixProgramGroup programgroups[] = {
-		raygenProgramGroup,
-		missProgramGroup,
-		hitgroupProgramGroup
-	};
+	std::vector<OptixProgramGroup> programgroups;
+	programgroups.push_back(raygenProgramGroup);
+	programgroups.push_back(missProgramGroup);
+	programgroups.push_back(hitgroupProgramGroup);
+	for(OptixProgramGroup pg : materialProgramGroups)
+		programgroups.push_back(pg);
 
 	char log[2048];
 	size_t sizeoflog = sizeof(log);
@@ -166,7 +236,7 @@ void PathTracerState::createPipeline(){
 		context,
 		&pipelineCompileOptions,
 		&pipelineLinkOptions,
-		programgroups, sizeof(programgroups)/sizeof(OptixProgramGroup),
+		programgroups.data(), programgroups.size(),
 		log, &sizeoflog,
 		&pipeline
 		));
@@ -208,23 +278,23 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			std::vector<Material> materials;
+			std::vector<MaterialSBTData> materialData;
 			if(mesh.materialSlots.size()==0)
-				materials.push_back(Material());
+				materialData.push_back(sceneBuffer.materialData_default());
 			else{
 				for(int i=0; i<mesh.materialSlots.size(); i++){
-					materials.push_back(scene.materials[mesh.materialSlots[i]]);
+					materialData.push_back(sceneBuffer.materialData(mesh.materialSlots[i]));
 				}
 			}
 
-			for(int i=0; i<materials.size(); i++){
+			for(const MaterialSBTData& m : materialData){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					materials[i]
+					m
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupProgramGroup, &rec));
@@ -241,12 +311,27 @@ void PathTracerState::buildSBT(const Scene& scene){
 		sbt.hitgroupRecordCount = (int)hitgroupRecords.size();
 	}
 
+	{ // material
+		std::vector<NullRecord> materialRecords;
+		for(int i=0; i<3*material_types.size(); i++){
+			NullRecord rec;
+			OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
+			materialRecords.push_back(rec);
+		}
+		materialRecordBuffer.alloc_and_upload(materialRecords, stream);
+
+		sbt.callablesRecordBase = materialRecordBuffer.d_pointer();
+		sbt.callablesRecordStrideInBytes = sizeof(NullRecord);
+		sbt.callablesRecordCount = materialRecords.size();
+	}
+
 }
 
 void PathTracerState::destroySBT(){
 	raygenRecordBuffer.free(stream);
 	missRecordBuffer.free(stream);
 	hitgroupRecordsBuffer.free(stream);
+	materialRecordBuffer.free(stream);
 }
 
 
@@ -385,6 +470,9 @@ PathTracerState::~PathTracerState(){
 	OPTIX_CHECK( optixProgramGroupDestroy( raygenProgramGroup ) );
 	OPTIX_CHECK( optixProgramGroupDestroy( missProgramGroup ) );
 	OPTIX_CHECK( optixProgramGroupDestroy( hitgroupProgramGroup ) );
+	for(int i=0; i<materialProgramGroups.size(); i++)
+		OPTIX_CHECK( optixProgramGroupDestroy(materialProgramGroups[i]) );
+	materialProgramGroups.clear();
 	OPTIX_CHECK( optixModuleDestroy( module ) );
 	OPTIX_CHECK( optixDeviceContextDestroy( context ) );
 
