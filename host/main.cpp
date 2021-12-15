@@ -77,10 +77,10 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 
 
 	scene.materials = {
-		std::make_shared<pt5::Material_t<pt5::MTLData_Diffuse>> (pt5::Material_t(pt5::MTLData_Diffuse({{0.8, 0.8, 0.8}, 0}))), // white
-		std::make_shared<pt5::Material_t<pt5::MTLData_Diffuse>> (pt5::Material_t(pt5::MTLData_Diffuse({{0.8, 0.2, 0.2}, 1}))), // red
-		std::make_shared<pt5::Material_t<pt5::MTLData_Diffuse>> (pt5::Material_t(pt5::MTLData_Diffuse({{0.2, 0.8, 0.2}, 0}))), // green
-		std::make_shared<pt5::Material_t<pt5::MTLData_Emission>>(pt5::Material_t(pt5::MTLData_Emission({{10,10,10}, 0})))      // light
+		pt5::abstract_material(pt5::MTLData_Diffuse({{0.8, 0.8, 0.8}, 0})),
+		pt5::abstract_material(pt5::MTLData_Diffuse({{0.8, 0.2, 0.2}, 1})),
+		pt5::abstract_material(pt5::MTLData_Diffuse({{0.2, 0.8, 0.2}, 0})),
+		pt5::abstract_material(pt5::MTLData_Emission({{10, 10, 10}, 0}))
 	};
 
 
