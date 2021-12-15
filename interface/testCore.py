@@ -19,14 +19,27 @@ def createScene(scene, camera):
 	scene.background = [0.8, 0.8, 0.8]
 
 	# material
-	materials = [pt5.Material() for i in range(3)]
-	materials[0].albedo = [0.8, 0.8, 0.3]
-	materials[1].albedo = [0.1, 0.8, 0.8]
-	materials[2].albedo = [0.8, 0.5, 0.1]
+	# materials = [pt5.Material() for i in range(3)]
+	# materials[0].albedo = [0.8, 0.8, 0.3]
+	# materials[1].albedo = [0.1, 0.8, 0.8]
+	# materials[2].albedo = [0.8, 0.5, 0.1]
 
-	m2 = pt5.Material()
-	m2.albedo = [0.8, 0.3, 0.8]
-	materials.append(m2)
+	# m2 = pt5.Material()
+	# m2.albedo = [0.8, 0.3, 0.8]
+	# materials.append(m2)
+
+	m0 = pt5.MTLData_Diffuse();
+	m0.color = [0.8, 0.8, 0.3]
+	m0.texture = 0
+
+	materials = [m0]*4
+
+	# materials = [
+		# pt5.MTLData_Diffuse([0.8, 0.8, 0.3], 0),
+		# pt5.MTLData_Diffuse([0.8, 0.8, 0.3], 0),
+		# pt5.MTLData_Diffuse([0.8, 0.8, 0.3], 0),
+		# pt5.MTLData_Diffuse([0.8, 0.8, 0.3], 0),
+	# ]
 
 	scene.materials = materials
 

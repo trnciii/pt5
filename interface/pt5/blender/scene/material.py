@@ -25,17 +25,15 @@ def getBackground(scene):
 
 
 def create_material_diffuse(x, y, z, texture = 0):
-	m = core.Material()
-	m.emission = 0,0,0
-	m.albedo = x,y,z
+	m = core.MTLData_Diffuse()
+	m.color = x,y,z
 	m.texture = texture
 	return m
 
 def create_material_emit(x,y,z, strength = 1, texture = 0):
-	m = core.Material()
-	m.emission = x, y, z
-	m.emission *= strength
-	m.albedo = 0,0,0
+	m = core.MTLData_Emission()
+	m.color = x, y, z
+	m.color *= strength
 	m.texture = texture
 	return m
 
@@ -103,10 +101,7 @@ def getMaterials():
 		try:
 			materials.append(perseMaterial(m, textures))
 		except:
-			magenta = core.Material()
-			magenta.albedo
-			magenta.emission = [1,0,1]
-			materials.append(magenta)
+			materials.append(create_material_emit(1,0,1))
 
 			print(m.name)
 			traceback.print_exc()

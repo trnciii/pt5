@@ -75,7 +75,30 @@ PYBIND11_MODULE(core, m) {
 
 	py::class_<Scene>(m, "Scene")
 		.def(py::init<>())
-		.def_readwrite("materials", &Scene::materials)
+		.def_property("materials",
+			[](const Scene& self){
+				py::list li;
+				for(const std::shared_ptr<Material>& m: self.materials){
+					if(m->type() == MaterialType::Diffuse)
+						li.append(*(MTLData_Diffuse*)m->ptr());
+					else if(m->type() == MaterialType::Emission)
+						li.append(*(MTLData_Emission*)m->ptr());
+					else
+						li.append("error");
+				}
+				return li;
+			},
+			[](Scene& self, const py::list& li){
+				std::vector<std::shared_ptr<Material>> mtls;
+				for(const py::handle& obj : li){
+					if(py::isinstance<MTLData_Diffuse>(obj))
+						mtls.push_back(abstract_material(obj.cast<MTLData_Diffuse>()));
+					else if(py::isinstance<MTLData_Emission>(obj))
+						mtls.push_back(abstract_material(obj.cast<MTLData_Emission>()));
+					else std::cout <<"error: " <<obj <<std::endl;
+				}
+				self.materials = mtls;
+			})
 		.def_readwrite("meshes", &Scene::meshes)
 		.def_readwrite("textures", &Scene::textures)
 		.def_property("background", PROPERTY_FLOAT3(Scene, background));
@@ -102,11 +125,19 @@ PYBIND11_MODULE(core, m) {
 		.def_readwrite("focalLength", &Camera::focalLength);
 
 
-	py::class_<Material, std::shared_ptr<Material>>(m, "Material")
+
+	py::class_<MTLData_Diffuse>(m, "MTLData_Diffuse")
 		.def(py::init<>())
-		.def_property("albedo", PROPERTY_FLOAT3(Material, albedo))
-		.def_property("emission", PROPERTY_FLOAT3(Material, emission))
-		.def_readwrite("texture", &Material::texture);
+		// .def(py::init([](const py::array_t<float>& c, uint32_t t){
+		// }))
+		.def_property("color", PROPERTY_FLOAT3(MTLData_Diffuse, color))
+		.def_readwrite("texture", &MTLData_Diffuse::texture);
+
+	py::class_<MTLData_Emission>(m, "MTLData_Emission")
+		.def(py::init<>())
+		.def_property("color", PROPERTY_FLOAT3(MTLData_Emission, color))
+		.def_readwrite("texture", &MTLData_Emission::texture);
+
 
 
 	py::class_<Texture>(m, "Texture")
