@@ -20,7 +20,23 @@ public:
 
 	void render(const View& view, uint spp, const Camera& camera);
 
-	bool running() const;
+	inline void resetEvents(){
+		CUDA_CHECK(cudaEventCreate(&finishEvent));
+		finishEvent = nullptr;
+	}
+
+	inline bool launched()const{
+		return finishEvent != nullptr;
+	}
+
+	inline bool running() const{
+		return launched() && (cudaEventQuery(finishEvent) == cudaErrorNotReady);
+	}
+
+	inline bool finished()const{
+		return launched() && (cudaEventQuery(finishEvent) == cudaSuccess);
+	}
+
 
 private:
 	void createContext();
@@ -61,7 +77,7 @@ private:
 
 	SceneBuffer sceneBuffer;
 
-	cudaEvent_t finishEvent;
+	cudaEvent_t finishEvent = nullptr;
 };
 
 }

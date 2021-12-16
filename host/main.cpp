@@ -155,6 +155,13 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	}
 }
 
+void printEvents(const std::string& s, pt5::PathTracerState& pt){
+	std::cout <<s <<"\n"
+	<<"launched: " <<pt.launched() <<"\n"
+	<<"running : " <<pt.running() <<"\n"
+	<<"finished: " <<pt.finished() <<"\n" <<std::endl;
+}
+
 
 int main(int argc, char* _argv[]){
 	bool background = false;
@@ -210,8 +217,12 @@ int main(int argc, char* _argv[]){
 	std::cout <<"Time for tracer construction and scene uploading: "
 		<<std::chrono::duration_cast<std::chrono::microseconds>(t2-t1).count() <<"us" <<std::endl;
 
+	printEvents("nothing yet", tracer);
+
 
 	tracer.render(view, 100, camera);
+
+	printEvents("running", tracer);
 
 	while(window
 		&& !glfwWindowShouldClose(window)
@@ -244,6 +255,10 @@ int main(int argc, char* _argv[]){
 		glfwSwapBuffers(window);
     glfwPollEvents();
 	};
+
+	printEvents("finished", tracer);
+	tracer.resetEvents();
+	printEvents("reset", tracer);
 
 	CUDA_SYNC_CHECK();
 	auto t3 = std::chrono::system_clock::now();
