@@ -24,5 +24,16 @@ __device__ __forceinline__ T barycentric(const T& x0, const T& x1, const T& x2, 
 	return (1-c.x-c.y)*x0 + c.x*x1 + c.y*x2;
 }
 
+__device__ inline float2 equirectanglar(float3 v){
+	v = normalize(v);
+	if(v.z<=-1) return make_float2(0.5, 0);
+	else if(1<=v.z) return make_float2(0.5, 1);
+	else {
+		float th = asinf(v.z);
+		float cph = v.x/cosf(th);
+		float ph = (0>v.y) ?acosf(cph) :-acosf(cph);
+		return make_float2(ph*M_1_PI*0.5+0.5, th*M_1_PI+0.5);
+	}
+}
 
 }

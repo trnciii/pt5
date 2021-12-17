@@ -11,7 +11,9 @@ struct RaygenSBTData{
 };
 
 struct MissSBTData{
-	float3 background;
+	float3 color;
+	uint32_t texture;
+	float strength;
 };
 
 struct MaterialSBTData{

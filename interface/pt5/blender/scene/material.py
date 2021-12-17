@@ -4,24 +4,29 @@ import numpy as np
 import traceback
 from ... import core
 
-def getBackground(scene):
-	world = scene.world
+def getBackground(world, textures):
 
 	if not (world.use_nodes and world.node_tree):
-		return  world.color
+		return  world.color, 0, 1
 
 	output = world.node_tree.get_output_node('CYCLES')
 	if not output:
-		return world.color
+		return world.color, 0, 1
 
 	socket = find_node_input(output, 'Surface')
 	filtered = [l.from_node for l in world.node_tree.links if l.to_socket == socket]
 	if not (len(filtered)>0 and filtered[0].type == 'BACKGROUND'):
-		return  [0,0,0]
+		return  [0,0,0], 0, 1
 
 
 	params = filtered[0].inputs
-	return np.array(params[0].default_value[:3]) * params[1].default_value
+	texture = findImageTexture(world.node_tree, params[0])
+	tx_index = 0
+	if texture:
+		textures.append(texture)
+		tx_index = len(textures)
+
+	return np.array(params[0].default_value[:3]), tx_index,  params[1].default_value
 
 
 
@@ -73,7 +78,7 @@ def perseMaterial(mtl, textures):
 
 
 
-def getMaterials():
+def getMaterials(scene):
 	textures = []
 	materials = []
 
@@ -86,5 +91,7 @@ def getMaterials():
 			print(m.name)
 			traceback.print_exc()
 
-	return materials, textures
+	world = getBackground(scene.world, textures)
+
+	return materials, textures, world
 

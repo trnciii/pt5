@@ -99,7 +99,21 @@ PYBIND11_MODULE(core, m) {
 			})
 		.def_readwrite("meshes", &Scene::meshes)
 		.def_readwrite("textures", &Scene::textures)
-		.def_property("background", PROPERTY_FLOAT3(Scene, background));
+		.def_property("background",
+			[](const Scene& self){
+				auto& bg = self.background;
+				return py::make_tuple(
+					py::make_tuple(bg.color.x, bg.color.y, bg.color.z),
+					bg.texture,
+					bg.strength
+				);
+			},
+			[](Scene& self, const py::tuple& args){
+				const py::array_t<float>& c = args[0].cast<py::array_t<float>>();
+				self.background.color = make_float3(c.at(0), c.at(1), c.at(2));
+				self.background.texture = args[1].cast<uint32_t>();
+				self.background.strength = args[2].cast<float>();
+			});
 
 
 	py::class_<Camera>(m, "Camera")

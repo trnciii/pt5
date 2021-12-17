@@ -13,7 +13,11 @@ namespace pt5{
 struct TriangleMesh;
 
 struct Scene{
-	float3 background = {0.4, 0.4, 0.4};
+	struct{
+		float3 color = {0.4, 0.4, 0.4};
+		uint32_t texture = 0;
+		float strength = 1;
+	}background;
 	std::vector<TriangleMesh> meshes;
 	std::vector<std::shared_ptr<Material>> materials;
 	std::vector<Texture> textures;

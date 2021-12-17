@@ -51,8 +51,7 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 		camera.focalLength = 2.3;
 	}
 
-
-	scene.background = make_float3(0.2, 0, 0.4);
+	scene.background = {{0.2, 0, 0.4}, 0, 1};
 
 	{
 		std::vector<float4> pixels(128*128);

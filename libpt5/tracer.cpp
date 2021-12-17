@@ -262,7 +262,9 @@ void PathTracerState::buildSBT(const Scene& scene){
 	{
 		MissRecord rec;
 		OPTIX_CHECK(optixSbtRecordPackHeader(missProgramGroup, &rec));
-		rec.data.background = scene.background;
+		rec.data.color = scene.background.color;
+		rec.data.texture = scene.background.texture;
+		rec.data.strength = scene.background.strength;
 
 		missRecordBuffer.alloc_and_upload(rec, stream);
 

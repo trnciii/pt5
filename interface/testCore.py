@@ -16,7 +16,7 @@ def createScene(scene, camera):
 										[0, 1, 0]]
 
 	# background
-	scene.background = [0.8, 0.8, 0.8]
+	scene.background = [0.8, 0.8, 0.8], 0, 1
 
 
 	scene.materials = [
