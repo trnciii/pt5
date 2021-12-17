@@ -49,11 +49,11 @@ extern "C" __global__ void __closesthit__radiance(){
 	binromal = normalize(binromal);
 	tangent = cross(binromal, is.n);
 
-	float3 ray_d = optixDirectCall<float3, float, float, const Intersection&>(sbtData.material.dc_sample_direction_id, payload.rng.uniform(), payload.rng.uniform(), is);
+	float3 ray_d = optixDirectCall<float3, RNG&, const Intersection&>(sbtData.material.sample_direction, payload.rng, is);
 
 
-	payload.emission = optixDirectCall<float3, const Intersection&>(sbtData.material.dc_emission_id, is);
-	payload.albedo = optixDirectCall<float3, const Intersection&>(sbtData.material.dc_albedo_id, is);
+	payload.emission = optixDirectCall<float3, const Intersection&>(sbtData.material.emission, is);
+	payload.albedo = optixDirectCall<float3, const Intersection&>(sbtData.material.albedo, is);
 	payload.pContinue = max(payload.albedo.x, max(payload.albedo.y, payload.albedo.z));
 	payload.ray_o = is.p + 0.001*is.ng;
 	payload.ray_d = ray_d.x*tangent + ray_d.y*binromal + ray_d.z*is.n;

@@ -280,7 +280,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			std::vector<MaterialSBTData> materialData;
+			std::vector<BSDF> materialData;
 			if(mesh.materialSlots.size()==0)
 				materialData.push_back(sceneBuffer.materialData_default());
 			else{
@@ -289,7 +289,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 				}
 			}
 
-			for(const MaterialSBTData& m : materialData){
+			for(const BSDF& m : materialData){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {

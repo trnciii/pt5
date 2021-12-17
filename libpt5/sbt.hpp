@@ -2,6 +2,7 @@
 
 #include "vector_math.h"
 #include "mesh.hpp"
+#include "material/data.h"
 
 namespace pt5{
 
@@ -16,18 +17,11 @@ struct MissSBTData{
 	float strength;
 };
 
-struct MaterialSBTData{
-	CUdeviceptr data;
-	int dc_albedo_id;
-	int dc_emission_id;
-	int dc_sample_direction_id;
-};
-
 struct HitgroupSBTData{
 	Vertex* vertices;
 	Face* faces;
 	float2* uv;
-	MaterialSBTData material;
+	BSDF material;
 };
 
 template <typename T>

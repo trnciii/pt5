@@ -61,7 +61,7 @@ void SceneBuffer::upload_materials(const std::vector<std::shared_ptr<Material>>&
 		materialBuffers[i].second = m->type();
 	}
 
-	MTLData_Diffuse material_default;
+	BSDFData_Diffuse material_default;
 	materialBuffer_default.alloc_and_upload(material_default, stream);
 
 	cudaStreamSynchronize(stream);

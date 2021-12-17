@@ -50,12 +50,12 @@ public:
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 	inline CUdeviceptr materials(int i) const{return materialBuffers[i].first.d_pointer();}
 	inline CUdeviceptr material_default() const{return materialBuffer_default.d_pointer();}
-	inline MaterialSBTData materialData(int i)const{
+	inline BSDF materialData(int i)const{
 		int offset = 3*static_cast<int>(materialBuffers[i].second);
-		return (MaterialSBTData){materials(i), offset, offset+1, offset+2};
+		return (BSDF){materials(i), offset, offset+1, offset+2};
 	}
-	inline MaterialSBTData materialData_default()const{
-		return (MaterialSBTData){material_default(), 0, 1, 2};
+	inline BSDF materialData_default()const{
+		return (BSDF){material_default(), 0, 1, 2};
 	}
 };
 

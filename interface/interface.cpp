@@ -78,9 +78,9 @@ PYBIND11_MODULE(core, m) {
 				py::list li;
 				for(const std::shared_ptr<Material>& m: self.materials){
 					if(m->type() == MaterialType::Diffuse)
-						li.append(*(MTLData_Diffuse*)m->ptr());
+						li.append(*(BSDFData_Diffuse*)m->ptr());
 					else if(m->type() == MaterialType::Emission)
-						li.append(*(MTLData_Emission*)m->ptr());
+						li.append(*(BSDFData_Emission*)m->ptr());
 					else
 						li.append("error");
 				}
@@ -89,10 +89,10 @@ PYBIND11_MODULE(core, m) {
 			[](Scene& self, const py::list& li){
 				std::vector<std::shared_ptr<Material>> mtls;
 				for(const py::handle& obj : li){
-					if(py::isinstance<MTLData_Diffuse>(obj))
-						mtls.push_back(abstract_material(obj.cast<MTLData_Diffuse>()));
-					else if(py::isinstance<MTLData_Emission>(obj))
-						mtls.push_back(abstract_material(obj.cast<MTLData_Emission>()));
+					if(py::isinstance<BSDFData_Diffuse>(obj))
+						mtls.push_back(abstract_material(obj.cast<BSDFData_Diffuse>()));
+					else if(py::isinstance<BSDFData_Emission>(obj))
+						mtls.push_back(abstract_material(obj.cast<BSDFData_Emission>()));
 					else std::cout <<"error: " <<obj <<std::endl;
 				}
 				self.materials = mtls;
@@ -138,22 +138,34 @@ PYBIND11_MODULE(core, m) {
 
 
 
-	py::class_<MTLData_Diffuse>(m, "MTLData_Diffuse")
+	py::class_<BSDFData_Diffuse>(m, "BSDF_Diffuse")
 		.def(py::init<>())
 		.def(py::init([](const py::array_t<float>& c, uint32_t t=0){
-			return MTLData_Diffuse{make_float3(*c.data(0), *c.data(1), *c.data(2)), t};
+			return BSDFData_Diffuse{{make_float3(*c.data(0), *c.data(1), *c.data(2)), t}};
 		}))
-		.def_property("color", PROPERTY_FLOAT3(MTLData_Diffuse, color))
-		.def_readwrite("texture", &MTLData_Diffuse::texture);
+		.def_property("color",
+			[](const BSDFData_Diffuse& self){return self.color.default_value;},
+			[](BSDFData_Diffuse& self, const py::array_t<float>& c){
+				self.color.default_value = make_float3(c.at(0), c.at(1), c.at(2));
+			})
+		.def_property("texture",
+			[](const BSDFData_Diffuse& self){return self.color.texture;},
+			[](BSDFData_Diffuse& self, uint32_t t){self.color.texture = t;});
 
-	py::class_<MTLData_Emission>(m, "MTLData_Emission")
+
+	py::class_<BSDFData_Emission>(m, "BSDF_Emission")
 		.def(py::init<>())
 		.def(py::init([](const py::array_t<float>& c, uint32_t t=0){
-			return MTLData_Emission{make_float3(*c.data(0), *c.data(1), *c.data(2)), t};
+			return BSDFData_Emission{{make_float3(*c.data(0), *c.data(1), *c.data(2)), t}};
 		}))
-		.def_property("color", PROPERTY_FLOAT3(MTLData_Emission, color))
-		.def_readwrite("texture", &MTLData_Emission::texture);
-
+		.def_property("color",
+			[](const BSDFData_Diffuse& self){return self.color.default_value;},
+			[](BSDFData_Diffuse& self, const py::array_t<float>& c){
+				self.color.default_value = make_float3(c.at(0), c.at(1), c.at(2));
+			})
+		.def_property("texture",
+			[](const BSDFData_Diffuse& self){return self.color.texture;},
+			[](BSDFData_Diffuse& self, uint32_t t){self.color.texture = t;});
 
 
 	py::class_<Texture>(m, "Texture")

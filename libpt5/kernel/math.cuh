@@ -14,6 +14,14 @@ struct RNG{
 		return curand_uniform(&state);
 	}
 
+	__device__ float2 uniform2(){
+		return make_float2(curand_uniform(&state), curand_uniform(&state));
+	}
+
+	__device__ float3 uniform3(){
+		return make_float3(curand_uniform(&state), curand_uniform(&state), curand_uniform(&state));
+	}
+
 private:
 	curandState state;
 };
