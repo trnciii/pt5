@@ -16,10 +16,10 @@ __device__ float3 sample_cosine_hemisphere(float2 u){
 
 
 extern "C" __device__ float3 __direct_callable__diffuse_albedo(const Intersection& is){
-	BSDFData_Diffuse* material = (BSDFData_Diffuse*)is.materialData;
-	return (material->color.texture>0)?
-		make_float3(tex2D<float4>(material->color.texture, is.uv.x, is.uv.y))
-		: material->color.default_value;
+	const BSDFData_Diffuse& material = **(BSDFData_Diffuse**)optixGetSbtDataPointer();
+	return (material.color.texture>0)?
+		make_float3(tex2D<float4>(material.color.texture, is.uv.x, is.uv.y))
+		: material.color.default_value;
 }
 
 extern "C" __device__ float3 __direct_callable__diffuse_emission(const Intersection& is){
@@ -38,10 +38,10 @@ extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersecti
 }
 
 extern "C" __device__ float3 __direct_callable__emission_emission(const Intersection& is){
-	BSDFData_Emission* material = (BSDFData_Emission*)is.materialData;
-	return (material->color.texture>0)?
-		make_float3(tex2D<float4>(material->color.texture, is.uv.x, is.uv.y))
-		: material->color.default_value;
+	const BSDFData_Emission& material = **(BSDFData_Emission**)optixGetSbtDataPointer();
+	return (material.color.texture>0)?
+		make_float3(tex2D<float4>(material.color.texture, is.uv.x, is.uv.y))
+		: material.color.default_value;
 }
 
 extern "C" __device__ float3 __direct_callable__emission_sample_direction(RNG& rng, const Intersection& is){

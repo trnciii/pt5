@@ -240,23 +240,18 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			std::vector<BSDF> materialData;
-			if(mesh.materialSlots.size()==0)
-				materialData.push_back(sceneBuffer.materialData_default());
-			else{
-				for(int i=0; i<mesh.materialSlots.size(); i++){
-					materialData.push_back(sceneBuffer.materialData(mesh.materialSlots[i]));
-				}
-			}
+			std::vector<uint32_t> materialIndices = mesh.materialSlots;
+			if(materialIndices.size() == 0) materialIndices.push_back(scene.materials.size());
 
-			for(const BSDF& m : materialData){
+			for(const int i : materialIndices){
 				HitgroupRecord rec;
+				int offset = material_methods.size()*i;
 
 				HitgroupSBTData data = {
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					m
+					{offset, offset+1, offset+2}
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[2], &rec));
@@ -273,17 +268,37 @@ void PathTracerState::buildSBT(const Scene& scene){
 		sbt.hitgroupRecordCount = (int)hitgroupRecords.size();
 	}
 
-	{ // material
-		std::vector<NullRecord> materialRecords;
-		for(int i=0; i<material_methods.size()*material_types.size(); i++){
-			NullRecord rec;
-			OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
-			materialRecords.push_back(rec);
+	{
+		using MaterialRecord = Record<CUdeviceptr>;
+
+		std::vector<MaterialRecord> materialRecords;
+		for(int material=0; material<scene.materials.size(); material++){
+
+			int offset = material_methods.size()*sceneBuffer.materialTypeIndex(material);
+			for(int method = 0; method<material_methods.size(); method++){
+				MaterialRecord rec;
+				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[offset + method], &rec));
+				rec.data = sceneBuffer.materials(material);
+
+				materialRecords.push_back(rec);
+			}
 		}
+
+		{
+			int offset = 0;
+			for(int method = 0; method<material_methods.size(); method++){
+				MaterialRecord rec;
+				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[offset + method], &rec));
+				rec.data = sceneBuffer.material_default();
+
+				materialRecords.push_back(rec);
+			}
+		}
+
 		materialRecordBuffer.alloc_and_upload(materialRecords, stream);
 
 		sbt.callablesRecordBase = materialRecordBuffer.d_pointer();
-		sbt.callablesRecordStrideInBytes = sizeof(NullRecord);
+		sbt.callablesRecordStrideInBytes = sizeof(MaterialRecord);
 		sbt.callablesRecordCount = materialRecords.size();
 	}
 

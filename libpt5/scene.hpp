@@ -48,15 +48,12 @@ public:
 	inline CUdeviceptr vertices(int i) const{return vertexBuffers[i].d_pointer();}
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
+
 	inline CUdeviceptr materials(int i) const{return materialBuffers[i].first.d_pointer();}
 	inline CUdeviceptr material_default() const{return materialBuffer_default.d_pointer();}
-	inline BSDF materialData(int i)const{
-		int offset = 3*static_cast<int>(materialBuffers[i].second);
-		return (BSDF){materials(i), offset, offset+1, offset+2};
-	}
-	inline BSDF materialData_default()const{
-		return (BSDF){material_default(), 0, 1, 2};
-	}
+
+	inline uint32_t materialTypeIndex(int i) const{return static_cast<int>(materialBuffers[i].second);}
+
 };
 
 

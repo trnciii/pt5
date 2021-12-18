@@ -9,7 +9,6 @@ namespace pt5{
 namespace material{
 
 	struct BSDF{
-		CUdeviceptr data;
 		int albedo;
 		int emission;
 		int sample_direction;
