@@ -124,7 +124,8 @@ def main(out, background):
 
 	view.downloadImage()
 
-	os.makedirs(os.path.dirname(out), exist_ok=True)
+	if (parent := os.path.dirname(out)) != '':
+		os.makedirs(parent, exist_ok=True)
 	plt.imsave(out, pt5.linear_to_sRGB(view.pixels))
 
 
