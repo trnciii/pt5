@@ -125,7 +125,7 @@ def main(out, background):
 	view.downloadImage()
 
 	os.makedirs(os.path.dirname(out), exist_ok=True)
-	plt.imsave(out, np.maximum(0, np.minimum(1, view.pixels)))
+	plt.imsave(out, pt5.linear_to_sRGB(view.pixels))
 
 
 if ('-o' in sys.argv):

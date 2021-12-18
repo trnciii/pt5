@@ -111,6 +111,7 @@ class Window:
 			return
 
 		glfw.make_context_current(self.window)
+		glEnable(GL_FRAMEBUFFER_SRGB);
 
 		glfw.set_key_callback(self.window, self.on_key)
 

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <execution>
 #include <algorithm>
 #include <filesystem>
 #include <chrono>
@@ -13,7 +14,7 @@
 #include "stb_image_write.h"
 
 
-void writeImage(const std::string& filename, const pt5::View& view){
+void writeImage(const std::string& filename, int w, int h, const std::vector<float>& pixels){
 
 	{
 		std::filesystem::path parent = std::filesystem::path(filename).parent_path();
@@ -24,18 +25,16 @@ void writeImage(const std::string& filename, const pt5::View& view){
 		}
 	}
 
-	const int w = view.size().x;
-	const int h = view.size().y;
+	auto t0 = std::chrono::system_clock::now();
 
-	std::vector<uint32_t> color(w*h);
-	for(int i=0; i<w*h; i++){
-		const uint32_t r(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i  ])) );
-		const uint32_t g(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i+1])) );
-		const uint32_t b(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i+2])) );
-		const uint32_t a(255.99 * std::max(0.0f, std::min(1.0f, view.pixels[4*i+3])) );
+	std::vector<char> color(4*w*h);
+	std::transform(std::execution::par_unseq, pixels.begin(), pixels.end(), color.begin(),
+		[](float x)->char{return 255.99*pt5::linear_to_sRGB(x);});
 
-		color[i] = (r<<0) | (g<<8) | (b<<16) | (a<<24);
-	}
+	auto t1 = std::chrono::system_clock::now();
+	std::cout <<"Time for color formatting: "
+		<<std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count() <<"us" <<std::endl;
+
 
 	stbi_write_png(filename.c_str(), w, h, 4, color.data(), w*sizeof(uint32_t));
 	std::cout <<"image saved as " <<filename <<std::endl;
@@ -211,7 +210,7 @@ int main(int argc, char* _argv[]){
 		<<std::chrono::duration_cast<std::chrono::microseconds>(t2-t1).count() <<"us" <<std::endl;
 
 
-	tracer.render(view, 1000, camera);
+	tracer.render(view, 100, camera);
 
 	while(window
 		&& !glfwWindowShouldClose(window)
@@ -252,7 +251,7 @@ int main(int argc, char* _argv[]){
 
 	view.downloadImage();
 
-	writeImage(out, view);
+	writeImage(out, view.size().x, view.size().y, view.pixels);
 
 	return 0;
 }

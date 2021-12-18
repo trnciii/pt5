@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include "CUDABuffer.hpp"
 #include "mesh.hpp"
 #include "scene.hpp"
@@ -23,7 +24,7 @@ public:
 
 private:
 	void createContext();
-	void createModule();
+	void createModules();
 	void createProgramGroups();
 	void createPipeline();
 
@@ -37,21 +38,16 @@ private:
 	OptixDeviceContext context;
 	CUstream stream;
 
-	OptixModule module;
-	OptixModule module_material;
+	std::unordered_map<std::string, OptixModule> modules;
 
 	OptixPipeline pipeline;
 	OptixPipelineCompileOptions pipelineCompileOptions = {};
 	OptixPipelineLinkOptions pipelineLinkOptions = {};
 
 
-	OptixProgramGroup raygenProgramGroup;
+	std::vector<OptixProgramGroup> kernelProgramGroups;
 	CUDABuffer raygenRecordBuffer;
-
-	OptixProgramGroup missProgramGroup;
 	CUDABuffer missRecordBuffer;
-
-	OptixProgramGroup hitgroupProgramGroup;
 	CUDABuffer hitgroupRecordsBuffer;
 
 	std::vector<OptixProgramGroup> materialProgramGroups;

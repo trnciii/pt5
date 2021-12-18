@@ -28,7 +28,7 @@ namespace py = pybind11;
 template <typename T>
 std::vector<T> toSTDVector(const py::array_t<T>& x){
 	if(x.size()==0) return std::vector<T>(0);
-	else return std::vector<T>(x.data(0), x.data(0)+x.size());
+	else return std::vector<T>(x.data(), x.data()+x.size());
 }
 
 
@@ -42,7 +42,7 @@ PYBIND11_MODULE(core, m) {
 		.def("destroyGLTexture", &View::destroyGLTexture)
 		.def("updateGLTexture", &View::updateGLTexture)
 		.def("clear", [](View& self, py::array_t<float> c){
-			self.clear(make_float4(*c.data(0), *c.data(1), *c.data(2), *c.data(3)));
+			self.clear(make_float4(c.at(0), c.at(1), c.at(2), c.at(3)));
 		})
 		.def_property_readonly("GLTexture", &View::GLTexture)
 		.def_property_readonly("hasGLTexture", &View::hasGLTexture)
@@ -132,7 +132,7 @@ PYBIND11_MODULE(core, m) {
 			},
 			[](Camera& self, py::array_t<float>& x){
 				assert(x.ndim()==2 && x.shape(0) == 3 && x.shape(1) == 3);
-				memcpy(&self.toWorld, x.data(0,0), 9*sizeof(float));
+				memcpy(&self.toWorld, x.data(), 9*sizeof(float));
 			})
 		.def_readwrite("focalLength", &Camera::focalLength);
 
@@ -141,7 +141,7 @@ PYBIND11_MODULE(core, m) {
 	py::class_<BSDFData_Diffuse>(m, "BSDF_Diffuse")
 		.def(py::init<>())
 		.def(py::init([](const py::array_t<float>& c, uint32_t t=0){
-			return BSDFData_Diffuse{{make_float3(*c.data(0), *c.data(1), *c.data(2)), t}};
+			return BSDFData_Diffuse{{make_float3(c.at(0), c.at(1), c.at(2)), t}};
 		}))
 		.def_property("color",
 			[](const BSDFData_Diffuse& self){return self.color.default_value;},
@@ -156,7 +156,7 @@ PYBIND11_MODULE(core, m) {
 	py::class_<BSDFData_Emission>(m, "BSDF_Emission")
 		.def(py::init<>())
 		.def(py::init([](const py::array_t<float>& c, uint32_t t=0){
-			return BSDFData_Emission{{make_float3(*c.data(0), *c.data(1), *c.data(2)), t}};
+			return BSDFData_Emission{{make_float3(c.at(0), c.at(1), c.at(2)), t}};
 		}))
 		.def_property("color",
 			[](const BSDFData_Diffuse& self){return self.color.default_value;},
@@ -175,8 +175,8 @@ PYBIND11_MODULE(core, m) {
 			return (Texture){
 				{data.shape(1), data.shape(0)},
 				std::vector<float4>(
-					(float4*)data.data(0,0,0),
-					(float4*)data.data(0,0,0) + (data.shape(0)*data.shape(1)))
+					(float4*)data.data(),
+					(float4*)data.data() + (data.shape(0)*data.shape(1)))
 			};
 		}));
 
@@ -198,12 +198,13 @@ PYBIND11_MODULE(core, m) {
 			return (TriangleMesh){
 				toSTDVector(v),
 				toSTDVector(f),
-				std::vector<float2>((float2*)uv.data(0,0), (float2*)uv.data(0,0)+uv.shape(0)),
+				std::vector<float2>((float2*)uv.data(), (float2*)uv.data()+uv.shape(0)),
 				toSTDVector(m)
 			};
 		}));
 
 
 	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});
+	m.def("linear_to_sRGB", py::vectorize(linear_to_sRGB));
 
 }
