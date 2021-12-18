@@ -49,10 +49,19 @@ public:
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 
-	inline CUdeviceptr materials(int i) const{return materialBuffers[i].first.d_pointer();}
-	inline CUdeviceptr material_default() const{return materialBuffer_default.d_pointer();}
+	inline CUdeviceptr materials(int i) const{
+		if(0<=i && i<materialBuffers.size())
+			return materialBuffers[i].first.d_pointer();
+		else
+			return materialBuffer_default.d_pointer();
+	}
 
-	inline uint32_t materialTypeIndex(int i) const{return static_cast<int>(materialBuffers[i].second);}
+	inline uint32_t materialTypeIndex(int i) const{
+		if(0<=i && i<materialBuffers.size())
+			return static_cast<int>(materialBuffers[i].second);
+		else
+			return static_cast<int>(MaterialType::Diffuse);
+	}
 
 };
 

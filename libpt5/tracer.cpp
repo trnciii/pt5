@@ -272,24 +272,13 @@ void PathTracerState::buildSBT(const Scene& scene){
 		using MaterialRecord = Record<CUdeviceptr>;
 
 		std::vector<MaterialRecord> materialRecords;
-		for(int material=0; material<scene.materials.size(); material++){
+		for(int material=0; material<scene.materials.size() + 1; material++){
 
 			int offset = material_methods.size()*sceneBuffer.materialTypeIndex(material);
 			for(int method = 0; method<material_methods.size(); method++){
 				MaterialRecord rec;
 				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[offset + method], &rec));
 				rec.data = sceneBuffer.materials(material);
-
-				materialRecords.push_back(rec);
-			}
-		}
-
-		{
-			int offset = 0;
-			for(int method = 0; method<material_methods.size(); method++){
-				MaterialRecord rec;
-				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[offset + method], &rec));
-				rec.data = sceneBuffer.material_default();
 
 				materialRecords.push_back(rec);
 			}
