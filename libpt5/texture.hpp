@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include "optix.hpp"
 
 namespace pt5{
@@ -23,7 +24,7 @@ struct Texture{
 	void interpolation(const std::string& s){
 		if(s == "Linear")
 			desc.filterMode = cudaFilterModeLinear;
-		if(s == "Closest")
+		else if(s == "Closest")
 			desc.filterMode = cudaFilterModePoint;
 		else
 			std::cout <<s <<" not found in ('Linear', 'Closest')." <<std::endl;
@@ -32,7 +33,7 @@ struct Texture{
 	void extension(const std::string& s, float4 c = {0,0,0,0}){
 		if(s == "REPEAT")
 			desc.addressMode[0] = desc.addressMode[1] = cudaAddressModeWrap;
-		if(s == "CLIP"){
+		else if(s == "CLIP"){
 			desc.addressMode[0] = desc.addressMode[1] = cudaAddressModeBorder;
 			desc.borderColor[0] = c.x;
 			desc.borderColor[1] = c.y;
