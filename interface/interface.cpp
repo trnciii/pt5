@@ -99,6 +99,7 @@ PYBIND11_MODULE(core, m) {
 			})
 		.def_readwrite("meshes", &Scene::meshes)
 		.def_readwrite("textures", &Scene::textures)
+		.def_readwrite("images", &Scene::images)
 		.def_property("background", PROPERTY_FLOAT3(Scene, background));
 
 
@@ -141,18 +142,22 @@ PYBIND11_MODULE(core, m) {
 		.def_readwrite("texture", &MTLData_Emission::texture);
 
 
-
-	py::class_<Texture>(m, "Texture")
-		.def(py::init([](const py::array_t<float>& data, const py::kwargs& kw){
+	py::class_<Image>(m, "Image")
+		.def(py::init([](const py::array_t<float>& data){
 			assert(data.ndim() == 3);
 			assert(data.shape(2) == 4);
-
-			Texture t{
+			return Image{
 				{static_cast<uint>(data.shape(1)), static_cast<uint>(data.shape(0))},
 				std::vector<float4>(
 					(float4*)data.data(),
 					(float4*)data.data() + (data.shape(0)*data.shape(1)))
 			};
+		}));
+
+
+	py::class_<Texture>(m, "Texture")
+		.def(py::init([](uint32_t image, const py::kwargs& kw){
+			Texture t(image);
 
 			if(kw.contains("interpolation"))
 				t.interpolation(kw["interpolation"].cast<std::string>());

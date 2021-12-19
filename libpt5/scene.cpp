@@ -6,13 +6,15 @@ namespace pt5{
 
 void SceneBuffer::upload(const Scene& scene, CUstream stream){
 	upload_meshes(scene.meshes, stream);
-	upload_textures(scene.textures, stream);
+	upload_images(scene.images);
+	create_textures(scene.textures, scene, stream);
 	upload_materials(scene.materials, stream);
 }
 
 void SceneBuffer::free(CUstream stream){
 	free_meshes(stream);
-	free_textures(stream);
+	destroy_textures(stream);
+	free_images();
 	free_materials(stream);
 };
 
@@ -41,17 +43,50 @@ void SceneBuffer::free_meshes(CUstream stream){
 }
 
 
-void SceneBuffer::upload_textures(const std::vector<Texture>& s_textures, CUstream stream){
-	textures.resize(s_textures.size());
-	for(int i=0; i<s_textures.size(); i++)
-		textures[i].upload(s_textures[i]);
+
+void SceneBuffer::upload_images(const std::vector<Image>& s_images){
+	images.resize(s_images.size());
+	for(int i=0; i<s_images.size(); i++){
+		const Image& image = s_images[i];
+		cudaArray_t& array = images[i];
+
+		cudaChannelFormatDesc channelFormatDesc = cudaCreateChannelDesc<float4>();
+
+		uint32_t pitch = image.size.x * 4 * sizeof(float);
+		CUDA_CHECK(cudaMallocArray(&array, &channelFormatDesc, image.size.x, image.size.y));
+		CUDA_CHECK(cudaMemcpy2DToArray(
+			array,
+			0, 0,
+			image.pixels.data(),
+			pitch, pitch, image.size.y,
+			cudaMemcpyHostToDevice));
+	}
 }
 
-void SceneBuffer::free_textures(CUstream stream){
-	for(CUDATexture& texture : textures)texture.free();
-	CUDA_SYNC_CHECK();
+void SceneBuffer::free_images(){
+	for(cudaArray_t& array : images) CUDA_CHECK(cudaFreeArray(array));
+}
+
+
+
+void SceneBuffer::create_textures(const std::vector<Texture>& s_textures, const Scene& scene, CUstream stream){
+	textures.resize(s_textures.size());
+	for(int i=0; i<s_textures.size(); i++){
+		const Texture& t = s_textures[i];
+		cudaResourceDesc resDesc = {};
+		resDesc.resType = cudaResourceTypeArray;
+		resDesc.res.array.array = images[t.image];
+		CUDA_CHECK(cudaCreateTextureObject(&textures[i], &resDesc, &t.desc, nullptr));
+	}
+}
+
+void SceneBuffer::destroy_textures(CUstream stream){
+	for(cudaTextureObject_t& t : textures)
+		CUDA_CHECK(cudaDestroyTextureObject(t));
 	textures.clear();
 }
+
+
 
 void SceneBuffer::upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream){
 	materialBuffers.resize(materials.size());

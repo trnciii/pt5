@@ -5,13 +5,16 @@
 
 namespace pt5{
 
-struct Texture{
+struct Image{
 	uint2 size;
 	std::vector<float4> pixels;
+};
+
+struct Texture{
+	uint32_t image;
 	cudaTextureDesc desc;
 
-	Texture(const uint2& s, const std::vector<float4>& p)
-	:size(s), pixels(p){
+	Texture(uint32_t i):image(i){
 		desc.addressMode[0] = desc.addressMode[1] = cudaAddressModeWrap;
 		desc.filterMode = cudaFilterModeLinear;
 		desc.normalizedCoords = 1;
@@ -48,39 +51,5 @@ struct Texture{
 
 };
 
-
-class CUDATexture{
-	cudaArray_t cudaTextureData {};
-	cudaTextureObject_t cudaTexture {};
-
-public:
-	void upload(const Texture& texture){
-		cudaChannelFormatDesc channelFormatDesc = cudaCreateChannelDesc<float4>();
-
-		uint32_t pitch = texture.size.x * 4 * sizeof(float);
-		CUDA_CHECK(cudaMallocArray(&cudaTextureData, &channelFormatDesc, texture.size.x, texture.size.y));
-		CUDA_CHECK(cudaMemcpy2DToArray(
-			cudaTextureData,
-			0, 0,
-			texture.pixels.data(),
-			pitch, pitch, texture.size.y,
-			cudaMemcpyHostToDevice));
-
-
-		cudaResourceDesc resDesc = {};
-			resDesc.resType = cudaResourceTypeArray;
-			resDesc.res.array.array = cudaTextureData;
-
-
-		CUDA_CHECK(cudaCreateTextureObject(&cudaTexture, &resDesc, &texture.desc, nullptr));
-	}
-
-	void free(){
-		CUDA_CHECK(cudaFreeArray(cudaTextureData));
-		CUDA_CHECK(cudaDestroyTextureObject(cudaTexture));
-	}
-
-	cudaTextureObject_t id()const {return cudaTexture;}
-};
 
 }
