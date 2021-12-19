@@ -99,6 +99,7 @@ PYBIND11_MODULE(core, m) {
 			})
 		.def_readwrite("meshes", &Scene::meshes)
 		.def_readwrite("textures", &Scene::textures)
+		.def_readwrite("images", &Scene::images)
 		.def_property("background",
 			[](const Scene& self){
 				auto& bg = self.background;
@@ -167,18 +168,35 @@ PYBIND11_MODULE(core, m) {
 			[](const BSDFData_Diffuse& self){return self.color.texture;},
 			[](BSDFData_Diffuse& self, uint32_t t){self.color.texture = t;});
 
-
-	py::class_<Texture>(m, "Texture")
+	py::class_<Image>(m, "Image")
 		.def(py::init([](const py::array_t<float>& data){
 			assert(data.ndim() == 3);
 			assert(data.shape(2) == 4);
-			return (Texture){
-				{data.shape(1), data.shape(0)},
+			return Image{
+				{static_cast<uint>(data.shape(1)), static_cast<uint>(data.shape(0))},
 				std::vector<float4>(
 					(float4*)data.data(),
 					(float4*)data.data() + (data.shape(0)*data.shape(1)))
 			};
 		}));
+
+
+	py::class_<Texture>(m, "Texture")
+		.def(py::init([](uint32_t image, const py::kwargs& kw){
+			Texture t(image);
+
+			if(kw.contains("interpolation"))
+				t.interpolation(kw["interpolation"].cast<std::string>());
+
+			if(kw.contains("extension"))
+				t.extension(kw["extension"].cast<std::string>());
+
+			return t;
+		}))
+		.def("interpolation", &Texture::interpolation)
+		.def("extension", [](Texture& self, const std::string& s){
+			self.extension(s, make_float4(0));
+		});
 
 
 	PYBIND11_NUMPY_DTYPE(float2, x, y);

@@ -4,7 +4,7 @@ import numpy as np
 import traceback
 from ... import core
 
-def getBackground(world, textures):
+def getBackground(world, textures, images):
 
 	if not (world.use_nodes and world.node_tree):
 		return  world.color, 0, 1
@@ -20,7 +20,7 @@ def getBackground(world, textures):
 
 
 	params = filtered[0].inputs
-	texture = findImageTexture(world.node_tree, params[0])
+	image, texture = findImageTexture(world.node_tree, params[0], images)
 	tx_index = 0
 	if texture:
 		textures.append(texture)
@@ -30,16 +30,21 @@ def getBackground(world, textures):
 
 
 
-def findImageTexture(tree, socket):
+def findImageTexture(tree, socket, images):
 	filtered = [l.from_node for l in tree.links if l.to_socket == socket]
 	if not (len(filtered)>0 and filtered[0].type == 'TEX_IMAGE'):
-		return None
+		return None, None
 
-	image = filtered[0].image
-	return core.Texture(np.array(image.pixels).reshape((image.size[1], image.size[0], 4)))
+	node = filtered[0]
+	image = node.image
+	return image.name, core.Texture(
+		bpy.data.images.values().index(image),
+		interpolation = node.interpolation,
+		extension = node.extension)
 
 
-def perseMaterial(mtl, textures):
+def perseMaterial(mtl, textures, images):
+
 	if mtl.grease_pencil:
 		return core.BSDF_Diffuse([0,0,0], 0)
 
@@ -61,7 +66,7 @@ def perseMaterial(mtl, textures):
 	nodetype = filtered[0].type
 	params = filtered[0].inputs
 
-	texture = findImageTexture(mtl.node_tree, params[0])
+	image, texture = findImageTexture(mtl.node_tree, params[0], images)
 	tx_index = 0
 	if texture:
 		textures.append(texture)
@@ -78,20 +83,20 @@ def perseMaterial(mtl, textures):
 
 
 
-def getMaterials(scene):
+def getMaterials(scene, images):
 	textures = []
 	materials = []
 
-	for m in bpy.data.materials.values():
+	for m_bl in bpy.data.materials.values():
 		try:
-			materials.append(perseMaterial(m, textures))
+			materials.append(perseMaterial(m_bl, textures, images))
 		except:
 			materials.append(core.BSDF_Emission([1,0,1],0))
 
-			print(m.name)
+			print(m_bl.name)
 			traceback.print_exc()
 
-	world = getBackground(scene.world, textures)
+	world = getBackground(scene.world, textures, images)
 
 	return materials, textures, world
 

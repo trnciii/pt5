@@ -21,6 +21,7 @@ struct Scene{
 	std::vector<TriangleMesh> meshes;
 	std::vector<std::shared_ptr<Material>> materials;
 	std::vector<Texture> textures;
+	std::vector<Image> images;
 };
 
 
@@ -28,17 +29,23 @@ class SceneBuffer{
 	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
 	std::vector<CUDABuffer> uvBuffers;
-	std::vector<CUDATexture> textures;
+
+	std::vector<cudaArray_t> images;
+	std::vector<cudaTextureObject_t> textures;
+
 	std::vector<std::pair<CUDABuffer, MaterialType>> materialBuffers;
 	CUDABuffer materialBuffer_default;
 
 	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
-	void upload_textures(const std::vector<Texture>&, CUstream);
 	void upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream);
+	void upload_images(const std::vector<Image>& images);
+	void create_textures(const std::vector<Texture>& s_textures, const Scene& scene, CUstream stream);
 
 	void free_meshes(CUstream stream);
-	void free_textures(CUstream stream);
 	void free_materials(CUstream stream);
+	void free_images();
+	void destroy_textures(CUstream stream);
+
 
 public:
 
