@@ -32,7 +32,7 @@ def getBackground(world, textures, images):
 
 def findImageTexture(tree, socket, images):
 	filtered = [l.from_node for l in tree.links if l.to_socket == socket]
-	if not (len(filtered)>0 and filtered[0].type == 'TEX_IMAGE'):
+	if not (len(filtered)>0 and filtered[0].type == 'TEX_IMAGE' and filtered[0].image):
 		return None, None
 
 	node = filtered[0]
@@ -73,7 +73,7 @@ def perseMaterial(mtl, textures, images):
 		tx_index = len(textures)
 
 	if nodetype == 'EMISSION':
-		return core.BSDF_Emission(np.array(params[0].default_value[:3])*params[1].default_value, tx_index)
+		return core.BSDF_Emission(np.array(params[0].default_value[:3]), tx_index, params[1].default_value, 0)
 
 	elif nodetype == 'BSDF_DIFFUSE':
 		return core.BSDF_Diffuse(params[0].default_value[:3], tx_index)
@@ -91,7 +91,7 @@ def getMaterials(scene, images):
 		try:
 			materials.append(perseMaterial(m_bl, textures, images))
 		except:
-			materials.append(core.BSDF_Emission([1,0,1],0))
+			materials.append(core.BSDF_Emission([1,0,1],0, 1, 0))
 
 			print(m_bl.name)
 			traceback.print_exc()

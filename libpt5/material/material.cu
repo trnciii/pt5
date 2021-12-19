@@ -39,9 +39,15 @@ extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersecti
 
 extern "C" __device__ float3 __direct_callable__emission_emission(const Intersection& is){
 	const BSDFData_Emission& material = **(BSDFData_Emission**)optixGetSbtDataPointer();
-	return (material.color.texture>0)?
+	float3 color = (material.color.texture>0)?
 		make_float3(tex2D<float4>(material.color.texture, is.uv.x, is.uv.y))
 		: material.color.default_value;
+
+	float strength = (material.strength.texture>0)?
+		(tex2D<float4>(material.strength.texture, is.uv.x, is.uv.y)).x
+		: material.strength.default_value;
+
+	return color*strength;
 }
 
 extern "C" __device__ float3 __direct_callable__emission_sample_direction(RNG& rng, const Intersection& is){

@@ -26,6 +26,7 @@ namespace material{
 
 	struct BSDFData_Emission{
 		Prop<float3> color {{1,1,1},0};
+		Prop<float> strength {1, 0};
 	};
 
 }

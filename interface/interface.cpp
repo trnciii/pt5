@@ -156,8 +156,8 @@ PYBIND11_MODULE(core, m) {
 
 	py::class_<BSDFData_Emission>(m, "BSDF_Emission")
 		.def(py::init<>())
-		.def(py::init([](const py::array_t<float>& c, uint32_t t=0){
-			return BSDFData_Emission{{make_float3(c.at(0), c.at(1), c.at(2)), t}};
+		.def(py::init([](const py::array_t<float>& c, uint32_t tc=0, float s=1, uint32_t ts=0){
+			return BSDFData_Emission{{make_float3(c.at(0), c.at(1), c.at(2)), tc}, {s, ts}};
 		}))
 		.def_property("color",
 			[](const BSDFData_Diffuse& self){return self.color.default_value;},
