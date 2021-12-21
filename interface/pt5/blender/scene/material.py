@@ -46,21 +46,21 @@ def findImageTexture(tree, socket, images):
 def perseMaterial(mtl, textures, images):
 
 	if mtl.grease_pencil:
-		return core.BSDF_Diffuse([0,0,0], 0)
+		return core.Material([core.BSDF_Diffuse([0,0,0], 0)])
 
 
 	if not mtl.use_nodes:
-		return core.BSDF_Diffuse(mtl.diffuse_color[:3], 0)
+		return core.Material([core.BSDF_Diffuse(mtl.diffuse_color[:3], 0)])
 
 
 	output = mtl.node_tree.get_output_node('CYCLES')
 	if not output:
-		return core.BSDF_Diffuse([0,0,0], 0)
+		return core.Material([core.BSDF_Diffuse([0,0,0], 0)])
 
 	socket = find_node_input(output, 'Surface')
 	filtered = [l.from_node for l in mtl.node_tree.links if l.to_socket == socket]
 	if not len(filtered) > 0:
-		return core.BSDF_Diffuse([0,0,0], 0)
+		return core.Material([core.BSDF_Diffuse([0,0,0], 0)])
 
 
 	nodetype = filtered[0].type
@@ -73,13 +73,13 @@ def perseMaterial(mtl, textures, images):
 		tx_index = len(textures)
 
 	if nodetype == 'EMISSION':
-		return core.BSDF_Emission(np.array(params[0].default_value[:3]), tx_index, params[1].default_value, 0)
+		return core.Material([core.BSDF_Emission(np.array(params[0].default_value[:3]), tx_index, params[1].default_value, 0)])
 
 	elif nodetype == 'BSDF_DIFFUSE':
-		return core.BSDF_Diffuse(params[0].default_value[:3], tx_index)
+		return core.Material([core.BSDF_Diffuse(params[0].default_value[:3], tx_index)])
 
 	else:
-		return core.BSDF_Diffuse(params[0].default_value[:3], tx_index)
+		return core.Material([core.BSDF_Diffuse(params[0].default_value[:3], tx_index)])
 
 
 
@@ -91,7 +91,7 @@ def getMaterials(scene, images):
 		try:
 			materials.append(perseMaterial(m_bl, textures, images))
 		except:
-			materials.append(core.BSDF_Emission([1,0,1],0, 1, 0))
+			materials.append(core.Material([core.BSDF_Emission([1,0,1],0, 1, 0)]))
 
 			print(m_bl.name)
 			traceback.print_exc()

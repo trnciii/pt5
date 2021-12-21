@@ -19,7 +19,7 @@ struct Scene{
 		float strength = 1;
 	}background;
 	std::vector<TriangleMesh> meshes;
-	std::vector<std::shared_ptr<Material>> materials;
+	std::vector<Material> materials;
 	std::vector<Texture> textures;
 	std::vector<Image> images;
 };
@@ -33,11 +33,9 @@ class SceneBuffer{
 	std::vector<cudaArray_t> images;
 	std::vector<cudaTextureObject_t> textures;
 
-	std::vector<std::pair<CUDABuffer, MaterialType>> materialBuffers;
-	CUDABuffer materialBuffer_default;
 
 	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
-	void upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream);
+	void upload_materials(const std::vector<Material>& materials, CUstream stream);
 	void upload_images(const std::vector<Image>& images);
 	void create_textures(const std::vector<Texture>& s_textures, const Scene& scene, CUstream stream);
 
@@ -48,7 +46,6 @@ class SceneBuffer{
 
 
 public:
-
 	void upload(const Scene& scene, CUstream stream);
 	void free(CUstream stream);
 
@@ -56,19 +53,9 @@ public:
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 
-	inline CUdeviceptr materials(int i) const{
-		if(0<=i && i<materialBuffers.size())
-			return materialBuffers[i].first.d_pointer();
-		else
-			return materialBuffer_default.d_pointer();
-	}
-
-	inline uint32_t materialTypeIndex(int i) const{
-		if(0<=i && i<materialBuffers.size())
-			return static_cast<int>(materialBuffers[i].second);
-		else
-			return static_cast<int>(MaterialType::Diffuse);
-	}
+	std::vector<std::vector<CUDABuffer>> materialNodesBuffer;
+	std::vector<int> material_offset;
+	CUDABuffer materialBuffer_default;
 
 };
 

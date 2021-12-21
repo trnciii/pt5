@@ -245,13 +245,12 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 			for(const int i : materialIndices){
 				HitgroupRecord rec;
-				int offset = material_methods.size()*i;
 
 				HitgroupSBTData data = {
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					{offset, offset+1, offset+2}
+					sceneBuffer.material_offset[i]
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[2], &rec));
@@ -269,17 +268,26 @@ void PathTracerState::buildSBT(const Scene& scene){
 	}
 
 	{
-		using MaterialRecord = Record<CUdeviceptr>;
+		using MaterialNodeRecord = Record<CUdeviceptr>;
 
-		std::vector<MaterialRecord> materialRecords;
-		for(int material=0; material<scene.materials.size() + 1; material++){
+		std::vector<MaterialNodeRecord> materialRecords;
+		for(int m=0; m<scene.materials.size(); m++){
+			for(int n=0; n<scene.materials[m].nodes.size(); n++){
+				const int pgOffset = scene.materials[m].nodes[n]->program();
+				for(int pg = 0; pg<scene.materials[m].nodes[n]->nprograms(); pg++){
+ 					MaterialNodeRecord rec;
+					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[pgOffset + pg], &rec));
+					rec.data = sceneBuffer.materialNodesBuffer[m][n].d_pointer();
+					materialRecords.push_back(rec);
+				}
+			}
+		}
 
-			int offset = material_methods.size()*sceneBuffer.materialTypeIndex(material);
-			for(int method = 0; method<material_methods.size(); method++){
-				MaterialRecord rec;
-				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[offset + method], &rec));
-				rec.data = sceneBuffer.materials(material);
-
+		{
+			for(int i=0; i<3; i++){
+				MaterialNodeRecord rec;
+				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
+				rec.data = sceneBuffer.materialBuffer_default.d_pointer();
 				materialRecords.push_back(rec);
 			}
 		}
@@ -287,7 +295,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 		materialRecordBuffer.alloc_and_upload(materialRecords, stream);
 
 		sbt.callablesRecordBase = materialRecordBuffer.d_pointer();
-		sbt.callablesRecordStrideInBytes = sizeof(MaterialRecord);
+		sbt.callablesRecordStrideInBytes = sizeof(MaterialNodeRecord);
 		sbt.callablesRecordCount = materialRecords.size();
 	}
 

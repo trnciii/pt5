@@ -8,13 +8,6 @@
 namespace pt5{
 namespace material{
 
-	struct BSDF{
-		int albedo;
-		int emission;
-		int sample_direction;
-	};
-
-
 	template <typename T>
 	struct Prop{T default_value; long long texture = 0;};
 
@@ -31,7 +24,6 @@ namespace material{
 
 }
 
-using BSDF = material::BSDF;
 using BSDFData_Diffuse = material::BSDFData_Diffuse;
 using BSDFData_Emission = material::BSDFData_Emission;
 

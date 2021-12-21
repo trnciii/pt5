@@ -79,10 +79,21 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	scene.textures = {pt5::Texture(0)};
 
 	scene.materials = {
-		pt5::abstract_material(pt5::BSDFData_Diffuse({{{0.8, 0.8, 0.8}, 0}})),
-		pt5::abstract_material(pt5::BSDFData_Diffuse({{{0.8, 0.2, 0.2}, 1}})),
-		pt5::abstract_material(pt5::BSDFData_Diffuse({{{0.2, 0.8, 0.2}, 0}})),
-		pt5::abstract_material(pt5::BSDFData_Emission({{{1, 1, 1}, 0}, {10, 1}}))
+		pt5::Material{{
+			pt5::make_node(pt5::BSDFData_Diffuse({{{0.8, 0.8, 0.8}, 0}}))
+		}},
+
+		pt5::Material{{
+			pt5::make_node(pt5::BSDFData_Diffuse({{{0.8, 0.2, 0.2}, 1}}))
+		}},
+
+		pt5::Material{{
+			pt5::make_node(pt5::BSDFData_Diffuse({{{0.2, 0.8, 0.2}, 0}}))
+		}},
+
+		pt5::Material{{
+			pt5::make_node(pt5::BSDFData_Emission({{{1, 1, 1}, 0}, {10, 1}}))
+		}},
 	};
 
 
