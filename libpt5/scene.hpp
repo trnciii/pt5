@@ -35,12 +35,10 @@ class SceneBuffer{
 
 
 	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
-	void upload_materials(const std::vector<Material>& materials, CUstream stream);
 	void upload_images(const std::vector<Image>& images);
 	void create_textures(const std::vector<Texture>& s_textures, const Scene& scene, CUstream stream);
 
 	void free_meshes(CUstream stream);
-	void free_materials(CUstream stream);
 	void free_images();
 	void destroy_textures(CUstream stream);
 
@@ -52,10 +50,6 @@ public:
 	inline CUdeviceptr vertices(int i) const{return vertexBuffers[i].d_pointer();}
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
-
-	std::vector<std::vector<CUDABuffer>> materialNodesBuffer;
-	std::vector<int> material_offset;
-	CUDABuffer materialBuffer_default;
 
 };
 

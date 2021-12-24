@@ -8,14 +8,12 @@ void SceneBuffer::upload(const Scene& scene, CUstream stream){
 	upload_meshes(scene.meshes, stream);
 	upload_images(scene.images);
 	create_textures(scene.textures, scene, stream);
-	upload_materials(scene.materials, stream);
 }
 
 void SceneBuffer::free(CUstream stream){
 	free_meshes(stream);
 	destroy_textures(stream);
 	free_images();
-	free_materials(stream);
 };
 
 
@@ -84,39 +82,6 @@ void SceneBuffer::destroy_textures(CUstream stream){
 	for(cudaTextureObject_t& t : textures)
 		CUDA_CHECK(cudaDestroyTextureObject(t));
 	textures.clear();
-}
-
-
-
-void SceneBuffer::upload_materials(const std::vector<Material>& materials, CUstream stream){
-	material_offset.resize(materials.size()+1);
-	material_offset[0] = 0;
-
-	for(int i=0; i<materials.size(); i++){
-		std::vector<CUDABuffer>& nodes = materialNodesBuffer.emplace_back();
-		for(const std::shared_ptr<material::Node>& node : materials[i].nodes){
-			nodes.emplace_back().alloc_and_upload(node->ptr(), node->size(), stream);
-		}
-
-		material_offset[i+1] = material_offset[i] + materials[i].nprograms();
-	}
-
-
-	BSDFData_Diffuse material_default;
-	materialBuffer_default.alloc_and_upload(material_default, stream);
-
-	cudaStreamSynchronize(stream);
-}
-
-void SceneBuffer::free_materials(CUstream stream){
-	for(std::vector<CUDABuffer>& nodes : materialNodesBuffer)
-		for(CUDABuffer& node : nodes)
-			node.free(stream);
-
-	materialBuffer_default.free(stream);
-	cudaStreamSynchronize(stream);
-	materialNodesBuffer.clear();
-	material_offset.clear();
 }
 
 

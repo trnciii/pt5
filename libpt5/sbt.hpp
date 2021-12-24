@@ -24,15 +24,23 @@ struct HitgroupSBTData{
 	int material;
 };
 
+union MaterialNodeSBTData{
+	BSDFData_Diffuse bsdf_diffuse;
+	BSDFData_Emission bsdf_emission;
+	BSDFData_Mix bsdf_mix;
+};
+
+
 template <typename T>
 struct Record{
 	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-	T data;
+	T data {};
 };
 
 using RaygenRecord = Record<RaygenSBTData>;
 using MissRecord = Record<MissSBTData>;
 using HitgroupRecord = Record<HitgroupSBTData>;
+using MaterialNodeRecord = Record<MaterialNodeSBTData>;
 
 struct NullRecord{
 	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];

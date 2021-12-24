@@ -2,7 +2,7 @@
 
 #include "../vector_math.h"
 #include "../kernel/intersection.cuh"
-#include "data.h"
+#include "../sbt.hpp"
 
 namespace pt5{
 
@@ -16,7 +16,7 @@ __device__ float3 sample_cosine_hemisphere(float2 u){
 
 
 extern "C" __device__ float3 __direct_callable__diffuse_albedo(const Intersection& is){
-	const BSDFData_Diffuse& material = **(BSDFData_Diffuse**)optixGetSbtDataPointer();
+	const BSDFData_Diffuse& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_diffuse;
 	return (material.color.texture>0)?
 		make_float3(tex2D<float4>(material.color.texture, is.uv.x, is.uv.y))
 		: material.color.default_value;
@@ -38,7 +38,7 @@ extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersecti
 }
 
 extern "C" __device__ float3 __direct_callable__emission_emission(const Intersection& is){
-	const BSDFData_Emission& material = **(BSDFData_Emission**)optixGetSbtDataPointer();
+	const BSDFData_Emission& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_emission;
 	float3 color = (material.color.texture>0)?
 		make_float3(tex2D<float4>(material.color.texture, is.uv.x, is.uv.y))
 		: material.color.default_value;
@@ -57,7 +57,7 @@ extern "C" __device__ float3 __direct_callable__emission_sample_direction(RNG& r
 
 
 extern "C" __device__ float3 __direct_callable__mix_albedo(const Intersection& is){
-	const BSDFData_Mix& material = **(BSDFData_Mix**)optixGetSbtDataPointer();
+	const BSDFData_Mix& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_mix;
 	const float f = (material.factor.texture>0)?
 		(tex2D<float4>(material.factor.texture, is.uv.x, is.uv.y)).x
 		: material.factor.default_value;
@@ -67,7 +67,7 @@ extern "C" __device__ float3 __direct_callable__mix_albedo(const Intersection& i
 }
 
 extern "C" __device__ float3 __direct_callable__mix_emission(const Intersection& is){
-	const BSDFData_Mix& material = **(BSDFData_Mix**)optixGetSbtDataPointer();
+	const BSDFData_Mix& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_mix;
 	const float f = (material.factor.texture>0)?
 		(tex2D<float4>(material.factor.texture, is.uv.x, is.uv.y)).x
 		: material.factor.default_value;
@@ -77,7 +77,7 @@ extern "C" __device__ float3 __direct_callable__mix_emission(const Intersection&
 }
 
 extern "C" __device__ float3 __direct_callable__mix_sample_direction(RNG& rng, const Intersection& is){
-	const BSDFData_Mix& material = **(BSDFData_Mix**)optixGetSbtDataPointer();
+	const BSDFData_Mix& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_mix;
 	const float f = (material.factor.texture>0)?
 		(tex2D<float4>(material.factor.texture, is.uv.x, is.uv.y)).x
 		: material.factor.default_value;

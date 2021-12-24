@@ -236,6 +236,15 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 	// hitgroup
 	{
+		std::vector<int> material_offset;
+		material_offset.resize(scene.materials.size()+1);
+		material_offset[0] = 0;
+
+		for(int i=0; i<scene.materials.size(); i++){
+			material_offset[i+1] = material_offset[i] + scene.materials[i].nprograms();
+		}
+
+
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for(int objectCount=0; objectCount<scene.meshes.size(); objectCount++){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
@@ -251,7 +260,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					sceneBuffer.material_offset[i]
+					material_offset[i]
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[2], &rec));
@@ -268,9 +277,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 		sbt.hitgroupRecordCount = (int)hitgroupRecords.size();
 	}
 
-	{
-		using MaterialNodeRecord = Record<CUdeviceptr>;
-
+	{ // material
 		std::vector<MaterialNodeRecord> materialRecords;
 		for(int m=0; m<scene.materials.size(); m++){
 			for(int n=0; n<scene.materials[m].nodes.size(); n++){
@@ -278,7 +285,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 				for(int pg = 0; pg<scene.materials[m].nodes[n]->nprograms(); pg++){
  					MaterialNodeRecord rec;
 					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[pgOffset + pg], &rec));
-					rec.data = sceneBuffer.materialNodesBuffer[m][n].d_pointer();
+					rec.data = scene.materials[m].nodes[n]->sbtData();
 					materialRecords.push_back(rec);
 				}
 			}
@@ -288,7 +295,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 			for(int i=0; i<3; i++){
 				MaterialNodeRecord rec;
 				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
-				rec.data = sceneBuffer.materialBuffer_default.d_pointer();
+				rec.data = MaterialNodeSBTData{.bsdf_diffuse = BSDFData_Diffuse()};
 				materialRecords.push_back(rec);
 			}
 		}
