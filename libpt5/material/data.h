@@ -9,7 +9,7 @@ namespace pt5{
 namespace material{
 
 	struct BSDFData_Diffuse{
-		Prop<float3> color {{0.6, 0.6, 0.6}, 0};
+		Prop<float3> color {{0.6, 0.6, 0.6}, -1};
 	};
 
 	struct Node_DiffuseBSDF : public Node{
@@ -32,8 +32,8 @@ namespace material{
 
 
 	struct BSDFData_Emission{
-		Prop<float3> color {{1,1,1},0};
-		Prop<float> strength {1, 0};
+		Prop<float3> color {{1,1,1},-1};
+		Prop<float> strength {1, -1};
 	};
 
 	struct Node_EmissionBSDF : public Node{
@@ -55,10 +55,35 @@ namespace material{
 	}
 
 
+	struct BSDFData_Mix{
+		int bsdf1 = -1;
+		int bsdf2 = -1;
+		Prop<float> factor {0.5, -1};
+	};
+
+	struct Node_MixBSDF : public Node{
+		BSDFData_Mix data;
+
+		Node_MixBSDF():data(){}
+		Node_MixBSDF(const BSDFData_Mix& d):data(d){}
+
+		size_t size()const{return sizeof(BSDFData_Mix);}
+		void* ptr()const{return (void*)&data;}
+		Type type()const{return Type::Mix;}
+		int program()const{return 6;}
+		int nprograms()const{return 3;}
+	};
+
+	inline std::shared_ptr<Node> make_node(const BSDFData_Mix& data){
+		return std::make_shared<Node_MixBSDF>(data);
+	}
+
+
 }
 
 using material::BSDFData_Diffuse;
 using material::BSDFData_Emission;
+using material::BSDFData_Mix;
 
 using material::make_node;
 

@@ -9,6 +9,7 @@ namespace material{
 	enum class Type{
 		Diffuse,
 		Emission,
+		Mix,
 	};
 
 
@@ -27,12 +28,13 @@ namespace material{
 
 	struct Material{
 		std::vector<std::shared_ptr<Node>> nodes;
-		int nprograms()const{
+		int offset_of_program(int n)const{
 			int count = 0;
-			for(const std::shared_ptr<Node>& node : nodes)
-				count += node->nprograms();
+			for(int i=0; i<n; i++)
+				count += nodes[i]->nprograms();
 			return count;
 		}
+		int nprograms()const{return offset_of_program(nodes.size());}
 	};
 
 

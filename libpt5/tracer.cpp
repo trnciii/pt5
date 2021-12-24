@@ -26,6 +26,7 @@ void context_log_callback(unsigned int level, const char *tag, const char *messa
 const std::vector<std::string> material_types{
 	"diffuse",
 	"emission",
+	"mix",
 };
 
 const std::vector<std::string> material_methods{

@@ -80,7 +80,9 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 
 	scene.materials = {
 		pt5::Material{{
-			pt5::make_node(pt5::BSDFData_Diffuse({{{0.8, 0.8, 0.8}, 0}}))
+			pt5::make_node(pt5::BSDFData_Mix({3, 6, {0.5, 1}})),
+			pt5::make_node(pt5::BSDFData_Diffuse({{{0.8, 0.2, 0.2}, 0}})),
+			pt5::make_node(pt5::BSDFData_Diffuse({{{0.2, 0.2, 0.8}, 0}}))
 		}},
 
 		pt5::Material{{
