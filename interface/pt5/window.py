@@ -82,11 +82,6 @@ class Polygon:
 		glVertexAttribPointer(1, 2, GL_FLOAT, False, 20, ctypes.c_void_p(12))
 
 
-	def __del__(self):
-		glDeleteVertexArrays(1, self.vao)
-		glDeleteBuffers(1, self.vertexBuffer)
-
-
 	def draw(self):
 		glBindVertexArray(self.vao)
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
@@ -124,8 +119,6 @@ class Window:
 	def __del__(self):
 		if not self.window: return
 		self.view.destroyGLTexture()
-		glfw.destroy_window(self.window)
-		glfw.terminate()
 
 
 	def draw(self, tracer):
