@@ -3,6 +3,7 @@
 #include "../vector_math.h"
 #include "../kernel/intersection.cuh"
 #include "../sbt.hpp"
+#include "data.h"
 
 namespace pt5{
 
@@ -87,5 +88,6 @@ extern "C" __device__ float3 __direct_callable__mix_sample_direction(RNG& rng, c
 	else
 		return optixDirectCall<float3, RNG&, const Intersection&>(material.bsdf2+2, rng, is);
 }
+
 
 }

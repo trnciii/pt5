@@ -1,6 +1,7 @@
 #include "scene.hpp"
 #include "mesh.hpp"
-#include "material/data.h"
+#include "texture.hpp"
+
 
 namespace pt5{
 

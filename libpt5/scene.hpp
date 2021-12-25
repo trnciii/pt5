@@ -1,16 +1,17 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 #include "vector_math.h"
 #include "CUDABuffer.hpp"
-#include "texture.hpp"
-#include "sbt.hpp"
 #include "material/type.hpp"
+
 
 namespace pt5{
 
 struct TriangleMesh;
+struct Image;
+struct Texture;
+
 
 struct Scene{
 	struct{

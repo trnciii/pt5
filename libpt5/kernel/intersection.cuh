@@ -3,6 +3,7 @@
 #include <optix_device.h>
 
 #include "../vector_math.h"
+#include "../mesh.hpp"
 #include "../sbt.hpp"
 #include "math.cuh"
 

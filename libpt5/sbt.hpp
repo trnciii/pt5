@@ -1,5 +1,6 @@
 #pragma once
 
+#include "optix.hpp"
 #include "vector_math.h"
 #include "mesh.hpp"
 #include "material/data.h"

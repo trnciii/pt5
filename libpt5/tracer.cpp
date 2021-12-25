@@ -1,14 +1,15 @@
-#include "tracer.hpp"
 #include <optix_function_table_definition.h>
 #include <iostream>
 #include <vector>
 
+#include "tracer.hpp"
 #include "optix.hpp"
 #include "view.hpp"
 #include "scene.hpp"
 #include "camera.hpp"
 #include "LaunchParams.hpp"
 #include "sbt.hpp"
+#include "material/node.hpp"
 
 
 namespace pt5{

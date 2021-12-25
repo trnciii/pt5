@@ -35,6 +35,7 @@ add_library(pt5
 	${embedded_ptx_material}
 
 	material/data.h
+	material/node.hpp
 	material/type.hpp
 
 	camera.hpp

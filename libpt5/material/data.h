@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdint.h>
-#include "optix.h"
 #include "vector_math.h"
 
 namespace pt5{

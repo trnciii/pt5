@@ -1,7 +1,10 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
+#include <cuda_runtime.h>
 #include "optix.hpp"
+#include "vector_math.h"
 
 namespace pt5{
 
