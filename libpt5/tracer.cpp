@@ -234,17 +234,27 @@ void PathTracerState::buildSBT(const Scene& scene){
 		sbt.missRecordCount = 1;
 	}
 
+
+	std::vector<int> offset_material;
+	offset_material.resize(scene.materials.size()+1);
+	offset_material[0] = 0;
+
+	for(int i=0; i<scene.materials.size(); i++)
+		offset_material[i+1] = offset_material[i] + scene.materials[i].nprograms();
+
+
+	std::vector<std::vector<int>> offset_nodes(scene.materials.size());
+	for(int m=0; m<scene.materials.size(); m++){
+		const Material& material = scene.materials[m];
+		std::vector<int>& offset = offset_nodes[m];
+
+		offset.resize(material.nodes.size());
+		for(int n=1; n<material.nodes.size(); n++)
+			offset[n] = offset[n-1] + material.nodes[n]->nprograms();
+	}
+
 	// hitgroup
 	{
-		std::vector<int> material_offset;
-		material_offset.resize(scene.materials.size()+1);
-		material_offset[0] = 0;
-
-		for(int i=0; i<scene.materials.size(); i++){
-			material_offset[i+1] = material_offset[i] + scene.materials[i].nprograms();
-		}
-
-
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for(int objectCount=0; objectCount<scene.meshes.size(); objectCount++){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
@@ -260,7 +270,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					material_offset[i]
+					offset_material[i]
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[2], &rec));
@@ -280,12 +290,13 @@ void PathTracerState::buildSBT(const Scene& scene){
 	{ // material
 		std::vector<MaterialNodeRecord> materialRecords;
 		for(int m=0; m<scene.materials.size(); m++){
-			for(int n=0; n<scene.materials[m].nodes.size(); n++){
-				const int pgOffset = scene.materials[m].nodes[n]->program();
-				for(int pg = 0; pg<scene.materials[m].nodes[n]->nprograms(); pg++){
+			const Material& material = scene.materials[m];
+			for(int n=0; n<material.nodes.size(); n++){
+				const std::shared_ptr<MaterialNode>& node = material.nodes[n];
+				for(int pg = 0; pg < node->nprograms(); pg++){
  					MaterialNodeRecord rec;
-					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[pgOffset + pg], &rec));
-					rec.data = scene.materials[m].nodes[n]->sbtData();
+					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
+					rec.data = node->sbtData(offset_material[m], offset_nodes[m]);
 					materialRecords.push_back(rec);
 				}
 			}

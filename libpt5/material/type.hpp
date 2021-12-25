@@ -22,7 +22,7 @@ namespace material{
 		virtual Type type()const=0;
 		virtual int program()const=0;
 		virtual int nprograms()const=0;
-		virtual MaterialNodeSBTData sbtData()const=0;
+		virtual MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const=0;
 	};
 
 
@@ -51,7 +51,9 @@ namespace material{
 		Type type()const {return Type::Diffuse;}
 		int program()const{return 0;}
 		int nprograms()const{return 3;}
-		MaterialNodeSBTData sbtData()const{return MaterialNodeSBTData{.bsdf_diffuse = data};}
+		MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const{
+			return MaterialNodeSBTData{.bsdf_diffuse = data};
+		}
 	};
 
 	inline std::shared_ptr<Node> make_node(const BSDFData_Diffuse& data){
@@ -70,13 +72,17 @@ namespace material{
 		Type type()const{return Type::Emission;}
 		int program()const{return 3;}
 		int nprograms()const{return 3;}
-		MaterialNodeSBTData sbtData()const{return MaterialNodeSBTData{.bsdf_emission = data};}
+		MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const{
+			return MaterialNodeSBTData{.bsdf_emission = data};
+		}
 
 	};
 
 	inline std::shared_ptr<Node> make_node(const BSDFData_Emission& data){
 		return std::make_shared<Node_EmissionBSDF>(data);
 	}
+
+
 	struct Node_MixBSDF : public Node{
 		BSDFData_Mix data;
 
@@ -88,7 +94,12 @@ namespace material{
 		Type type()const{return Type::Mix;}
 		int program()const{return 6;}
 		int nprograms()const{return 3;}
-		MaterialNodeSBTData sbtData()const{return MaterialNodeSBTData{.bsdf_mix = data};}
+		MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const{
+			BSDFData_Mix ret = data;
+			ret.bsdf1 = offset_material + offset_nodes[ret.bsdf1];
+			ret.bsdf2 = offset_material + offset_nodes[ret.bsdf2];
+			return MaterialNodeSBTData{.bsdf_mix = ret};
+		}
 
 	};
 
