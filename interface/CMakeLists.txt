@@ -5,5 +5,11 @@ add_subdirectory(ext/pybind11)
 
 include_directories(ext/)
 
-pybind11_add_module(core interface.cpp)
+pybind11_add_module(core
+	interface.cpp
+	material.cpp
+	scene.cpp
+	util.hpp
+)
+
 target_link_libraries(core PRIVATE pt5)
