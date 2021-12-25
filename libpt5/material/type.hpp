@@ -8,18 +8,7 @@
 namespace pt5{
 namespace material{
 
-	enum class Type{
-		Diffuse,
-		Emission,
-		Mix,
-	};
-
-
-
 	struct Node{
-		virtual size_t size()const=0;
-		virtual void* ptr()const=0;
-		virtual Type type()const=0;
 		virtual int program()const=0;
 		virtual int nprograms()const=0;
 		virtual MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const=0;
@@ -43,12 +32,8 @@ namespace material{
 	struct Node_DiffuseBSDF : public Node{
 		BSDFData_Diffuse data;
 
-		Node_DiffuseBSDF():data(){}
 		Node_DiffuseBSDF(const BSDFData_Diffuse& d):data(d){}
 
-		size_t size() const{return sizeof(BSDFData_Diffuse);}
-		void* ptr() const{return (void*)&data;}
-		Type type()const {return Type::Diffuse;}
 		int program()const{return 0;}
 		int nprograms()const{return 3;}
 		MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const{
@@ -64,12 +49,8 @@ namespace material{
 	struct Node_EmissionBSDF : public Node{
 		BSDFData_Emission data;
 
-		Node_EmissionBSDF():data(){}
 		Node_EmissionBSDF(const BSDFData_Emission& d):data(d){}
 
-		size_t size() const{return sizeof(BSDFData_Emission);}
-		void* ptr() const{return (void*)&data;}
-		Type type()const{return Type::Emission;}
 		int program()const{return 3;}
 		int nprograms()const{return 3;}
 		MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const{
@@ -86,12 +67,8 @@ namespace material{
 	struct Node_MixBSDF : public Node{
 		BSDFData_Mix data;
 
-		Node_MixBSDF():data(){}
 		Node_MixBSDF(const BSDFData_Mix& d):data(d){}
 
-		size_t size()const{return sizeof(BSDFData_Mix);}
-		void* ptr()const{return (void*)&data;}
-		Type type()const{return Type::Mix;}
 		int program()const{return 6;}
 		int nprograms()const{return 3;}
 		MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const{
@@ -109,7 +86,6 @@ namespace material{
 
 }
 
-using MaterialType = material::Type;
 using MaterialNode = material::Node;
 using material::Material;
 using material::make_node;

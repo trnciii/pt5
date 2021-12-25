@@ -20,10 +20,20 @@ def createScene(scene, camera):
 
 
 	scene.materials = [
-		pt5.Material([pt5.BSDF_Diffuse([0.8, 0.8, 0.3], 0)]),
-		pt5.Material([pt5.BSDF_Diffuse([0.1, 0.8, 0.8], 0)]),
-		pt5.Material([pt5.BSDF_Diffuse([0.8, 0.5, 0.1], 0)]),
-		pt5.Material([pt5.BSDF_Diffuse([0.8, 0.3, 0.8], 0)]),
+		pt5.Material([
+			pt5.make_node(pt5.BSDF_Mix(1, 2, (0.5, 0))),
+			pt5.make_node(pt5.BSDF_Diffuse( ([0.8, 0.1, 0.1], 0) )),
+			pt5.make_node(pt5.BSDF_Diffuse( ([0.1, 0.9, 0.1], 0) )),
+		]),
+		pt5.Material([
+			pt5.make_node(pt5.BSDF_Diffuse( ([0.1, 0.8, 0.8], 0) ))
+		]),
+		pt5.Material([
+			pt5.make_node(pt5.BSDF_Diffuse( ([0.8, 0.5, 0.1], 0) ))
+		]),
+		pt5.Material([
+			pt5.make_node(pt5.BSDF_Diffuse( ([0.8, 0.3, 0.8], 0) ))
+		]),
 	]
 
 

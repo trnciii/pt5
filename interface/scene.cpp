@@ -30,7 +30,7 @@ void init_scene(py::module_& m) {
 			},
 			[](Scene& self, const py::tuple& args){
 				const py::array_t<float>& c = args[0].cast<py::array_t<float>>();
-				self.background.color = make_float3(c.at(0), c.at(1), c.at(2));
+				self.background.color = make_float3(c);
 				self.background.texture = args[1].cast<uint32_t>();
 				self.background.strength = args[2].cast<float>();
 			});

@@ -21,6 +21,11 @@ namespace py = pybind11;
 	}
 
 
+inline float3 make_float3(const py::array_t<float>& x){
+	return make_float3(x.at(0), x.at(1), x.at(2));
+}
+
+
 template <typename T>
 std::vector<T> toSTDVector(const py::array_t<T>& x){
 	if(x.size()==0) return std::vector<T>(0);
