@@ -155,6 +155,9 @@ void PathTracerState::createProgramGroups(){
 			}
 		}
 
+		names.push_back("__direct_callable__image_texture");
+
+
 		std::vector<OptixProgramGroupDesc> descs;
 		for(const std::string& name : names){
 			OptixProgramGroupDesc desc;
@@ -297,7 +300,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 				for(int pg = 0; pg < node->nprograms(); pg++){
  					MaterialNodeRecord rec;
 					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
-					rec.data = node->sbtData(offset_material[m], offset_nodes[m]);
+					rec.data = node->sbtData(offset_material[m], offset_nodes[m], sceneBuffer.get_images());
 					materialRecords.push_back(rec);
 				}
 			}

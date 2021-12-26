@@ -9,9 +9,11 @@
 namespace pt5{
 
 struct TriangleMesh;
-struct Image;
-struct Texture;
 
+struct Image{
+	uint2 size;
+	std::vector<float4> pixels;
+};
 
 struct Scene{
 	struct{
@@ -21,7 +23,6 @@ struct Scene{
 	}background;
 	std::vector<TriangleMesh> meshes;
 	std::vector<Material> materials;
-	std::vector<Texture> textures;
 	std::vector<Image> images;
 };
 
@@ -32,16 +33,13 @@ class SceneBuffer{
 	std::vector<CUDABuffer> uvBuffers;
 
 	std::vector<cudaArray_t> images;
-	std::vector<cudaTextureObject_t> textures;
 
 
 	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
-	void upload_images(const std::vector<Image>& images);
-	void create_textures(const std::vector<Texture>& s_textures, const Scene& scene, CUstream stream);
-
 	void free_meshes(CUstream stream);
+
+	void upload_images(const std::vector<Image>& images);
 	void free_images();
-	void destroy_textures(CUstream stream);
 
 
 public:
@@ -52,6 +50,7 @@ public:
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 
+	inline const std::vector<cudaArray_t>& get_images()const{return images;}
 };
 
 

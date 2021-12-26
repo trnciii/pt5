@@ -18,8 +18,8 @@ __device__ float3 sample_cosine_hemisphere(float2 u){
 
 extern "C" __device__ float3 __direct_callable__diffuse_albedo(const Intersection& is){
 	const BSDFData_Diffuse& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_diffuse;
-	return (material.color.texture>0)?
-		make_float3(tex2D<float4>(material.color.texture, is.uv.x, is.uv.y))
+	return (material.color.input>0)?
+		optixDirectCall<float3, const Intersection&>(material.color.input, is)
 		: material.color.default_value;
 }
 
@@ -40,12 +40,13 @@ extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersecti
 
 extern "C" __device__ float3 __direct_callable__emission_emission(const Intersection& is){
 	const BSDFData_Emission& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_emission;
-	float3 color = (material.color.texture>0)?
-		make_float3(tex2D<float4>(material.color.texture, is.uv.x, is.uv.y))
+
+	float3 color = (material.color.input>0)?
+		optixDirectCall<float3, const Intersection&>(material.color.input, is)
 		: material.color.default_value;
 
-	float strength = (material.strength.texture>0)?
-		(tex2D<float4>(material.strength.texture, is.uv.x, is.uv.y)).x
+	float strength = (material.strength.input>0)?
+		optixDirectCall<float3, const Intersection&>(material.strength.input, is).x
 		: material.strength.default_value;
 
 	return color*strength;
@@ -57,10 +58,11 @@ extern "C" __device__ float3 __direct_callable__emission_sample_direction(RNG& r
 
 
 
+
 extern "C" __device__ float3 __direct_callable__mix_albedo(const Intersection& is){
 	const BSDFData_Mix& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_mix;
-	const float f = (material.factor.texture>0)?
-		(tex2D<float4>(material.factor.texture, is.uv.x, is.uv.y)).x
+	const float f = (material.factor.input>0)?
+		optixDirectCall<float3, const Intersection&>(material.factor.input, is).x
 		: material.factor.default_value;
 
 	return (1-f)*optixDirectCall<float3, const Intersection&>(material.bsdf1, is)
@@ -69,8 +71,8 @@ extern "C" __device__ float3 __direct_callable__mix_albedo(const Intersection& i
 
 extern "C" __device__ float3 __direct_callable__mix_emission(const Intersection& is){
 	const BSDFData_Mix& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_mix;
-	const float f = (material.factor.texture>0)?
-		(tex2D<float4>(material.factor.texture, is.uv.x, is.uv.y)).x
+	const float f = (material.factor.input>0)?
+		optixDirectCall<float3, const Intersection&>(material.factor.input, is).x
 		: material.factor.default_value;
 
 	return (1-f)*optixDirectCall<float3, const Intersection&>(material.bsdf1+1, is)
@@ -79,8 +81,8 @@ extern "C" __device__ float3 __direct_callable__mix_emission(const Intersection&
 
 extern "C" __device__ float3 __direct_callable__mix_sample_direction(RNG& rng, const Intersection& is){
 	const BSDFData_Mix& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->bsdf_mix;
-	const float f = (material.factor.texture>0)?
-		(tex2D<float4>(material.factor.texture, is.uv.x, is.uv.y)).x
+	const float f = (material.factor.input>0)?
+		optixDirectCall<float3, const Intersection&>(material.factor.input, is).x
 		: material.factor.default_value;
 
 	if(rng.uniform() < f)
@@ -89,5 +91,10 @@ extern "C" __device__ float3 __direct_callable__mix_sample_direction(RNG& rng, c
 		return optixDirectCall<float3, RNG&, const Intersection&>(material.bsdf2+2, rng, is);
 }
 
+
+
+extern "C" __device__ float3 __direct_callable__image_texture(const Intersection& is){
+	return make_float3(tex2D<float4>(((MaterialNodeSBTData*)optixGetSbtDataPointer())->texture, is.uv.x, is.uv.y));
+}
 
 }

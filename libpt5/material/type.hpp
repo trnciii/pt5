@@ -11,7 +11,7 @@ namespace material{
 	struct Node{
 		virtual int program()const=0;
 		virtual int nprograms()const=0;
-		virtual MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes)const=0;
+		virtual MaterialNodeSBTData sbtData(int, const std::vector<int>&, const std::vector<cudaArray_t>&)=0;
 	};
 
 

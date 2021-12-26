@@ -46,7 +46,6 @@ add_library(pt5
 	sbt.hpp
 	scene.cpp
 	scene.hpp
-	texture.hpp
 	tracer.hpp
 	tracer.cpp
 	vector_math.h
