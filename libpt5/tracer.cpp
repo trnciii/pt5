@@ -251,7 +251,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 		offset.resize(material.nodes.size());
 		for(int n=1; n<material.nodes.size(); n++)
-			offset[n] = offset[n-1] + material.nodes[n]->nprograms();
+			offset[n] = offset[n-1] + material.nodes[n-1]->nprograms();
 	}
 
 	// hitgroup
