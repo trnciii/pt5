@@ -310,7 +310,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 			for(int i=0; i<3; i++){
 				MaterialNodeRecord rec;
 				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
-				rec.data = MaterialNodeSBTData{.bsdf_diffuse = BSDFData_Diffuse()};
+				rec.data = MaterialNodeSBTData{.diffuse = material::DiffuseData()};
 				materialRecords.push_back(rec);
 			}
 		}

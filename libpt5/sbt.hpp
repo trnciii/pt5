@@ -26,9 +26,9 @@ struct HitgroupSBTData{
 };
 
 union MaterialNodeSBTData{
-	BSDFData_Diffuse bsdf_diffuse;
-	BSDFData_Emission bsdf_emission;
-	BSDFData_Mix bsdf_mix;
+	material::DiffuseData diffuse;
+	material::EmissionData emission;
+	material::MixData mix;
 
 	cudaTextureObject_t texture;
 };

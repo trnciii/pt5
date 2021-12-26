@@ -13,6 +13,7 @@ def create(scene, hide = []):
 
 	ret = core.Scene()
 	ret.images = [Image(np.array(i.pixels).reshape((i.size[1], i.size[0], 4))) for i in images]
-	ret.materials, ret.textures, ret.background = getMaterials(scene, images)
+	ret.materials = getMaterials(scene, images)
+	ret.background = getBackground(scene.world, images)
 	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(scene, hide)] if m]
 	return ret

@@ -8,3 +8,12 @@
 #include "view.hpp"
 #include "tracer.hpp"
 #include "util.hpp"
+
+namespace pt5{
+	using material::make_node;
+
+	using Diffuse = material::DiffuseData;
+	using Emission = material::EmissionData;
+	using Mix = material::MixData;
+	using Texture = material::ImageTexture::CreateInfo;
+};

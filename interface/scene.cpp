@@ -17,7 +17,6 @@ void init_scene(py::module_& m) {
 		.def(py::init<>())
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("meshes", &Scene::meshes)
-		.def_readwrite("textures", &Scene::textures)
 		.def_readwrite("images", &Scene::images)
 		.def_property("background",
 			[](const Scene& self){
