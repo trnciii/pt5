@@ -42,25 +42,89 @@ def findImageTexture(tree, socket, images):
 
 
 class Prop:
-	def __init__(self, d, s):
+	def __init__(self, d, i):
 		self.default = d
-		self.sub = s
+		self.input = i
 
 	def __str__(self):
 		if self.default != None:
-			return '(default: ' + str(self.default) +', input: ' + str(self.sub) + ')'
+			return '(default: ' + str(self.default) +', input: ' + str(self.input) + ')'
 		else:
-			return '(input: ' + str(self.sub) + ')'
+			return '(input: ' + str(self.input) + ')'
 
 	def nodeindex(self, nodes):
-		input_id = nodes.index(self.sub.node) if self.sub else 0
+		input_id = nodes.index(self.input.node) if self.input else 0
 		return self.default, input_id
 
 
 class Graph:
-	def __init__(self, node, props):
+	def __init__(self, node, tree):
+
 		self.node = node
-		self.props = props
+
+		def find_socket_input(socket):
+			filtered = [l.from_node for l in tree.links if l.to_socket == socket]
+			if(len(filtered)>0): return Graph(filtered[0], tree)
+			else: return None
+
+		inputs = node.inputs
+
+		if node.type == 'OUTPUT_MATERIAL':
+			self.props = {
+				'Surface': Prop(None, find_socket_input(inputs['Surface'])),
+			}
+
+
+		if node.type == 'EMISSION':
+			self.props = {
+				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
+				'Strength': Prop(inputs['Strength'].default_value, find_socket_input(inputs['Strength'])),
+			}
+
+			self.create = lambda nodes: core.Emission(
+				self.props['Color'].nodeindex(nodes),
+				self.props['Strength'].nodeindex(nodes)
+			)
+
+
+		if node.type == 'BSDF_DIFFUSE':
+			self.props = {
+				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
+			}
+
+			self.create = lambda nodes: core.Diffuse(self.props['Color'].nodeindex(nodes))
+
+
+		if node.type == 'MIX_SHADER':
+			self.props = {
+				'Fac': Prop(inputs['Fac'].default_value, find_socket_input(inputs['Fac'])),
+				'shader 1': Prop(None, find_socket_input(inputs[1])),
+				'shader 2': Prop(None, find_socket_input(inputs[2])),
+			}
+
+			self.create = lambda nodes: core.Mix(
+				self.props['shader 1'].nodeindex(nodes)[1],
+				self.props['shader 2'].nodeindex(nodes)[1],
+				self.props['Fac'].nodeindex(nodes),
+			)
+
+
+		if node.type == 'TEX_IMAGE':
+			self.props = {}
+			self.create = lambda nodes: core.Texture(
+				bpy.data.images.values().index(node.image),
+				interpolation = node.interpolation,
+				extension = node.extension
+			)
+
+
+		if node.type == 'BSDF_PRINCIPLED': # read as diffuse
+			self.props = {
+				'Base Color': Prop(inputs['Base Color'].default_value[:3], find_socket_input(inputs['Base Color'])),
+			}
+
+			self.create = lambda nodes: core.Diffuse(self.props['Base Color'].nodeindex(nodes))
+
 
 	def __str__(self):
 		return self.node.name + str({str(k):str(v) for k, v in self.props.items()})
@@ -68,56 +132,10 @@ class Graph:
 	def nodes(self):
 		nodes = [self.node]
 		for p in self.props.values():
-			if p.sub != None:
-				nodes += p.sub.nodes()
+			if p.input != None:
+				nodes += p.input.nodes()
 
 		return nodes
-
-
-
-def constructNodeTree(node, tree):
-
-	def find_socket_input(socket):
-		filtered = [l.from_node for l in tree.links if l.to_socket == socket]
-		if(len(filtered)>0): return Graph(*constructNodeTree(filtered[0], tree))
-		else: return None
-
-	inputs = node.inputs
-
-	if node.type == 'OUTPUT_MATERIAL':
-		return node, {
-			'Surface': Prop(None, find_socket_input(inputs['Surface'])),
-		}
-
-	if node.type == 'EMISSION':
-		return node,{
-			'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
-			'Strength': Prop(inputs['Strength'].default_value, find_socket_input(inputs['Strength'])),
-		}
-
-
-	if node.type == 'BSDF_DIFFUSE':
-		return node, {
-			'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
-		}
-
-
-	if node.type == 'MIX_SHADER':
-		return node,{
-			'Fac': Prop(inputs['Fac'].default_value, find_socket_input(inputs['Fac'])),
-			'shader 1': Prop(None, find_socket_input(inputs[1])),
-			'shader 2': Prop(None, find_socket_input(inputs[2])),
-		}
-
-
-	if node.type == 'TEX_IMAGE':
-		return node, {}
-
-
-	if node.type == 'BSDF_PRINCIPLED': # read as diffuse
-		return node, {
-			'Base Color': Prop(inputs['Base Color'].default_value[:3], find_socket_input(inputs['Base Color'])),
-		}
 
 
 
@@ -127,7 +145,7 @@ def compatible(mtl):
 	return True
 
 
-def perseMaterial(mtl, images):
+def perseMaterial(mtl):
 
 	if not compatible(mtl): return [core.Diffuse((0,0,0),0)]
 
@@ -139,11 +157,10 @@ def perseMaterial(mtl, images):
 	output = tree.get_output_node('CYCLES')
 
 
-	graph = constructNodeTree(output, tree)[1]['Surface']
+	graph = Graph(output, tree).props['Surface']
 
-	nodes = graph.sub.nodes()
+	nodes = graph.input.nodes()
 	nodes = sorted(set(nodes), key = nodes.index)
-
 
 	# print()
 	# print('#'*40)
@@ -151,57 +168,23 @@ def perseMaterial(mtl, images):
 	# print('graph', graph)
 	# print('nodes', [n.name for n in nodes])
 
-
 	# for n in nodes:
 	# 	print('  ', nodes.index(n), n.name, end=': ')
 
-	# 	props = constructNodeTree(n, tree)[1]
-	# 	print([(k, nodes.index(v.sub.node) if v.sub else 0) for k, v in props.items()])
+	# 	props = Graph(n, tree).props
+	# 	print([(k, v.default, nodes.index(v.input.node) if v.input else 0) for k, v in props.items()])
 
 	# print('-'*40)
 
-	ret = []
-
-	for n in nodes:
-		inputs = n.inputs
-		props = constructNodeTree(n, tree)[1]
-
-		if n.type == 'EMISSION':
-			ret.append(core.Emission(
-				props['Color'].nodeindex(nodes),
-				props['Strength'].nodeindex(nodes)
-			))
-
-		if n.type == 'BSDF_DIFFUSE':
-			ret.append(core.Diffuse(props['Color'].nodeindex(nodes)))
-
-		if n.type == 'MIX_SHADER':
-			ret.append(core.Mix(
-				props['shader 1'].nodeindex(nodes)[1],
-				props['shader 2'].nodeindex(nodes)[1],
-				props['Fac'].nodeindex(nodes),
-			))
+	return [Graph(n, tree).create(nodes) for n in nodes]
 
 
-		if n.type == 'TEX_IMAGE':
-			ret.append(core.Texture(
-				bpy.data.images.values().index(n.image),
-				interpolation = n.interpolation,
-				extension = n.extension
-			))
-
-		if n.type == 'BSDF_PRINCIPLED': # read as diffuse
-			ret.append(core.Diffuse(props['Base Color'].nodeindex(nodes)))
-
-	return ret
-
-
-def getMaterials(scene, images):
+def getMaterials(scene):
 	materials = []
 
 	for m_bl in bpy.data.materials.values():
 		try:
-			materials.append(core.Material([core.make_node(data) for data in perseMaterial(m_bl, images)]))
+			materials.append(core.Material([core.make_node(data) for data in perseMaterial(m_bl)]))
 		except:
 			materials.append(core.Material([core.make_node(core.Emission( ([1,0,1],0), (1, 0) ))]))
 
