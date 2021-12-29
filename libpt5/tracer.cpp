@@ -300,7 +300,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 				for(int pg = 0; pg < node->nprograms(); pg++){
  					MaterialNodeRecord rec;
 					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
-					rec.data = node->sbtData(offset_material[m], offset_nodes[m], sceneBuffer.get_images());
+					rec.data = node->sbtData(NodeIndexingInfo{offset_material[m], offset_nodes[m], sceneBuffer.get_images()});
 					materialRecords.push_back(rec);
 				}
 			}

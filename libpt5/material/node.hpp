@@ -9,11 +9,6 @@
 
 namespace pt5{ namespace material{
 
-
-inline void unwind_sbt_index(unsigned int& i, int offset_material, const std::vector<int>& offset_nodes){
-	if(i>0)i = offset_material + offset_nodes[i];
-}
-
 struct DiffuseBSDF : public Node{
 	DiffuseData data;
 
@@ -21,10 +16,10 @@ struct DiffuseBSDF : public Node{
 
 	int program()const{return 0;}
 	int nprograms()const{return 3;}
-	MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes, const std::vector<cudaArray_t>& imageBuffers){
+	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		DiffuseData ret = data;
 
-		unwind_sbt_index(ret.color.input, offset_material, offset_nodes);
+		ret.color.input = i.index_node(data.color.input);
 
 		return MaterialNodeSBTData{.diffuse = ret};
 	}
@@ -43,10 +38,12 @@ struct Emission : public Node{
 
 	int program()const{return 3;}
 	int nprograms()const{return 3;}
-	MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes, const std::vector<cudaArray_t>& imageBuffers){
+	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		EmissionData ret = data;
-		unwind_sbt_index(ret.color.input, offset_material, offset_nodes);
-		unwind_sbt_index(ret.strength.input, offset_material, offset_nodes);
+
+		ret.color.input = i.index_node(data.color.input);
+		ret.strength.input = i.index_node(data.strength.input);
+
 		return MaterialNodeSBTData{.emission = ret};
 	}
 
@@ -65,12 +62,12 @@ struct Mix : public Node{
 
 	int program()const{return 6;}
 	int nprograms()const{return 3;}
-	MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes, const std::vector<cudaArray_t>& imageBuffers){
+	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		MixData ret = data;
 
-		unwind_sbt_index(ret.shader1, offset_material, offset_nodes);
-		unwind_sbt_index(ret.shader2, offset_material, offset_nodes);
-		unwind_sbt_index(ret.factor.input, offset_material, offset_nodes);
+		ret.shader1 = i.index_node(data.shader1);
+		ret.shader2 = i.index_node(data.shader2);
+		ret.factor.input = i.index_node(data.factor.input);
 
 		return MaterialNodeSBTData{.mix = ret};
 	}
@@ -128,8 +125,8 @@ struct ImageTexture : public Node{
 
 	int program()const{return 9;}
 	int nprograms()const{return 1;}
-	MaterialNodeSBTData sbtData(int offset_material, const std::vector<int>& offset_nodes, const std::vector<cudaArray_t>& imageBuffers){
-		createCudaTexture(imageBuffers[info.image]);
+	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
+		createCudaTexture(i.imageBuffers[info.image]);
 		return MaterialNodeSBTData{.texture = cudaTexture};
 	}
 };
