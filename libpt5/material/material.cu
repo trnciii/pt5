@@ -98,4 +98,9 @@ extern "C" __device__ float3 __direct_callable__image_texture(const Intersection
 	return make_float3(tex2D<float4>(((MaterialNodeSBTData*)optixGetSbtDataPointer())->texture, is.uv.x, is.uv.y));
 }
 
+extern "C" __device__ float3 __direct_callable__environment_texture(const Intersection& is){
+	float2 co = equirectanglar(is.n);
+	return make_float3(tex2D<float4>(((MaterialNodeSBTData*)optixGetSbtDataPointer())->texture, co.x, co.y));
+}
+
 }}

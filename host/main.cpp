@@ -50,7 +50,6 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 		camera.focalLength = 2.3;
 	}
 
-	scene.background = {{0.2, 0, 0.4}, 0, 1};
 
 	{
 		uint w = 128;
@@ -75,6 +74,12 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 		};
 
 	}
+
+
+	scene.background = pt5::Material{{
+		pt5::make_node(pt5::Background({{{1,0.5,1}, 0}, {1,0}})),
+	}};
+
 
 
 	scene.materials = {

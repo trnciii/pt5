@@ -18,21 +18,7 @@ void init_scene(py::module_& m) {
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("meshes", &Scene::meshes)
 		.def_readwrite("images", &Scene::images)
-		.def_property("background",
-			[](const Scene& self){
-				auto& bg = self.background;
-				return py::make_tuple(
-					py::make_tuple(bg.color.x, bg.color.y, bg.color.z),
-					bg.texture,
-					bg.strength
-				);
-			},
-			[](Scene& self, const py::tuple& args){
-				const py::array_t<float>& c = args[0].cast<py::array_t<float>>();
-				self.background.color = make_float3(c);
-				self.background.texture = args[1].cast<uint32_t>();
-				self.background.strength = args[2].cast<float>();
-			});
+		.def_readwrite("background", &Scene::background);
 
 
 	py::class_<Camera>(m, "Camera")

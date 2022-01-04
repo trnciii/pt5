@@ -16,11 +16,7 @@ struct Image{
 };
 
 struct Scene{
-	struct{
-		float3 color = {0.4, 0.4, 0.4};
-		uint32_t texture = 0;
-		float strength = 1;
-	}background;
+	Material background;
 	std::vector<TriangleMesh> meshes;
 	std::vector<Material> materials;
 	std::vector<Image> images;

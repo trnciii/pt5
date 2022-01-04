@@ -16,7 +16,9 @@ def createScene(scene, camera):
 										[0, 1, 0]]
 
 	# background
-	scene.background = [0.8, 0.8, 0.8], 0, 1
+	scene.background = pt5.Material([
+		pt5.make_node(pt5.Background( ([1,1,1], 0), (1,0) ))
+	])
 
 
 	scene.materials = [

@@ -116,10 +116,45 @@ void init_material(py::module_& m){
 		}));
 
 
+	py::class_<Environment>(m, "Environment")
+		.def(py::init([](uint32_t image, const py::kwargs& kw){
+			cudaTextureFilterMode interpolation = cudaFilterModeLinear;
+			if(kw.contains("interpolation")){
+				const std::string s = kw["interpolation"].cast<std::string>();
+				if(s == "Closest") interpolation = cudaFilterModePoint;
+			}
+
+			cudaTextureAddressMode extension = cudaAddressModeWrap;
+			if(kw.contains("external")){
+				const std::string s = kw["extension"].cast<std::string>();
+				if(s == "CLIP") extension = cudaAddressModeBorder;
+				else if(s == "EXTEND") extension = cudaAddressModeClamp;
+			}
+
+			return Environment(image, interpolation, extension);
+
+		}));
+
+
+	py::class_<BackgroundData>(m, "Background")
+		.def(py::init<>())
+		.def(py::init<Prop<float3>, Prop<float>>())
+		.def(py::init([](const py::tuple& c, const py::tuple& s){
+			return BackgroundData{propf3(c), propf1(s)};
+		}))
+		.def(py::init([](const py::array_t<float>& c, unsigned int tc=0, float s=1, unsigned int ts=0){
+			return BackgroundData{{make_float3(c), tc}, {s, ts}};
+		}))
+		.def_readwrite("color", &BackgroundData::color)
+		.def_readwrite("strength", &BackgroundData::strength);
+
+
 
 	MAKE_NODE(MixData);
 	MAKE_NODE(DiffuseData);
 	MAKE_NODE(EmissionData);
 	MAKE_NODE(Texture);
+	MAKE_NODE(BackgroundData);
+	MAKE_NODE(Environment);
 
 }

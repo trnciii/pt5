@@ -156,6 +156,7 @@ void PathTracerState::createProgramGroups(){
 		}
 
 		names.push_back("__direct_callable__image_texture");
+		names.push_back("__direct_callable__environment_texture");
 
 
 		std::vector<OptixProgramGroupDesc> descs;
@@ -212,33 +213,6 @@ void PathTracerState::createPipeline(){
 
 void PathTracerState::buildSBT(const Scene& scene){
 
-	// raygen
-	{
-		RaygenRecord rec;
-		OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[0], &rec));
-		rec.data.traversable = asHandle;
-
-		raygenRecordBuffer.alloc_and_upload(rec, stream);
-
-		sbt.raygenRecord = raygenRecordBuffer.d_pointer();
-	}
-
-	// miss
-	{
-		MissRecord rec;
-		OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[1], &rec));
-		rec.data.color = scene.background.color;
-		rec.data.texture = scene.background.texture;
-		rec.data.strength = scene.background.strength;
-
-		missRecordBuffer.alloc_and_upload(rec, stream);
-
-		sbt.missRecordBase = missRecordBuffer.d_pointer();
-		sbt.missRecordStrideInBytes = sizeof(MissRecord);
-		sbt.missRecordCount = 1;
-	}
-
-
 	std::vector<int> offset_material;
 	offset_material.resize(scene.materials.size()+1);
 	offset_material[0] = 0;
@@ -256,6 +230,39 @@ void PathTracerState::buildSBT(const Scene& scene){
 		for(int n=1; n<material.nodes.size(); n++)
 			offset[n] = offset[n-1] + material.nodes[n-1]->nprograms();
 	}
+
+	// offset of all materials and default diffuse (has 3 programs)
+	int offset_backgroud = offset_material[scene.materials.size()] + 3;
+	std::vector<int> offset_backgroud_nodes(scene.background.nodes.size());
+	for(int n=1; n<scene.background.nodes.size(); n++)
+		offset_backgroud_nodes[n] = offset_backgroud_nodes[n-1] + scene.background.nodes[n-1]->nprograms();
+
+
+
+	// raygen
+	{
+		RaygenRecord rec;
+		OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[0], &rec));
+		rec.data.traversable = asHandle;
+
+		raygenRecordBuffer.alloc_and_upload(rec, stream);
+
+		sbt.raygenRecord = raygenRecordBuffer.d_pointer();
+	}
+
+	// miss
+	{
+		MissRecord rec;
+		OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[1], &rec));
+		rec.data = offset_backgroud;
+
+		missRecordBuffer.alloc_and_upload(rec, stream);
+
+		sbt.missRecordBase = missRecordBuffer.d_pointer();
+		sbt.missRecordStrideInBytes = sizeof(MissRecord);
+		sbt.missRecordCount = 1;
+	}
+
 
 	// hitgroup
 	{
@@ -312,6 +319,18 @@ void PathTracerState::buildSBT(const Scene& scene){
 				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
 				rec.data = MaterialNodeSBTData{.diffuse = material::DiffuseData()};
 				materialRecords.push_back(rec);
+			}
+		}
+
+		{
+			for(int n=0; n<scene.background.nodes.size(); n++){
+				const std::shared_ptr<MaterialNode>& node = scene.background.nodes[n];
+				for(int pg = 0; pg < node->nprograms(); pg++){
+ 					MaterialNodeRecord rec;
+					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
+					rec.data = node->sbtData(NodeIndexingInfo{offset_backgroud, offset_backgroud_nodes, sceneBuffer.get_images()});
+					materialRecords.push_back(rec);
+				}
 			}
 		}
 

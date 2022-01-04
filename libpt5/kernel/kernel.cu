@@ -64,11 +64,10 @@ extern "C" __global__ void __miss__radiance(){
 	MissSBTData& sbtData = *(MissSBTData*)optixGetSbtDataPointer();
 	PaylaodData& payload = *(PaylaodData*)getPRD<PaylaodData>();
 
-	float2 co = equirectanglar(payload.ray_d);
-	payload.emission = (sbtData.texture)?
-		make_float3(tex2D<float4>(sbtData.texture, co.x, co.y)) * sbtData.strength
-		: sbtData.color * sbtData.strength;
+	Intersection is;
+	is.n = optixGetWorldRayDirection();
 
+	payload.emission = optixDirectCall<float3, const Intersection&>(sbtData, is);
 	payload.albedo = make_float3(0);
 	payload.pContinue = 0;
 }

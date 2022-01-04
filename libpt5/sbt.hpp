@@ -12,11 +12,9 @@ struct RaygenSBTData{
 	OptixTraversableHandle traversable;
 };
 
-struct MissSBTData{
-	float3 color;
-	uint32_t texture;
-	float strength;
-};
+
+using MissSBTData = unsigned int;
+
 
 struct HitgroupSBTData{
 	Vertex* vertices;
@@ -29,6 +27,7 @@ union MaterialNodeSBTData{
 	material::DiffuseData diffuse;
 	material::EmissionData emission;
 	material::MixData mix;
+	material::BackgroundData background;
 
 	cudaTextureObject_t texture;
 };

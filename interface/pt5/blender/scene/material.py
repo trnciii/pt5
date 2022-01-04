@@ -4,42 +4,6 @@ import numpy as np
 import traceback
 from ... import core
 
-def getBackground(world, images):
-
-	if not (world.use_nodes and world.node_tree):
-		return  world.color, 0, 1
-
-	output = world.node_tree.get_output_node('CYCLES')
-	if not output:
-		return world.color, 0, 1
-
-	socket = find_node_input(output, 'Surface')
-	filtered = [l.from_node for l in world.node_tree.links if l.to_socket == socket]
-	if not (len(filtered)>0 and filtered[0].type == 'BACKGROUND'):
-		return  [0,0,0], 0, 1
-
-
-	params = filtered[0].inputs
-	texture = findImageTexture(world.node_tree, params[0], images)
-	if texture:
-		return np.array(params[0].default_value[:3]), 0,  params[1].default_value
-
-	else:
-		return np.array(params[0].default_value[:3]), 0,  params[1].default_value
-
-
-
-def findImageTexture(tree, socket, images):
-	filtered = [l.from_node for l in tree.links if l.to_socket == socket]
-	if not (len(filtered)>0 and filtered[0].type == 'TEX_IMAGE' and filtered[0].image):
-		return None
-
-	node = filtered[0]
-	return core.Texture(
-		bpy.data.images.values().index(node.image),
-		interpolation = node.interpolation,
-		extension = node.extension)
-
 
 class Prop:
 	def __init__(self, d, i):
@@ -75,7 +39,13 @@ class Graph:
 			}
 
 
-		if node.type == 'EMISSION':
+		elif node.type == 'OUTPUT_WORLD':
+			self.props = {
+				'Surface': Prop(None, find_socket_input(inputs['Surface'])),
+			}
+
+
+		elif node.type == 'EMISSION':
 			self.props = {
 				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
 				'Strength': Prop(inputs['Strength'].default_value, find_socket_input(inputs['Strength'])),
@@ -87,7 +57,8 @@ class Graph:
 			)
 
 
-		if node.type == 'BSDF_DIFFUSE':
+
+		elif node.type == 'BSDF_DIFFUSE':
 			self.props = {
 				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
 			}
@@ -95,7 +66,7 @@ class Graph:
 			self.create = lambda nodes: core.Diffuse(self.props['Color'].nodeindex(nodes))
 
 
-		if node.type == 'MIX_SHADER':
+		elif node.type == 'MIX_SHADER':
 			self.props = {
 				'Fac': Prop(inputs['Fac'].default_value, find_socket_input(inputs['Fac'])),
 				'shader 1': Prop(None, find_socket_input(inputs[1])),
@@ -109,7 +80,7 @@ class Graph:
 			)
 
 
-		if node.type == 'TEX_IMAGE':
+		elif node.type == 'TEX_IMAGE':
 			self.props = {}
 			self.create = lambda nodes: core.Texture(
 				bpy.data.images.values().index(node.image),
@@ -118,12 +89,33 @@ class Graph:
 			)
 
 
-		if node.type == 'BSDF_PRINCIPLED': # read as diffuse
+		elif node.type == 'BSDF_PRINCIPLED': # read as diffuse
 			self.props = {
 				'Base Color': Prop(inputs['Base Color'].default_value[:3], find_socket_input(inputs['Base Color'])),
 			}
 
 			self.create = lambda nodes: core.Diffuse(self.props['Base Color'].nodeindex(nodes))
+
+
+		elif node.type == 'BACKGROUND':
+			self.props = {
+				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
+				'Strength': Prop(inputs['Strength'].default_value, find_socket_input(inputs['Strength']))
+			}
+
+			self.create = lambda nodes: core.Background(
+				self.props['Color'].nodeindex(nodes),
+				self.props['Strength'].nodeindex(nodes)
+			)
+
+		elif node.type == 'TEX_ENVIRONMENT':
+			self.props = {}
+			self.create = lambda nodes: core.Environment(
+				bpy.data.images.values().index(node.image)
+			)
+
+		else:
+			print('failed to perse a', node.type, 'node ', node.name)
 
 
 	def __str__(self):
@@ -140,14 +132,22 @@ class Graph:
 
 
 def compatible(mtl):
-	if mtl.grease_pencil: return False
-	if mtl.use_nodes and not mtl.node_tree.get_output_node('CYCLES'): return False
-	return True
+	if isinstance(mtl, bpy.types.Material):
+		if mtl.grease_pencil:
+			return False
+		if mtl.use_nodes and not mtl.node_tree.get_output_node('CYCLES'):
+			return False
+		return True
+
+	elif isinstance(mtl, bpy.types.World):
+		if mtl.use_nodes and not mtl.node_tree.get_output_node('CYCLES'):
+			return False
+		return True
 
 
-def perseMaterial(mtl):
-
-	if not compatible(mtl): return [core.Diffuse((0,0,0),0)]
+def perseMaterialNodes(mtl):
+	if not compatible(mtl):
+		return [core.Diffuse((0,0,0),0)]
 
 	if not mtl.use_nodes:
 		return [core.Diffuse( (mtl.diffuse_color[:3], 0) )]
@@ -155,6 +155,8 @@ def perseMaterial(mtl):
 
 	tree = mtl.node_tree
 	output = tree.get_output_node('CYCLES')
+	if not output:
+		return [core.Background( ([0,0,0], 0), (1,0) )]
 
 
 	graph = Graph(output, tree).props['Surface']
@@ -179,14 +181,43 @@ def perseMaterial(mtl):
 	return [Graph(n, tree).create(nodes) for n in nodes]
 
 
+def make_material(nodes):
+	return core.Material([core.make_node(data) for data in nodes])
+
+
+def getBackground(world):
+	try:
+		if not compatible(world):
+			return [core.Background( ([1,1,1], 0), (1,0) )]
+
+		if not world.use_nodes:
+			return  [core.Background( (world.color[:3], 0), (1,0) )]
+
+		tree = world.node_tree
+		output = tree.get_output_node('CYCLES')
+		if not output:
+			return [core.Background( ([0,0,0], 0), (1,0) )]
+
+		graph = Graph(output, tree).props['Surface']
+
+		nodes = graph.input.nodes()
+		nodes = sorted(set(nodes), key = nodes.index)
+
+		return [Graph(n, tree).create(nodes) for n in nodes]
+
+	except:
+		return [core.Background( ([1,0,1],0), (1, 0) )]
+
+
+
 def getMaterials(scene):
 	materials = []
 
 	for m_bl in bpy.data.materials.values():
 		try:
-			materials.append(core.Material([core.make_node(data) for data in perseMaterial(m_bl)]))
+			materials.append(make_material(perseMaterialNodes(m_bl)))
 		except:
-			materials.append(core.Material([core.make_node(core.Emission( ([1,0,1],0), (1, 0) ))]))
+			materials.append(make_material([core.Emission( ([1,0,1],0), (1, 0) )]))
 
 			print(m_bl.name)
 			traceback.print_exc()

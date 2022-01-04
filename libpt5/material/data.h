@@ -26,4 +26,9 @@ namespace pt5{ namespace material{
 	};
 
 
+	struct BackgroundData{
+		Prop<float3> color {{1,1,1},0};
+		Prop<float> strength {1, 0};
+	};
+
 }}
