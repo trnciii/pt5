@@ -6,6 +6,7 @@
 #include "type.hpp"
 #include "../sbt.hpp"
 
+#include <iostream>
 
 namespace pt5{ namespace material{
 
@@ -80,32 +81,41 @@ inline std::shared_ptr<Node> make_node(const MixData& data){
 
 
 
-struct ImageTexture : public Node{
-	struct CreateInfo{
-		uint32_t image;
-		cudaTextureDesc desc;
 
-		CreateInfo(
-			uint32_t i,
-			cudaTextureFilterMode interpolation = cudaFilterModeLinear,
-			cudaTextureAddressMode extension = cudaAddressModeWrap)
-		:image(i){
-			desc.addressMode[0] = desc.addressMode[1] = extension;
-			desc.filterMode = interpolation;
-			desc.normalizedCoords = 1;
-			desc.maxAnisotropy = 1;
-			desc.maxMipmapLevelClamp = 99;
-			desc.minMipmapLevelClamp = 0;
-			desc.mipmapFilterMode = cudaFilterModePoint;
-		}
+struct TextureCreateInfo{
+
+	enum class Type{
+		ImageTexture,
+		Environment,
 	};
 
-	CreateInfo info;
-	cudaTextureObject_t cudaTexture;
+	uint32_t image;
+	cudaTextureDesc desc;
+	Type type;
 
-	ImageTexture(const CreateInfo& i):info(i){};
+	TextureCreateInfo(
+		uint32_t i,
+		Type t = Type::ImageTexture,
+		cudaTextureFilterMode interpolation = cudaFilterModeLinear,
+		cudaTextureAddressMode extension = cudaAddressModeWrap)
+	:image(i), type(t){
+		desc.addressMode[0] = desc.addressMode[1] = extension;
+		desc.filterMode = interpolation;
+		desc.normalizedCoords = 1;
+		desc.maxAnisotropy = 1;
+		desc.maxMipmapLevelClamp = 99;
+		desc.minMipmapLevelClamp = 0;
+		desc.mipmapFilterMode = cudaFilterModePoint;
+	}
+};
 
-	~ImageTexture(){if(cudaTexture!=0)destroyCudaTexture();}
+
+struct Texture_base : public Node{
+	TextureCreateInfo info;
+	cudaTextureObject_t cudaTexture {};
+
+	Texture_base(const TextureCreateInfo& i):info(i){};
+	~Texture_base(){if(cudaTexture!=0)destroyCudaTexture();}
 
 	cudaTextureObject_t createCudaTexture(const cudaArray_t& array){
 		assert(cudaTexture == 0);
@@ -123,72 +133,32 @@ struct ImageTexture : public Node{
 		cudaTexture = 0;
 	}
 
+	int nprograms()const{return 1;}
+	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
+		createCudaTexture(i.imageBuffers[info.image]);
+		return MaterialNodeSBTData{.texture = cudaTexture};
+	}
+};
+
+struct ImageTexture : public Texture_base{
+	using Texture_base::Texture_base;
+	~ImageTexture(){};
 	int program()const{return 9;}
-	int nprograms()const{return 1;}
-	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
-		createCudaTexture(i.imageBuffers[info.image]);
-		return MaterialNodeSBTData{.texture = cudaTexture};
-	}
 };
 
-inline std::shared_ptr<Node> make_node(const ImageTexture::CreateInfo& info){
-	return std::make_shared<ImageTexture>(info);
-}
 
-
-struct EnvironmentTexture : public Node{
-	struct CreateInfo{
-		uint32_t image;
-		cudaTextureDesc desc;
-
-		CreateInfo(
-			uint32_t i,
-			cudaTextureFilterMode interpolation = cudaFilterModeLinear,
-			cudaTextureAddressMode extension = cudaAddressModeWrap)
-		:image(i){
-			desc.addressMode[0] = desc.addressMode[1] = extension;
-			desc.filterMode = interpolation;
-			desc.normalizedCoords = 1;
-			desc.maxAnisotropy = 1;
-			desc.maxMipmapLevelClamp = 99;
-			desc.minMipmapLevelClamp = 0;
-			desc.mipmapFilterMode = cudaFilterModePoint;
-		}
-	};
-
-	CreateInfo info;
-	cudaTextureObject_t cudaTexture;
-
-	EnvironmentTexture(const CreateInfo& i):info(i){};
-
-	~EnvironmentTexture(){if(cudaTexture!=0)destroyCudaTexture();}
-
-	cudaTextureObject_t createCudaTexture(const cudaArray_t& array){
-		assert(cudaTexture == 0);
-
-		cudaResourceDesc resDesc = {};
-		resDesc.resType = cudaResourceTypeArray;
-		resDesc.res.array.array = array;
-		cudaCreateTextureObject(&cudaTexture, &resDesc, &info.desc, nullptr);
-		return cudaTexture;
-	}
-
-	void destroyCudaTexture(){
-		assert(cudaTexture != 0);
-		cudaDestroyTextureObject(cudaTexture);
-		cudaTexture = 0;
-	}
-
+struct EnvironmentTexture : public Texture_base{
+	using Texture_base::Texture_base;
+	~EnvironmentTexture(){};
 	int program()const{return 10;}
-	int nprograms()const{return 1;}
-	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
-		createCudaTexture(i.imageBuffers[info.image]);
-		return MaterialNodeSBTData{.texture = cudaTexture};
-	}
 };
 
-inline std::shared_ptr<Node> make_node(const EnvironmentTexture::CreateInfo& info){
-	return std::make_shared<EnvironmentTexture>(info);
+
+inline std::shared_ptr<Node> make_node(const TextureCreateInfo& info){
+	if(info.type == TextureCreateInfo::Type::ImageTexture)
+		return std::make_shared<ImageTexture>(info);
+	else
+		return std::make_shared<EnvironmentTexture>(info);
 }
 
 

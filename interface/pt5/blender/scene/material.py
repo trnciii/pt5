@@ -85,7 +85,8 @@ class Graph:
 			self.create = lambda nodes: core.Texture(
 				bpy.data.images.values().index(node.image),
 				interpolation = node.interpolation,
-				extension = node.extension
+				extension = node.extension,
+				type = node.type
 			)
 
 
@@ -110,9 +111,11 @@ class Graph:
 
 		elif node.type == 'TEX_ENVIRONMENT':
 			self.props = {}
-			self.create = lambda nodes: core.Environment(
-				bpy.data.images.values().index(node.image)
+			self.create = lambda nodes: core.Texture(
+				bpy.data.images.values().index(node.image),
+				type = node.type
 			)
+
 
 		else:
 			print('failed to perse a', node.type, 'node ', node.name)

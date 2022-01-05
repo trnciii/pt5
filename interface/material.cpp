@@ -111,28 +111,19 @@ void init_material(py::module_& m){
 				else if(s == "EXTEND") extension = cudaAddressModeClamp;
 			}
 
-			return Texture(image, interpolation, extension);
-
-		}));
-
-
-	py::class_<Environment>(m, "Environment")
-		.def(py::init([](uint32_t image, const py::kwargs& kw){
-			cudaTextureFilterMode interpolation = cudaFilterModeLinear;
-			if(kw.contains("interpolation")){
-				const std::string s = kw["interpolation"].cast<std::string>();
-				if(s == "Closest") interpolation = cudaFilterModePoint;
+			TexType type = TexType::ImageTexture;
+			if(kw.contains("type")){
+				const std::string s = kw["type"].cast<std::string>();
+				if(s == "TEX_ENVIRONMENT"){
+					std::cout <<"Environment texture" <<std::endl;
+					type = TexType::Environment;
+				}
+				else{
+					std::cout <<"image texture" <<std::endl;
+				}
 			}
 
-			cudaTextureAddressMode extension = cudaAddressModeWrap;
-			if(kw.contains("external")){
-				const std::string s = kw["extension"].cast<std::string>();
-				if(s == "CLIP") extension = cudaAddressModeBorder;
-				else if(s == "EXTEND") extension = cudaAddressModeClamp;
-			}
-
-			return Environment(image, interpolation, extension);
-
+			return Texture(image, type, interpolation, extension);
 		}));
 
 
@@ -155,6 +146,5 @@ void init_material(py::module_& m){
 	MAKE_NODE(EmissionData);
 	MAKE_NODE(Texture);
 	MAKE_NODE(BackgroundData);
-	MAKE_NODE(Environment);
 
 }

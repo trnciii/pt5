@@ -16,6 +16,6 @@ namespace pt5{
 	using Emission = material::EmissionData;
 	using Mix = material::MixData;
 	using Background = material::BackgroundData;
-	using Texture = material::ImageTexture::CreateInfo;
-	using Environment = material::EnvironmentTexture::CreateInfo;
+	using Texture = material::TextureCreateInfo;
+	using TexType = material::TextureCreateInfo::Type;
 };

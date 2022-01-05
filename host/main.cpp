@@ -77,7 +77,8 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 
 
 	scene.background = pt5::Material{{
-		pt5::make_node(pt5::Background({{{1,0.5,1}, 0}, {1,0}})),
+		pt5::make_node(pt5::Background({{{1,0.5,1}, 1}, {1,0}})),
+		pt5::make_node(pt5::Texture(0, pt5::TexType::Environment))
 	}};
 
 
