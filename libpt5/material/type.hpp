@@ -20,14 +20,16 @@ namespace material{
 	};
 
 
-	struct Node{
+	class Node{
+	public:
 		virtual int program()const=0;
 		virtual int nprograms()const=0;
 		virtual MaterialNodeSBTData sbtData(const NodeIndexingInfo&)=0;
 	};
 
 
-	struct Material{
+	class Material{
+	public:
 		std::vector<std::shared_ptr<Node>> nodes;
 		int offset_of_program(int n)const{
 			int count = 0;

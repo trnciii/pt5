@@ -10,9 +10,10 @@
 
 namespace pt5{ namespace material{
 
-struct DiffuseBSDF : public Node{
+class DiffuseBSDF : public Node{
 	DiffuseData data;
 
+public:
 	DiffuseBSDF(const DiffuseData& d):data(d){}
 
 	int program()const{return 0;}
@@ -32,9 +33,10 @@ inline std::shared_ptr<Node> make_node(const DiffuseData& data){
 
 
 
-struct Emission : public Node{
+class Emission : public Node{
 	EmissionData data;
 
+public:
 	Emission(const EmissionData& d):data(d){}
 
 	int program()const{return 3;}
@@ -56,9 +58,10 @@ inline std::shared_ptr<Node> make_node(const EmissionData& data){
 
 
 
-struct Mix : public Node{
+class Mix : public Node{
 	MixData data;
 
+public:
 	Mix(const MixData& d):data(d){}
 
 	int program()const{return 6;}
@@ -110,12 +113,9 @@ struct TextureCreateInfo{
 };
 
 
-struct Texture_base : public Node{
+class Texture_base : public Node{
 	TextureCreateInfo info;
 	cudaTextureObject_t cudaTexture {};
-
-	Texture_base(const TextureCreateInfo& i):info(i){};
-	~Texture_base(){if(cudaTexture!=0)destroyCudaTexture();}
 
 	cudaTextureObject_t createCudaTexture(const cudaArray_t& array){
 		assert(cudaTexture == 0);
@@ -133,6 +133,10 @@ struct Texture_base : public Node{
 		cudaTexture = 0;
 	}
 
+public:
+	Texture_base(const TextureCreateInfo& i):info(i){};
+	~Texture_base(){if(cudaTexture!=0)destroyCudaTexture();}
+
 	int nprograms()const{return 1;}
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		createCudaTexture(i.imageBuffers[info.image]);
@@ -140,14 +144,16 @@ struct Texture_base : public Node{
 	}
 };
 
-struct ImageTexture : public Texture_base{
+class ImageTexture : public Texture_base{
+public:
 	using Texture_base::Texture_base;
 	~ImageTexture(){};
 	int program()const{return 9;}
 };
 
 
-struct EnvironmentTexture : public Texture_base{
+class EnvironmentTexture : public Texture_base{
+public:
 	using Texture_base::Texture_base;
 	~EnvironmentTexture(){};
 	int program()const{return 10;}
@@ -162,9 +168,10 @@ inline std::shared_ptr<Node> make_node(const TextureCreateInfo& info){
 }
 
 
-struct Background : public Node{
+class Background : public Node{
 	BackgroundData data;
 
+public:
 	Background(const BackgroundData& d):data(d){}
 
 	int program()const{return 4;}
