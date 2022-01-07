@@ -1,6 +1,7 @@
 #include <optix_function_table_definition.h>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #include "tracer.hpp"
 #include "optix.hpp"
@@ -23,18 +24,6 @@ void context_log_callback(unsigned int level, const char *tag, const char *messa
   fprintf( stderr, "[%2d][%12s]: %s\n", (int)level, tag, message );
 }
 
-
-const std::vector<std::string> material_types{
-	"diffuse",
-	"emission",
-	"mix",
-};
-
-const std::vector<std::string> material_methods{
-	"albedo",
-	"emission",
-	"sample_direction"
-};
 
 
 void PathTracerState::createContext(){
@@ -148,16 +137,7 @@ void PathTracerState::createProgramGroups(){
 
 
 	{ // material
-		std::vector<std::string> names;
-		for(const std::string& type : material_types){
-			for(const std::string& method : material_methods){
-				names.push_back("__direct_callable__" + type + "_" + method);
-			}
-		}
-
-		names.push_back("__direct_callable__image_texture");
-		names.push_back("__direct_callable__environment_texture");
-
+		std::vector<std::string> names = material::nodeProgramNames();
 
 		std::vector<OptixProgramGroupDesc> descs;
 		for(const std::string& name : names){

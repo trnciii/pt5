@@ -1,6 +1,8 @@
 from .core import *
 from . import dtype
 
+setNodeIndices()
+
 # setup to work with blender
 
 bl_info = {

@@ -30,6 +30,10 @@ void init_material(py::module_& m){
 	using namespace pt5;
 	using namespace material;
 
+	m.def("nodeProgramNames", &nodeProgramNames);
+	m.def("setNodeIndices", &setNodeIndices);
+
+
 	py::class_<MaterialNode, std::shared_ptr<MaterialNode>>(m, "MaterialNode");
 
 	py::class_<Material>(m, "Material")

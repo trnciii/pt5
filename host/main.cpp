@@ -226,6 +226,9 @@ int main(int argc, char* _argv[]){
 	std::cout <<"Time for scene creation: "
 		<<std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count() <<"us" <<std::endl;
 
+
+	pt5::material::setNodeIndices();
+
 	pt5::PathTracerState tracer;
 	tracer.setScene(scene);
 

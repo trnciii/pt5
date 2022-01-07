@@ -20,6 +20,13 @@ namespace material{
 	};
 
 
+	struct NodeProgramManager{
+		int id;
+		const std::vector<std::string> names;
+		NodeProgramManager(const std::vector<std::string>& n):id(-1), names(n){}
+	};
+
+
 	class Node{
 	public:
 		virtual int program()const=0;

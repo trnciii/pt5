@@ -2,11 +2,13 @@
 
 #include <memory>
 #include <vector>
+#include <functional>
+#include <algorithm>
+
 #include "data.h"
 #include "type.hpp"
 #include "../sbt.hpp"
 
-#include <iostream>
 
 namespace pt5{ namespace material{
 
@@ -14,10 +16,17 @@ class DiffuseBSDF : public Node{
 	DiffuseData data;
 
 public:
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__diffuse_albedo",
+		"__direct_callable__diffuse_emission",
+		"__direct_callable__diffuse_sample_direction",
+	});
+
 	DiffuseBSDF(const DiffuseData& d):data(d){}
 
-	int program()const{return 0;}
-	int nprograms()const{return 3;}
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
+
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		DiffuseData ret = data;
 
@@ -37,10 +46,18 @@ class Emission : public Node{
 	EmissionData data;
 
 public:
+
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__emission_albedo",
+		"__direct_callable__emission_emission",
+		"__direct_callable__emission_sample_direction",
+	});
+
 	Emission(const EmissionData& d):data(d){}
 
-	int program()const{return 3;}
-	int nprograms()const{return 3;}
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
+
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		EmissionData ret = data;
 
@@ -64,8 +81,15 @@ class Mix : public Node{
 public:
 	Mix(const MixData& d):data(d){}
 
-	int program()const{return 6;}
-	int nprograms()const{return 3;}
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__mix_albedo",
+		"__direct_callable__mix_emission",
+		"__direct_callable__mix_sample_direction",
+	});
+
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
+
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		MixData ret = data;
 
@@ -137,26 +161,38 @@ public:
 	Texture_base(const TextureCreateInfo& i):info(i){};
 	~Texture_base(){if(cudaTexture!=0)destroyCudaTexture();}
 
-	int nprograms()const{return 1;}
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		createCudaTexture(i.imageBuffers[info.image]);
 		return MaterialNodeSBTData{.texture = cudaTexture};
 	}
 };
 
+
 class ImageTexture : public Texture_base{
 public:
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__image_texture",
+	});;
+
 	using Texture_base::Texture_base;
 	~ImageTexture(){};
-	int program()const{return 9;}
+
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
 };
 
 
 class EnvironmentTexture : public Texture_base{
 public:
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__environment_texture",
+	});;
+
 	using Texture_base::Texture_base;
 	~EnvironmentTexture(){};
-	int program()const{return 10;}
+
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
 };
 
 
@@ -172,10 +208,15 @@ class Background : public Node{
 	BackgroundData data;
 
 public:
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__emission_emission",
+	});
+
 	Background(const BackgroundData& d):data(d){}
 
-	int program()const{return 4;}
-	int nprograms()const{return 1;}
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
+
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
 		BackgroundData ret = data;
 
@@ -190,6 +231,44 @@ public:
 inline std::shared_ptr<Node> make_node(const BackgroundData& data){
 	return std::make_shared<Background>(data);
 }
+
+
+
+inline std::vector<std::string> nodeProgramNames(){
+	const std::vector<std::reference_wrapper<material::NodeProgramManager>> nodePrograms{
+		material::DiffuseBSDF::pgManager,
+		material::Emission::pgManager,
+		material::Mix::pgManager,
+		material::ImageTexture::pgManager,
+		material::EnvironmentTexture::pgManager,
+		material::Background::pgManager,
+	};
+
+	std::vector<std::string> names;
+	for(material::NodeProgramManager& node : nodePrograms){
+		std::copy(node.names.begin(), node.names.end(), std::back_inserter(names));
+	}
+
+	return names;
+}
+
+inline void setNodeIndices(){
+	const std::vector<std::reference_wrapper<material::NodeProgramManager>> nodePrograms{
+		material::DiffuseBSDF::pgManager,
+		material::Emission::pgManager,
+		material::Mix::pgManager,
+		material::ImageTexture::pgManager,
+		material::EnvironmentTexture::pgManager,
+		material::Background::pgManager,
+	};
+
+	int i=0;
+	for(material::NodeProgramManager& node : nodePrograms){
+		node.id = i;
+		i += node.names.size();
+	}
+}
+
 
 
 }}
