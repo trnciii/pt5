@@ -148,28 +148,41 @@ def compatible(mtl):
 		return True
 
 
-def perseMaterialNodes(mtl):
-	if not compatible(mtl):
-		return [core.Diffuse((0,0,0),0)]
-
-	if not mtl.use_nodes:
-		return [core.Diffuse( (mtl.diffuse_color[:3], 0) )]
+def make_material(nodes):
+	return core.Material([core.make_node(data) for data in nodes])
 
 
-	tree = mtl.node_tree
+def perseNodes(src):
+
+	if isinstance(src, bpy.types.Material):
+		black = [core.Diffuse((0,0,0),0)]
+		default = [core.Diffuse( (src.diffuse_color[:3], 0) )]
+
+		if src.grease_pencil: return black
+
+	else:
+		black = [core.Background( ([0,0,0], 0), (1,0) )]
+		default = [core.Background( (src.color[:3], 0), (1,0) )]
+
+
+	if not src.use_nodes: return default
+
+
+	tree = src.node_tree
 	output = tree.get_output_node('CYCLES')
 	if not output:
-		return [core.Background( ([0,0,0], 0), (1,0) )]
-
+		return black
 
 	graph = Graph(output, tree).props['Surface']
+	if not graph.input:
+		return black
 
 	nodes = graph.input.nodes()
 	nodes = sorted(set(nodes), key = nodes.index)
 
 	# print()
 	# print('#'*40)
-	# print(mtl.name)
+	# print(src.name)
 	# print('graph', graph)
 	# print('nodes', [n.name for n in nodes])
 
@@ -182,48 +195,3 @@ def perseMaterialNodes(mtl):
 	# print('-'*40)
 
 	return [Graph(n, tree).create(nodes) for n in nodes]
-
-
-def make_material(nodes):
-	return core.Material([core.make_node(data) for data in nodes])
-
-
-def getBackground(world):
-	try:
-		if not compatible(world):
-			return [core.Background( ([1,1,1], 0), (1,0) )]
-
-		if not world.use_nodes:
-			return  [core.Background( (world.color[:3], 0), (1,0) )]
-
-		tree = world.node_tree
-		output = tree.get_output_node('CYCLES')
-		if not output:
-			return [core.Background( ([0,0,0], 0), (1,0) )]
-
-		graph = Graph(output, tree).props['Surface']
-
-		nodes = graph.input.nodes()
-		nodes = sorted(set(nodes), key = nodes.index)
-
-		return [Graph(n, tree).create(nodes) for n in nodes]
-
-	except:
-		return [core.Background( ([1,0,1],0), (1, 0) )]
-
-
-
-def getMaterials(scene):
-	materials = []
-
-	for m_bl in bpy.data.materials.values():
-		try:
-			materials.append(make_material(perseMaterialNodes(m_bl)))
-		except:
-			materials.append(make_material([core.Emission( ([1,0,1],0), (1, 0) )]))
-
-			print(m_bl.name)
-			traceback.print_exc()
-
-	return materials
-
