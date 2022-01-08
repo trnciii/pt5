@@ -51,13 +51,13 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	}
 
 
-	scene.background = make_float3(0.2, 0, 0.4);
-
 	{
-		std::vector<float4> pixels(128*128);
+		uint w = 128;
+		uint h = 128;
+		std::vector<float4> pixels(w*h);
 		for(int i=0; i<pixels.size(); i++){
-			float x = (i%128)/(float)128;
-			float y = (i/128)/(float)128;
+			float x = (i%w)/(float)w;
+			float y = (i/w)/(float)h;
 			if(x*x + y*y < 1)
 				pixels[i] = make_float4(x, y, 0.5, 1);
 			else
@@ -69,17 +69,40 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 				pixels[i] += make_float4(1, 1, 0, 1);
 		}
 
-		scene.textures = {
-			{{128, 128}, pixels},
+		scene.images = {
+			{{w, h}, pixels}
 		};
+
 	}
 
 
+	scene.background = pt5::Material{{
+		pt5::make_node(pt5::Background({{{1,0.5,1}, 1}, {1,0}})),
+		pt5::make_node(pt5::Texture(0, pt5::TexType::Environment))
+	}};
+
+
+
 	scene.materials = {
-		pt5::abstract_material(pt5::MTLData_Diffuse({{0.8, 0.8, 0.8}, 0})),
-		pt5::abstract_material(pt5::MTLData_Diffuse({{0.8, 0.2, 0.2}, 1})),
-		pt5::abstract_material(pt5::MTLData_Diffuse({{0.2, 0.8, 0.2}, 0})),
-		pt5::abstract_material(pt5::MTLData_Emission({{10, 10, 10}, 0}))
+		pt5::Material{{
+			pt5::make_node(pt5::Diffuse({{{0.8, 0.8, 0.8}, 1}})),
+			pt5::make_node(pt5::Texture(0)),
+		}},
+
+		pt5::Material{{
+			pt5::make_node(pt5::Mix({1, 2, {0.5, 3}})),
+			pt5::make_node(pt5::Diffuse({{{0.8, 0.2, 0.2}, 0}})),
+			pt5::make_node(pt5::Diffuse({{{0.2, 0.6, 0.8}, 0}})),
+			pt5::make_node(pt5::Texture(0)),
+		}},
+
+		pt5::Material{{
+			pt5::make_node(pt5::Diffuse({{{0.2, 0.8, 0.2}, 0}}))
+		}},
+
+		pt5::Material{{
+			pt5::make_node(pt5::Emission({{{1, 1, 1}, 0}, {10, 0}}))
+		}},
 	};
 
 
@@ -202,6 +225,9 @@ int main(int argc, char* _argv[]){
 	auto t1 = std::chrono::system_clock::now();
 	std::cout <<"Time for scene creation: "
 		<<std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count() <<"us" <<std::endl;
+
+
+	pt5::material::setNodeIndices();
 
 	pt5::PathTracerState tracer;
 	tracer.setScene(scene);

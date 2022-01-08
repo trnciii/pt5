@@ -1,19 +1,17 @@
 #include "scene.hpp"
 #include "mesh.hpp"
-#include "material/data.h"
+
 
 namespace pt5{
 
 void SceneBuffer::upload(const Scene& scene, CUstream stream){
 	upload_meshes(scene.meshes, stream);
-	upload_textures(scene.textures, stream);
-	upload_materials(scene.materials, stream);
+	upload_images(scene.images);
 }
 
 void SceneBuffer::free(CUstream stream){
 	free_meshes(stream);
-	free_textures(stream);
-	free_materials(stream);
+	free_images();
 };
 
 
@@ -41,38 +39,30 @@ void SceneBuffer::free_meshes(CUstream stream){
 }
 
 
-void SceneBuffer::upload_textures(const std::vector<Texture>& s_textures, CUstream stream){
-	textures.resize(s_textures.size());
-	for(int i=0; i<s_textures.size(); i++)
-		textures[i].upload(s_textures[i]);
-}
 
-void SceneBuffer::free_textures(CUstream stream){
-	for(CUDATexture& texture : textures)texture.free();
-	CUDA_SYNC_CHECK();
-	textures.clear();
-}
+void SceneBuffer::upload_images(const std::vector<Image>& s_images){
+	images.resize(s_images.size());
+	for(int i=0; i<s_images.size(); i++){
+		const Image& image = s_images[i];
+		cudaArray_t& array = images[i];
 
-void SceneBuffer::upload_materials(const std::vector<std::shared_ptr<Material>>& materials, CUstream stream){
-	materialBuffers.resize(materials.size());
-	for(int i=0; i<materials.size(); i++){
-		const std::shared_ptr<Material>& m = materials[i];
-		materialBuffers[i].first.alloc_and_upload(m->ptr(), m->size(), stream);
-		materialBuffers[i].second = m->type();
+		cudaChannelFormatDesc channelFormatDesc = cudaCreateChannelDesc<float4>();
+
+		uint32_t pitch = image.size.x * 4 * sizeof(float);
+		CUDA_CHECK(cudaMallocArray(&array, &channelFormatDesc, image.size.x, image.size.y));
+		CUDA_CHECK(cudaMemcpy2DToArray(
+			array,
+			0, 0,
+			image.pixels.data(),
+			pitch, pitch, image.size.y,
+			cudaMemcpyHostToDevice));
 	}
-
-	MTLData_Diffuse material_default;
-	materialBuffer_default.alloc_and_upload(material_default, stream);
-
-	cudaStreamSynchronize(stream);
 }
 
-void SceneBuffer::free_materials(CUstream stream){
-	for(auto& buffer : materialBuffers)buffer.first.free(stream);
-	materialBuffer_default.free(stream);
-	cudaStreamSynchronize(stream);
-	materialBuffers.clear();
+void SceneBuffer::free_images(){
+	for(cudaArray_t& array : images) CUDA_CHECK(cudaFreeArray(array));
 }
+
 
 
 }

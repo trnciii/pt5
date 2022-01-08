@@ -1,14 +1,16 @@
-#include "tracer.hpp"
 #include <optix_function_table_definition.h>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
+#include "tracer.hpp"
 #include "optix.hpp"
 #include "view.hpp"
 #include "scene.hpp"
 #include "camera.hpp"
 #include "LaunchParams.hpp"
 #include "sbt.hpp"
+#include "material/node.hpp"
 
 
 namespace pt5{
@@ -22,17 +24,6 @@ void context_log_callback(unsigned int level, const char *tag, const char *messa
   fprintf( stderr, "[%2d][%12s]: %s\n", (int)level, tag, message );
 }
 
-
-const std::vector<std::string> material_types{
-	"diffuse",
-	"emission",
-};
-
-const std::vector<std::string> material_methods{
-	"albedo",
-	"emission",
-	"sample_direction"
-};
 
 
 void PathTracerState::createContext(){
@@ -146,12 +137,7 @@ void PathTracerState::createProgramGroups(){
 
 
 	{ // material
-		std::vector<std::string> names;
-		for(const std::string& type : material_types){
-			for(const std::string& method : material_methods){
-				names.push_back("__direct_callable__" + type + "_" + method);
-			}
-		}
+		std::vector<std::string> names = material::nodeProgramNames();
 
 		std::vector<OptixProgramGroupDesc> descs;
 		for(const std::string& name : names){
@@ -207,6 +193,32 @@ void PathTracerState::createPipeline(){
 
 void PathTracerState::buildSBT(const Scene& scene){
 
+	std::vector<int> offset_material;
+	offset_material.resize(scene.materials.size()+1);
+	offset_material[0] = 0;
+
+	for(int i=0; i<scene.materials.size(); i++)
+		offset_material[i+1] = offset_material[i] + scene.materials[i].nprograms();
+
+
+	std::vector<std::vector<int>> offset_nodes(scene.materials.size());
+	for(int m=0; m<scene.materials.size(); m++){
+		const Material& material = scene.materials[m];
+		std::vector<int>& offset = offset_nodes[m];
+
+		offset.resize(material.nodes.size());
+		for(int n=1; n<material.nodes.size(); n++)
+			offset[n] = offset[n-1] + material.nodes[n-1]->nprograms();
+	}
+
+	// offset of all materials and default diffuse (has 3 programs)
+	int offset_backgroud = offset_material[scene.materials.size()] + 3;
+	std::vector<int> offset_backgroud_nodes(scene.background.nodes.size());
+	for(int n=1; n<scene.background.nodes.size(); n++)
+		offset_backgroud_nodes[n] = offset_backgroud_nodes[n-1] + scene.background.nodes[n-1]->nprograms();
+
+
+
 	// raygen
 	{
 		RaygenRecord rec;
@@ -222,7 +234,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 	{
 		MissRecord rec;
 		OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[1], &rec));
-		rec.data.background = scene.background;
+		rec.data = offset_backgroud;
 
 		missRecordBuffer.alloc_and_upload(rec, stream);
 
@@ -231,6 +243,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 		sbt.missRecordCount = 1;
 	}
 
+
 	// hitgroup
 	{
 		std::vector<HitgroupRecord> hitgroupRecords;
@@ -238,23 +251,17 @@ void PathTracerState::buildSBT(const Scene& scene){
 			const TriangleMesh& mesh = scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
-			std::vector<MaterialSBTData> materialData;
-			if(mesh.materialSlots.size()==0)
-				materialData.push_back(sceneBuffer.materialData_default());
-			else{
-				for(int i=0; i<mesh.materialSlots.size(); i++){
-					materialData.push_back(sceneBuffer.materialData(mesh.materialSlots[i]));
-				}
-			}
+			std::vector<uint32_t> materialIndices = mesh.materialSlots;
+			if(materialIndices.size() == 0) materialIndices.push_back(scene.materials.size());
 
-			for(const MaterialSBTData& m : materialData){
+			for(const int i : materialIndices){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
 					(Vertex*)sceneBuffer.vertices(objectCount),
 					(Face*)sceneBuffer.indices(objectCount),
 					(float2*)sceneBuffer.uv(objectCount),
-					m
+					offset_material[i]
 				};
 
 				OPTIX_CHECK(optixSbtRecordPackHeader(kernelProgramGroups[2], &rec));
@@ -272,16 +279,45 @@ void PathTracerState::buildSBT(const Scene& scene){
 	}
 
 	{ // material
-		std::vector<NullRecord> materialRecords;
-		for(int i=0; i<material_methods.size()*material_types.size(); i++){
-			NullRecord rec;
-			OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
-			materialRecords.push_back(rec);
+		std::vector<MaterialNodeRecord> materialRecords;
+		for(int m=0; m<scene.materials.size(); m++){
+			const Material& material = scene.materials[m];
+			for(int n=0; n<material.nodes.size(); n++){
+				const std::shared_ptr<MaterialNode>& node = material.nodes[n];
+				for(int pg = 0; pg < node->nprograms(); pg++){
+ 					MaterialNodeRecord rec;
+					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
+					rec.data = node->sbtData(NodeIndexingInfo{offset_material[m], offset_nodes[m], sceneBuffer.get_images()});
+					materialRecords.push_back(rec);
+				}
+			}
 		}
+
+		{
+			for(int i=0; i<3; i++){
+				MaterialNodeRecord rec;
+				OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[i], &rec));
+				rec.data = MaterialNodeSBTData{.diffuse = material::DiffuseData()};
+				materialRecords.push_back(rec);
+			}
+		}
+
+		{
+			for(int n=0; n<scene.background.nodes.size(); n++){
+				const std::shared_ptr<MaterialNode>& node = scene.background.nodes[n];
+				for(int pg = 0; pg < node->nprograms(); pg++){
+ 					MaterialNodeRecord rec;
+					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
+					rec.data = node->sbtData(NodeIndexingInfo{offset_backgroud, offset_backgroud_nodes, sceneBuffer.get_images()});
+					materialRecords.push_back(rec);
+				}
+			}
+		}
+
 		materialRecordBuffer.alloc_and_upload(materialRecords, stream);
 
 		sbt.callablesRecordBase = materialRecordBuffer.d_pointer();
-		sbt.callablesRecordStrideInBytes = sizeof(NullRecord);
+		sbt.callablesRecordStrideInBytes = sizeof(MaterialNodeRecord);
 		sbt.callablesRecordCount = materialRecords.size();
 	}
 

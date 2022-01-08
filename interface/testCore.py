@@ -16,14 +16,26 @@ def createScene(scene, camera):
 										[0, 1, 0]]
 
 	# background
-	scene.background = [0.8, 0.8, 0.8]
+	scene.background = pt5.Material([
+		pt5.make_node(pt5.Background( ([1,1,1], 0), (1,0) ))
+	])
 
 
 	scene.materials = [
-		pt5.MTLData_Diffuse([0.8, 0.8, 0.3], 0),
-		pt5.MTLData_Diffuse([0.1, 0.8, 0.8], 0),
-		pt5.MTLData_Diffuse([0.8, 0.5, 0.1], 0),
-		pt5.MTLData_Diffuse([0.8, 0.3, 0.8], 0),
+		pt5.Material([
+			pt5.make_node(pt5.Mix(1, 2, (0.5, 0))),
+			pt5.make_node(pt5.Diffuse( ([0.8, 0.1, 0.1], 0) )),
+			pt5.make_node(pt5.Diffuse( ([0.1, 0.9, 0.1], 0) )),
+		]),
+		pt5.Material([
+			pt5.make_node(pt5.Diffuse( ([0.1, 0.8, 0.8], 0) ))
+		]),
+		pt5.Material([
+			pt5.make_node(pt5.Diffuse( ([0.8, 0.5, 0.1], 0) ))
+		]),
+		pt5.Material([
+			pt5.make_node(pt5.Diffuse( ([0.8, 0.3, 0.8], 0) ))
+		]),
 	]
 
 

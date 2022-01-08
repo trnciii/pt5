@@ -3,6 +3,7 @@
 #include <optix_device.h>
 
 #include "../vector_math.h"
+#include "../mesh.hpp"
 #include "../sbt.hpp"
 #include "math.cuh"
 
@@ -15,7 +16,6 @@ struct Intersection{
 	float3 ng;
 	float2 parametric;
 	float2 uv;
-	CUdeviceptr materialData;
 	float3 wo;
 };
 
@@ -47,8 +47,6 @@ __device__ Intersection make_intersection(const HitgroupSBTData& sbtData, int pr
 
 	is.n = faceforward(is.n, is.wo, is.ng);
 	is.ng = faceforward(is.ng, is.wo, is.ng);
-
-	is.materialData = sbtData.material.data;
 
 	return is;
 }
