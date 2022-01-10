@@ -62,7 +62,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		# Here we write the pixel values to the RenderResult
 		result = self.begin_result(0, 0, width, height)
 		layer = result.layers[0].passes["Combined"]
-		layer.rect = rect
+		layer.rect.foreach_set(rect)
 		self.end_result(result)
 
 	# For viewport renders, this method gets called once at the start and

@@ -1,8 +1,16 @@
 import numpy as np
 import bpy
 
+import time
+
 from . import camera
 from ...core import Image
+
+def make_image(src):
+	image = Image(*src.size)
+	src.pixels.foreach_get(np.array(image, copy=False).ravel())
+	return image
+
 
 def create(scene, hide = []):
 	from ... import core
@@ -13,16 +21,15 @@ def create(scene, hide = []):
 
 
 	# materials
-	images = []
+	images = set()
 	materials = []
 	for src in bpy.data.materials.values():
 		try:
 			nodes = perseNodes(src)
-			images += [n.image for n in nodes if isinstance(n, core.Texture)]
+			images.update({n.image for n in nodes if isinstance(n, core.Texture)})
 			materials.append(make_material(nodes))
 		except:
 			materials.append(make_material([core.Emission( ([1,0,1],0), (1, 0) )]))
-
 			print(src.name)
 			traceback.print_exc()
 
@@ -31,7 +38,7 @@ def create(scene, hide = []):
 	# background
 	try:
 		nodes = perseNodes(scene.world)
-		images += [n.image for n in nodes if isinstance(n, core.Texture)]
+		images.update({n.image for n in nodes if isinstance(n, core.Texture)})
 		ret.background = make_material(perseNodes(scene.world))
 	except:
 		ret.background = make_material([core.Background( ([1,0,1],0), (1, 0) )])
@@ -39,10 +46,7 @@ def create(scene, hide = []):
 
 	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(scene, hide)] if m]
 
-	ret.images = {
-		k : Image(np.array(v.pixels).reshape((v.size[1], v.size[0], 4)))
-		for k, v in {k:bpy.data.images[k] for k in images}.items()
-	}
+	ret.images = {k : make_image(bpy.data.images[k]) for k in images}
 
 
 	return ret

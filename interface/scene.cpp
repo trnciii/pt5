@@ -66,7 +66,7 @@ void init_scene(py::module_& m) {
 		}));
 
 
-	py::class_<Image>(m, "Image")
+	py::class_<Image>(m, "Image", py::buffer_protocol())
 		.def(py::init([](const py::array_t<float>& data){
 			assert(data.ndim() == 3);
 			assert(data.shape(2) == 4);
@@ -76,6 +76,26 @@ void init_scene(py::module_& m) {
 					(float4*)data.data(),
 					(float4*)data.data() + (data.shape(0)*data.shape(1)))
 			};
-		}));
+		}))
+		.def(py::init([](uint x, uint y, const py::array_t<float>& data){
+			assert(data.size() == x*y*4);
+			return Image{
+				{x, y},
+				std::vector<float4>((float4*)data.data(),	(float4*)data.data() + data.size()/4)
+			};
+		}))
+		.def(py::init([](uint x, uint y){
+			return Image{{x, y}, std::vector<float4>(x*y)};
+		}))
+		.def_buffer([](Image& self){
+			return py::buffer_info(
+				self.pixels.data(),
+				sizeof(float),
+				py::format_descriptor<float>::format(),
+				3,
+				{(int)self.size.y, (int)self.size.x, 4},
+				{self.size.x*sizeof(float4), sizeof(float4), sizeof(float)}
+			);
+		});
 
 }
