@@ -24,8 +24,8 @@ namespace material{
 
 	struct NodeProgramManager{
 		int id;
-		const std::vector<std::string> names;
-		NodeProgramManager(const std::vector<std::string>& n):id(-1), names(n){}
+		const std::vector<const char*> names;
+		NodeProgramManager(const std::vector<const char*>& n):id(-1), names(n){}
 	};
 
 

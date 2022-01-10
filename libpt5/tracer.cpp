@@ -137,15 +137,13 @@ void PathTracerState::createProgramGroups(){
 
 
 	{ // material
-		std::vector<std::string> names = material::nodeProgramNames();
-
 		std::vector<OptixProgramGroupDesc> descs;
-		for(const std::string& name : names){
+		for(const char* name : material::nodeProgramNames()){
 			OptixProgramGroupDesc desc;
 				desc.kind  = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
 				desc.flags = OPTIX_PROGRAM_GROUP_FLAGS_NONE;
 				desc.callables.moduleDC            = modules["material"];
-				desc.callables.entryFunctionNameDC = name.c_str();
+				desc.callables.entryFunctionNameDC = name;
 			descs.push_back(desc);
 		}
 

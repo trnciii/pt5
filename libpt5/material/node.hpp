@@ -235,7 +235,7 @@ inline std::shared_ptr<Node> make_node(const BackgroundData& data){
 
 
 
-inline std::vector<std::string> nodeProgramNames(){
+inline std::vector<const char*> nodeProgramNames(){
 	const std::vector<std::reference_wrapper<material::NodeProgramManager>> nodePrograms{
 		material::DiffuseBSDF::pgManager,
 		material::Emission::pgManager,
@@ -245,8 +245,8 @@ inline std::vector<std::string> nodeProgramNames(){
 		material::Background::pgManager,
 	};
 
-	std::vector<std::string> names;
-	for(material::NodeProgramManager& node : nodePrograms){
+	std::vector<const char*> names;
+	for(const material::NodeProgramManager& node : nodePrograms){
 		std::copy(node.names.begin(), node.names.end(), std::back_inserter(names));
 	}
 
