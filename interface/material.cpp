@@ -128,7 +128,8 @@ void init_material(py::module_& m){
 			}
 
 			return Texture(image, type, interpolation, extension);
-		}));
+		}))
+		.def_readwrite("image", &Texture::image);
 
 
 	py::class_<BackgroundData>(m, "Background")

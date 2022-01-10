@@ -9,22 +9,17 @@ def create(scene, hide = []):
 	from .material import make_material, perseNodes
 	from .object import toTriangleMesh, drawable
 
-	# images = [i for i in bpy.data.images.values() if i.name != 'Render Result']
-
 	ret = core.Scene()
-	# ret.images = {i.name : Image(np.array(i.pixels).reshape((i.size[1], i.size[0], 4))) for i in images}
 
-	ret.images = {
-		k : Image(np.array(v.pixels).reshape((v.size[1], v.size[0], 4)))
-		for k, v in bpy.data.images.items()
-		if k != 'Render Result'
-	}
 
 	# materials
+	images = []
 	materials = []
 	for src in bpy.data.materials.values():
 		try:
-			materials.append(make_material(perseNodes(src)))
+			nodes = perseNodes(src)
+			images += [n.image for n in nodes if isinstance(n, core.Texture)]
+			materials.append(make_material(nodes))
 		except:
 			materials.append(make_material([core.Emission( ([1,0,1],0), (1, 0) )]))
 
@@ -35,11 +30,19 @@ def create(scene, hide = []):
 
 	# background
 	try:
+		nodes = perseNodes(scene.world)
+		images += [n.image for n in nodes if isinstance(n, core.Texture)]
 		ret.background = make_material(perseNodes(scene.world))
 	except:
 		ret.background = make_material([core.Background( ([1,0,1],0), (1, 0) )])
 
 
 	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(scene, hide)] if m]
+
+	ret.images = {
+		k : Image(np.array(v.pixels).reshape((v.size[1], v.size[0], 4)))
+		for k, v in {k:bpy.data.images[k] for k in images}.items()
+	}
+
 
 	return ret
