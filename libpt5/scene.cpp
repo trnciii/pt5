@@ -40,12 +40,9 @@ void SceneBuffer::free_meshes(CUstream stream){
 
 
 
-void SceneBuffer::upload_images(const std::vector<Image>& s_images){
-	images.resize(s_images.size());
-	for(int i=0; i<s_images.size(); i++){
-		const Image& image = s_images[i];
-		cudaArray_t& array = images[i];
-
+void SceneBuffer::upload_images(const std::unordered_map<std::string, Image>& s_images){
+	for(const auto& [k, image] : s_images){
+		cudaArray_t& array = images[k];
 		cudaChannelFormatDesc channelFormatDesc = cudaCreateChannelDesc<float4>();
 
 		uint32_t pitch = image.size.x * 4 * sizeof(float);
@@ -56,11 +53,13 @@ void SceneBuffer::upload_images(const std::vector<Image>& s_images){
 			image.pixels.data(),
 			pitch, pitch, image.size.y,
 			cudaMemcpyHostToDevice));
+
 	}
 }
 
 void SceneBuffer::free_images(){
-	for(cudaArray_t& array : images) CUDA_CHECK(cudaFreeArray(array));
+	for(auto& [k, array] : images) CUDA_CHECK(cudaFreeArray(array));
+	images.clear();
 }
 
 

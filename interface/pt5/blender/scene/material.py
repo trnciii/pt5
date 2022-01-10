@@ -83,7 +83,7 @@ class Graph:
 		elif node.type == 'TEX_IMAGE':
 			self.props = {}
 			self.create = lambda nodes: core.Texture(
-				bpy.data.images.values().index(node.image),
+				node.image.name,
 				interpolation = node.interpolation,
 				extension = node.extension,
 				type = node.type
@@ -112,7 +112,7 @@ class Graph:
 		elif node.type == 'TEX_ENVIRONMENT':
 			self.props = {}
 			self.create = lambda nodes: core.Texture(
-				bpy.data.images.values().index(node.image),
+				node.image.name,
 				type = node.type
 			)
 

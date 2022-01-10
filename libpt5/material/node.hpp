@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <algorithm>
+#include <string>
 
 #include "data.h"
 #include "type.hpp"
@@ -116,12 +117,12 @@ struct TextureCreateInfo{
 		Environment,
 	};
 
-	uint32_t image;
+	std::string image;
 	cudaTextureDesc desc;
 	Type type;
 
 	TextureCreateInfo(
-		uint32_t i,
+		std::string i,
 		Type t = Type::ImageTexture,
 		cudaTextureFilterMode interpolation = cudaFilterModeLinear,
 		cudaTextureAddressMode extension = cudaAddressModeWrap)
@@ -162,7 +163,7 @@ public:
 	~Texture_base(){if(cudaTexture!=0)destroyCudaTexture();}
 
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
-		createCudaTexture(i.imageBuffers[info.image]);
+		createCudaTexture(i.imageBuffers.at(info.image));
 		return MaterialNodeSBTData{.texture = cudaTexture};
 	}
 };
@@ -172,7 +173,7 @@ class ImageTexture : public Texture_base{
 public:
 	inline static NodeProgramManager pgManager = NodeProgramManager({
 		"__direct_callable__image_texture",
-	});;
+	});
 
 	using Texture_base::Texture_base;
 	~ImageTexture(){};
@@ -186,7 +187,7 @@ class EnvironmentTexture : public Texture_base{
 public:
 	inline static NodeProgramManager pgManager = NodeProgramManager({
 		"__direct_callable__environment_texture",
-	});;
+	});
 
 	using Texture_base::Texture_base;
 	~EnvironmentTexture(){};

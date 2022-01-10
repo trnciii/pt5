@@ -9,10 +9,16 @@ def create(scene, hide = []):
 	from .material import make_material, perseNodes
 	from .object import toTriangleMesh, drawable
 
-	images = [i for i in bpy.data.images.values() if i.name != 'Render Result']
+	# images = [i for i in bpy.data.images.values() if i.name != 'Render Result']
 
 	ret = core.Scene()
-	ret.images = [Image(np.array(i.pixels).reshape((i.size[1], i.size[0], 4))) for i in images]
+	# ret.images = {i.name : Image(np.array(i.pixels).reshape((i.size[1], i.size[0], 4))) for i in images}
+
+	ret.images = {
+		k : Image(np.array(v.pixels).reshape((v.size[1], v.size[0], 4)))
+		for k, v in bpy.data.images.items()
+		if k != 'Render Result'
+	}
 
 	# materials
 	materials = []
