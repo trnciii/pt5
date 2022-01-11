@@ -35,7 +35,7 @@ $ROOT/build/main -o $RESULT/c++
 
 breakline
 bold_cyan "python"
-python3 $ROOT/interface/testCore.py -o $RESULT/py
+python3 $ROOT/testCore.py -o $RESULT/py
 
 
 
