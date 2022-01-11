@@ -4,18 +4,8 @@ class Scene:
 	def __init__(self):
 		self.materials = []
 		self.meshes = []
-		self._background = [0,0,0]
-
-	def upload(self):pass
-	def free(self):pass
-
-	@property
-	def background(self):
-		return self._background
-
-	@background.setter
-	def background(self, c):
-		self._background = np.array(c)
+		self.images = {}
+		self.background = None
 
 
 class Camera:
@@ -39,31 +29,23 @@ class Camera:
 		self._toWorld = np.array(m).reshape((3,3))
 
 
-class Material:
-	def __init__(self):
-		self._albedo = np.array([0,0,0])
-		self._emission = np.array([0,0,0])
-
-	@property
-	def albedo(self):
-		return self._albedo
-
-	@albedo.setter
-	def albedo(self, a):
-		self._albedo = np.array(a)
-
-	@property
-	def emission(self):
-		return self._emission
-
-	@emission.setter
-	def emission(self, e):
-		self._emission = np.array(e)
-
-
 class TriangleMesh:
-	def __init__(self, v, f, uv, m):
-		self.vertices = v
-		self.indices = f
-		self.uv = uv
-		self.materialSlots = m
+	def __init__(self, v, f, uv, m):pass
+
+
+class Image(np.ndarray):
+	def __new__(self, *args):
+		if len(args) == 1:
+			print('one', *args)
+			return args[0].reshape( (*args[0].shape, 4) )
+
+		elif len(args) == 2:
+			print('two', *args)
+			return np.zeros((args[1], args[0], 4), dtype = np.float32)
+
+		elif len(args) == 3:
+			print('three', *args)
+			return args[2].reshape((args[1], args[0], 4))
+
+
+

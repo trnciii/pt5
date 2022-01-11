@@ -42,4 +42,4 @@ class View:
 
 	@property
 	def pixels(self):
-		return np.array([0.8, 0.2, 0.4, 1]*(self.x*self.y)).reshape((self.y, self.x, 4))
+		return np.array([0.8, 0.2, 0.4, 1]*(self.x*self.y), dtype = np.float32).reshape((self.y, self.x, 4))
