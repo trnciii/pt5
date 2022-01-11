@@ -1,19 +1,34 @@
 #pragma once
 
-#include <stdint.h>
 #include "vector_math.h"
 
+namespace pt5{ namespace material{
 
-namespace pt5{
+	template <typename T>
+	struct Prop{T default_value; unsigned int input = 0;};
 
-struct MTLData_Diffuse{
-	float3 color = {0.6, 0.6, 0.6};
-	uint32_t texture = 0;
-};
 
-struct MTLData_Emission{
-	float3 color = {1,1,1};
-	uint32_t texture = 0;
-};
+	struct DiffuseData{
+		Prop<float3> color {{0.6, 0.6, 0.6}, 0};
+	};
 
-}
+
+	struct EmissionData{
+		Prop<float3> color {{1,1,1},0};
+		Prop<float> strength {1, 0};
+	};
+
+
+	struct MixData{
+		unsigned int shader1 = 0;
+		unsigned int shader2 = 0;
+		Prop<float> factor {0.5, 0};
+	};
+
+
+	struct BackgroundData{
+		Prop<float3> color {{1,1,1},0};
+		Prop<float> strength {1, 0};
+	};
+
+}}

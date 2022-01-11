@@ -1,7 +1,9 @@
 #pragma once
 
+#include "optix.hpp"
 #include "vector_math.h"
 #include "mesh.hpp"
+#include "material/data.h"
 
 namespace pt5{
 
@@ -10,33 +12,37 @@ struct RaygenSBTData{
 	OptixTraversableHandle traversable;
 };
 
-struct MissSBTData{
-	float3 background;
-};
 
-struct MaterialSBTData{
-	CUdeviceptr data;
-	int dc_albedo_id;
-	int dc_emission_id;
-	int dc_sample_direction_id;
-};
+using MissSBTData = unsigned int;
+
 
 struct HitgroupSBTData{
 	Vertex* vertices;
 	Face* faces;
 	float2* uv;
-	MaterialSBTData material;
+	int material;
 };
+
+union MaterialNodeSBTData{
+	material::DiffuseData diffuse;
+	material::EmissionData emission;
+	material::MixData mix;
+	material::BackgroundData background;
+
+	cudaTextureObject_t texture;
+};
+
 
 template <typename T>
 struct Record{
 	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-	T data;
+	T data {};
 };
 
 using RaygenRecord = Record<RaygenSBTData>;
 using MissRecord = Record<MissSBTData>;
 using HitgroupRecord = Record<HitgroupSBTData>;
+using MaterialNodeRecord = Record<MaterialNodeSBTData>;
 
 struct NullRecord{
 	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
