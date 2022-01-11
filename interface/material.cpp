@@ -30,7 +30,6 @@ void init_material(py::module_& m){
 	using namespace pt5;
 	using namespace material;
 
-	m.def("nodeProgramNames", &nodeProgramNames);
 	m.def("setNodeIndices", &setNodeIndices);
 
 
@@ -39,24 +38,6 @@ void init_material(py::module_& m){
 	py::class_<Material>(m, "Material")
 		.def(py::init<std::vector<std::shared_ptr<MaterialNode>>>())
 		.def_readwrite("nodes", &Material::nodes);
-
-
-	py::class_<Prop<float>>(m, "prop_float")
-		.def(py::init<>())
-		.def(py::init<float, unsigned int>())
-		.def(py::init(&propf1))
-		.def_readwrite("value", &Prop<float>::default_value)
-		.def_readwrite("input", &Prop<float>::input);
-
-
-	py::class_<Prop<float3>>(m, "prop_float3")
-		.def(py::init<>())
-		.def(py::init([](const py::array_t<float>& v, unsigned int i){
-			return Prop<float3>{make_float3(v), i};
-		}))
-		.def(py::init(&propf3))
-		.def_property("value", PROPERTY_FLOAT3(Prop<float3>, default_value))
-		.def_readwrite("input", &Prop<float3>::input);
 
 
 
@@ -118,13 +99,8 @@ void init_material(py::module_& m){
 			TexType type = TexType::ImageTexture;
 			if(kw.contains("type")){
 				const std::string s = kw["type"].cast<std::string>();
-				if(s == "TEX_ENVIRONMENT"){
-					std::cout <<"Environment texture" <<std::endl;
+				if(s == "TEX_ENVIRONMENT")
 					type = TexType::Environment;
-				}
-				else{
-					std::cout <<"image texture" <<std::endl;
-				}
 			}
 
 			return Texture(image, type, interpolation, extension);
