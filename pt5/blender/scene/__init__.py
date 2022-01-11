@@ -1,6 +1,6 @@
 import numpy as np
 import bpy
-
+import traceback
 import time
 
 from . import camera

@@ -1,7 +1,7 @@
 import bpy
 from bpy_extras.node_utils import find_node_input
 import numpy as np
-import traceback
+
 from ... import core
 
 
