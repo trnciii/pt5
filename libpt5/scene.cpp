@@ -4,18 +4,26 @@
 
 namespace pt5{
 
-void SceneBuffer::upload(const Scene& scene, CUstream stream){
-	upload_meshes(scene.meshes, stream);
+SceneBuffer::SceneBuffer(){
+	CUDA_CHECK(cudaStreamCreate(&stream));
+}
+
+SceneBuffer::~SceneBuffer(){
+	cudaStreamDestroy(stream);
+}
+
+void SceneBuffer::upload(const Scene& scene){
+	upload_meshes(scene.meshes);
 	upload_images(scene.images);
 }
 
-void SceneBuffer::free(CUstream stream){
-	free_meshes(stream);
+void SceneBuffer::free(){
+	free_meshes();
 	free_images();
 };
 
 
-void SceneBuffer::upload_meshes(const std::vector<TriangleMesh>& meshes, CUstream stream){
+void SceneBuffer::upload_meshes(const std::vector<TriangleMesh>& meshes){
 	vertexBuffers.resize(meshes.size());
 	indexBuffers.resize(meshes.size());
 	uvBuffers.resize(meshes.size());
@@ -27,7 +35,7 @@ void SceneBuffer::upload_meshes(const std::vector<TriangleMesh>& meshes, CUstrea
 	}
 }
 
-void SceneBuffer::free_meshes(CUstream stream){
+void SceneBuffer::free_meshes(){
 	for(CUDABuffer& buffer : vertexBuffers)buffer.free(stream);
 	for(CUDABuffer& buffer : indexBuffers)buffer.free(stream);
 	for(CUDABuffer& buffer : uvBuffers)buffer.free(stream);

@@ -447,13 +447,17 @@ PathTracerState::PathTracerState(){
 }
 
 void PathTracerState::setScene(const Scene& scene){
-	sceneBuffer.upload(scene, stream);
+	sceneBuffer.upload(scene);
+	sceneBuffer.syncStream();
+
 	buildAccel(scene.meshes);
 	buildSBT(scene);
 }
 
 void PathTracerState::removeScene(){
-	sceneBuffer.free(stream);
+	sceneBuffer.free();
+	sceneBuffer.syncStream();
+
 	destroyAccel();
 	destroySBT();
 }

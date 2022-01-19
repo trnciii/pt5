@@ -26,6 +26,8 @@ struct Scene{
 
 
 class SceneBuffer{
+	CUstream stream;
+
 	std::vector<CUDABuffer> vertexBuffers;
 	std::vector<CUDABuffer> indexBuffers;
 	std::vector<CUDABuffer> uvBuffers;
@@ -33,16 +35,21 @@ class SceneBuffer{
 	std::unordered_map<std::string, cudaArray_t> images;
 
 
-	void upload_meshes(const std::vector<TriangleMesh>&, CUstream);
-	void free_meshes(CUstream stream);
+	void upload_meshes(const std::vector<TriangleMesh>&);
+	void free_meshes();
 
 	void upload_images(const std::unordered_map<std::string, Image>& images);
 	void free_images();
 
 
 public:
-	void upload(const Scene& scene, CUstream stream);
-	void free(CUstream stream);
+	SceneBuffer();
+	~SceneBuffer();
+
+	void upload(const Scene& scene);
+	void free();
+
+	inline void syncStream()const{cudaStreamSynchronize(stream);}
 
 	inline CUdeviceptr vertices(int i) const{return vertexBuffers[i].d_pointer();}
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
