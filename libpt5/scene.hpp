@@ -7,11 +7,10 @@
 #include "vector_math.h"
 #include "CUDABuffer.hpp"
 #include "material/type.hpp"
+#include "mesh.hpp"
 
 
 namespace pt5{
-
-struct TriangleMesh;
 
 struct Image{
 	uint2 size;
