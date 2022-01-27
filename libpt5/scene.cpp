@@ -76,13 +76,13 @@ void SceneBuffer::free_images(){
 
 void SceneBuffer::createMaterialData(const std::vector<Material>& materials, const Material& background){
 
-	offset_material.resize(materials.size()+1);
+	offset_material.resize(materials.size());
 	offset_material[0] = 0;
-	for(int i=0; i<materials.size(); i++)
-		offset_material[i+1] = offset_material[i] + materials[i].nprograms();
+	for(int i=1; i<materials.size(); i++)
+		offset_material[i] = offset_material[i-1] + materials[i-1].nprograms();
 
-	// offset of all materials and default diffuse (has 3 programs)
-	offset_backgroud = offset_material[materials.size()] + 3;
+	offset_default_diffuse = offset_material.back() + materials.back().nprograms();
+	offset_backgroud = offset_default_diffuse + 3;
 
 
 	// create sbt data
@@ -91,6 +91,7 @@ void SceneBuffer::createMaterialData(const std::vector<Material>& materials, con
 		const Material& material = materials[m];
 
 		std::vector<int> offset_nodes(material.nodes.size());
+		offset_nodes[0] = 0;
 		for(int n=1; n<material.nodes.size(); n++)
 			offset_nodes[n] = offset_nodes[n-1] + material.nodes[n-1]->nprograms();
 
@@ -103,13 +104,14 @@ void SceneBuffer::createMaterialData(const std::vector<Material>& materials, con
 
 	backgroundSBTData.clear();
 	{
-		std::vector<int> offset_backgroud_nodes(background.nodes.size());
+		std::vector<int> offset_nodes(background.nodes.size());
+		offset_nodes[0] = 0;
 		for(int n=1; n<background.nodes.size(); n++)
-			offset_backgroud_nodes[n] = offset_backgroud_nodes[n-1] + background.nodes[n-1]->nprograms();
+			offset_nodes[n] = offset_nodes[n-1] + background.nodes[n-1]->nprograms();
 
 		for(const auto& node : background.nodes){
 			backgroundSBTData.emplace_back(node->sbtData(
-				NodeIndexingInfo{offset_backgroud, offset_backgroud_nodes, images}
+				NodeIndexingInfo{offset_backgroud, offset_nodes, images}
 			));
 		}
 	}

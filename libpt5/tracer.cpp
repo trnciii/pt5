@@ -225,7 +225,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 			int rayTypeCount = 1;
 
 			std::vector<uint32_t> materialIndices = mesh.materialSlots;
-			if(materialIndices.size() == 0) materialIndices.push_back(scene.materials.size());
+			if(materialIndices.size() == 0) materialIndices.push_back(-1);
 
 			for(const int i : materialIndices){
 				HitgroupRecord rec;

@@ -36,6 +36,7 @@ class SceneBuffer{
 	std::unordered_map<std::string, cudaArray_t> images;
 
 	std::vector<int> offset_material;
+	int offset_default_diffuse;
 	int offset_backgroud;
 	std::vector<std::vector<MaterialNodeSBTData>> materialSBTData;
 	std::vector<MaterialNodeSBTData> backgroundSBTData;
@@ -63,7 +64,11 @@ public:
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 
 	inline int node_output_background()const{return offset_backgroud;}
-	inline int node_output_material(int i)const{return offset_material[i];}
+	inline int node_output_material(int i)const{
+		if(i<0) return offset_default_diffuse;
+		else return offset_material[i];
+	}
+	inline int node_output_default()const{return offset_default_diffuse;}
 	inline MaterialNodeSBTData SBTData_material(int m, int n)const{return materialSBTData[m][n];}
 	inline MaterialNodeSBTData SBTData_background(int n)const{return backgroundSBTData[n];}
 };
