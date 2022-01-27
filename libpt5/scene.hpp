@@ -8,6 +8,7 @@
 #include "CUDABuffer.hpp"
 #include "material/type.hpp"
 #include "mesh.hpp"
+#include "sbt.hpp"
 
 
 namespace pt5{
@@ -34,6 +35,10 @@ class SceneBuffer{
 
 	std::unordered_map<std::string, cudaArray_t> images;
 
+	std::vector<int> offset_material;
+	int offset_backgroud;
+	std::vector<std::vector<MaterialNodeSBTData>> materialSBTData;
+	std::vector<MaterialNodeSBTData> backgroundSBTData;
 
 	void upload_meshes(const std::vector<TriangleMesh>&);
 	void free_meshes();
@@ -41,6 +46,8 @@ class SceneBuffer{
 	void upload_images(const std::unordered_map<std::string, Image>& images);
 	void free_images();
 
+	void createMaterialData(const std::vector<Material>& materials, const Material& background);
+	void destrpyMaterialData();
 
 public:
 	SceneBuffer();
@@ -55,7 +62,10 @@ public:
 	inline CUdeviceptr indices(int i) const{return indexBuffers[i].d_pointer();}
 	inline CUdeviceptr uv(int i) const{return uvBuffers[i].d_pointer();}
 
-	inline const std::unordered_map<std::string, cudaArray_t>& get_images()const{return images;}
+	inline int node_output_background()const{return offset_backgroud;}
+	inline int node_output_material(int i)const{return offset_material[i];}
+	inline MaterialNodeSBTData SBTData_material(int m, int n)const{return materialSBTData[m][n];}
+	inline MaterialNodeSBTData SBTData_background(int n)const{return backgroundSBTData[n];}
 };
 
 

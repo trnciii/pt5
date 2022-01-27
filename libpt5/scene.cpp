@@ -15,11 +15,13 @@ SceneBuffer::~SceneBuffer(){
 void SceneBuffer::upload(const Scene& scene){
 	upload_meshes(scene.meshes);
 	upload_images(scene.images);
+	createMaterialData(scene.materials, scene.background);
 }
 
 void SceneBuffer::free(){
 	free_meshes();
 	free_images();
+	destrpyMaterialData();
 };
 
 
@@ -68,6 +70,56 @@ void SceneBuffer::upload_images(const std::unordered_map<std::string, Image>& s_
 void SceneBuffer::free_images(){
 	for(auto& [k, array] : images) CUDA_CHECK(cudaFreeArray(array));
 	images.clear();
+}
+
+
+
+void SceneBuffer::createMaterialData(const std::vector<Material>& materials, const Material& background){
+
+	offset_material.resize(materials.size()+1);
+	offset_material[0] = 0;
+	for(int i=0; i<materials.size(); i++)
+		offset_material[i+1] = offset_material[i] + materials[i].nprograms();
+
+	// offset of all materials and default diffuse (has 3 programs)
+	offset_backgroud = offset_material[materials.size()] + 3;
+
+
+	// create sbt data
+	materialSBTData.resize(materials.size());
+	for(int m=0; m<materials.size(); m++){
+		const Material& material = materials[m];
+
+		std::vector<int> offset_nodes(material.nodes.size());
+		for(int n=1; n<material.nodes.size(); n++)
+			offset_nodes[n] = offset_nodes[n-1] + material.nodes[n-1]->nprograms();
+
+		for(const auto& node : material.nodes){
+			materialSBTData[m].emplace_back(node->sbtData(
+				NodeIndexingInfo{offset_material[m], offset_nodes, images}
+			));
+		}
+	}
+
+	backgroundSBTData.clear();
+	{
+		std::vector<int> offset_backgroud_nodes(background.nodes.size());
+		for(int n=1; n<background.nodes.size(); n++)
+			offset_backgroud_nodes[n] = offset_backgroud_nodes[n-1] + background.nodes[n-1]->nprograms();
+
+		for(const auto& node : background.nodes){
+			backgroundSBTData.emplace_back(node->sbtData(
+				NodeIndexingInfo{offset_backgroud, offset_backgroud_nodes, images}
+			));
+		}
+	}
+
+}
+
+void SceneBuffer::destrpyMaterialData(){
+	materialSBTData.clear();
+	backgroundSBTData.clear();
+	offset_material.clear();
 }
 
 
