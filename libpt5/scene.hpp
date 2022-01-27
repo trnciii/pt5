@@ -39,7 +39,6 @@ class SceneBuffer{
 	int offset_default_diffuse;
 	int offset_backgroud;
 	std::vector<std::vector<MaterialNodeSBTData>> materialSBTData;
-	std::vector<MaterialNodeSBTData> backgroundSBTData;
 
 	void upload_meshes(const std::vector<TriangleMesh>&);
 	void free_meshes();
@@ -70,7 +69,7 @@ public:
 	}
 	inline int node_output_default()const{return offset_default_diffuse;}
 	inline MaterialNodeSBTData SBTData_material(int m, int n)const{return materialSBTData[m][n];}
-	inline MaterialNodeSBTData SBTData_background(int n)const{return backgroundSBTData[n];}
+	inline MaterialNodeSBTData SBTData_background(int n)const{return materialSBTData.back()[n];}
 };
 
 

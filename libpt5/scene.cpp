@@ -1,6 +1,7 @@
 #include "scene.hpp"
 #include "mesh.hpp"
 
+#include <iostream>
 
 namespace pt5{
 
@@ -86,32 +87,29 @@ void SceneBuffer::createMaterialData(const std::vector<Material>& materials, con
 
 
 	// create sbt data
-	materialSBTData.resize(materials.size());
-	for(int m=0; m<materials.size(); m++){
-		const Material& material = materials[m];
+	materialSBTData.resize(materials.size() + 1);
 
-		std::vector<int> offset_nodes(material.nodes.size());
-		offset_nodes[0] = 0;
-		for(int n=1; n<material.nodes.size(); n++)
-			offset_nodes[n] = offset_nodes[n-1] + material.nodes[n-1]->nprograms();
+	for(int i=0; i<materials.size(); i++){
+		const int offset = offset_material[i];
+		const Material& material = materials[i];
 
+		const auto offset_nodes = material.offset_nodes();
 		for(const auto& node : material.nodes){
-			materialSBTData[m].emplace_back(node->sbtData(
-				NodeIndexingInfo{offset_material[m], offset_nodes, images}
+			materialSBTData[i].emplace_back(node->sbtData(
+				NodeIndexingInfo{offset, offset_nodes, images}
 			));
 		}
 	}
 
-	backgroundSBTData.clear();
 	{
-		std::vector<int> offset_nodes(background.nodes.size());
-		offset_nodes[0] = 0;
-		for(int n=1; n<background.nodes.size(); n++)
-			offset_nodes[n] = offset_nodes[n-1] + background.nodes[n-1]->nprograms();
+		int i = materials.size();
+		const int offset = offset_backgroud;
+		const Material& material = background;
 
-		for(const auto& node : background.nodes){
-			backgroundSBTData.emplace_back(node->sbtData(
-				NodeIndexingInfo{offset_backgroud, offset_nodes, images}
+		const auto offset_nodes = material.offset_nodes();
+		for(const auto& node : material.nodes){
+			materialSBTData[i].emplace_back(node->sbtData(
+				NodeIndexingInfo{offset, offset_nodes, images}
 			));
 		}
 	}
@@ -120,10 +118,8 @@ void SceneBuffer::createMaterialData(const std::vector<Material>& materials, con
 
 void SceneBuffer::destrpyMaterialData(){
 	materialSBTData.clear();
-	backgroundSBTData.clear();
 	offset_material.clear();
 }
-
 
 
 }

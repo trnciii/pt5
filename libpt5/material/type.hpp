@@ -40,11 +40,20 @@ namespace material{
 	class Material{
 	public:
 		std::vector<std::shared_ptr<Node>> nodes;
+
 		int nprograms()const{
 			int count = 0;
 			for(const auto& node : nodes)
 				count += node->nprograms();
 			return count;
+		}
+
+		std::vector<int> offset_nodes()const{
+			std::vector<int> ret(nodes.size());
+			ret[0] = 0;
+			for(int i=1; i<nodes.size(); i++)
+				ret[i] = ret[i-1] + nodes[i-1]->nprograms();
+			return ret;
 		}
 	};
 
