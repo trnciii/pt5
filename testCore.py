@@ -148,4 +148,4 @@ if ('-o' in sys.argv):
 else:
 	out = 'result/python.png'
 
-main(out = out, background='--background' in sys.argv)
+main(out = out, background= '--background' in sys.argv or '-b' in sys.argv)

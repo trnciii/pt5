@@ -184,7 +184,8 @@ int main(int argc, char* _argv[]){
 	std::string out = "result/c++.png";
 	{
 		std::vector<std::string> argv(_argv, _argv+argc);
-		background = std::find(argv.begin(), argv.end(), "--background") != argv.end();
+		background = std::find(argv.begin(), argv.end(), "--background") != argv.end()
+			|| std::find(argv.begin(), argv.end(), "-b") != argv.end();
 		auto o = std::find(argv.begin(), argv.end(), "-o");
 		if(o++ < argv.end()) out = *o;
 

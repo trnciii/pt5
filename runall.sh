@@ -30,12 +30,12 @@ fi
 
 breakline
 bold_cyan "c++ only"
-$ROOT/build/main -o $RESULT/c++
+$ROOT/build/main -o $RESULT/c++ $@
 
 
 breakline
 bold_cyan "python"
-python3 $ROOT/testCore.py -o $RESULT/py
+python3 $ROOT/testCore.py -o $RESULT/py $@
 
 
 
