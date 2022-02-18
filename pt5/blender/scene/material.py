@@ -118,7 +118,7 @@ class Graph:
 
 
 		else:
-			print('failed to perse a', node.type, 'node ', node.name)
+			print('failed to parse a', node.type, 'node ', node.name)
 
 
 	def __str__(self):
@@ -152,7 +152,7 @@ def make_material(nodes):
 	return core.Material([core.make_node(data) for data in nodes])
 
 
-def perseNodes(src):
+def parseNodes(src):
 
 	if isinstance(src, bpy.types.Material):
 		black = [core.Diffuse((0,0,0),0)]

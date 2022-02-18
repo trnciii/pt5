@@ -14,7 +14,7 @@ def make_image(src):
 
 def create(scene, hide = []):
 	from ... import core
-	from .material import make_material, perseNodes
+	from .material import make_material, parseNodes
 	from .object import toTriangleMesh, drawable
 
 	ret = core.Scene()
@@ -25,7 +25,7 @@ def create(scene, hide = []):
 	materials = []
 	for src in bpy.data.materials.values():
 		try:
-			nodes = perseNodes(src)
+			nodes = parseNodes(src)
 			images.update({n.image for n in nodes if isinstance(n, core.Texture)})
 			materials.append(make_material(nodes))
 		except:
@@ -37,9 +37,9 @@ def create(scene, hide = []):
 
 	# background
 	try:
-		nodes = perseNodes(scene.world)
+		nodes = parseNodes(scene.world)
 		images.update({n.image for n in nodes if isinstance(n, core.Texture)})
-		ret.background = make_material(perseNodes(scene.world))
+		ret.background = make_material(parseNodes(scene.world))
 	except:
 		ret.background = make_material([core.Background( ([1,0,1],0), (1, 0) )])
 
