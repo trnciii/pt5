@@ -3,12 +3,12 @@
 C++/OptiX7で書かれたパストレーサーであり、そのPython3のラッパ、またBlenderのアドオンです。
 リポジトリの構成はは次の通りです。
 
-host	C++から利用するサンプル
-interface python3 への公開
-libpt5 ライブラリ本体
-pt5 Blenderアドオン
-pt5/blender Blnder用モジュール
-pt5/core python3から利用できるモジュール
+* host	C++から利用するサンプル
+* interface python3 への公開
+* libpt5 関数等の本体
+* pt5 Blenderアドオン
+* pt5/blender Blnder用モジュール
+* pt5/core python3から利用できるモジュール
 
 
 ## 要求 (tested on)
