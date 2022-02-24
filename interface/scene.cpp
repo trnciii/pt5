@@ -50,19 +50,21 @@ void init_scene(py::module_& m) {
 	PYBIND11_NUMPY_DTYPE(Face, vertices, uv, smooth, material);
 
 
-	py::class_<TriangleMesh>(m, "TriangleMesh")
+	py::class_<TriangleMesh, std::shared_ptr<TriangleMesh>>(m, "TriangleMesh")
 		.def(py::init([](
 			const py::array_t<Vertex>& v,
 			const py::array_t<Face>& f,
 			const py::array_t<float>& uv,
 			const py::array_t<uint32_t>& m)
 		{
-			return (TriangleMesh){
+			std::shared_ptr<TriangleMesh> me = std::make_shared<TriangleMesh>(
 				toSTDVector(v),
 				toSTDVector(f),
 				std::vector<float2>((float2*)uv.data(), (float2*)uv.data()+uv.shape(0)),
 				toSTDVector(m)
-			};
+			);
+			me->upload(0);
+			return me;
 		}));
 
 

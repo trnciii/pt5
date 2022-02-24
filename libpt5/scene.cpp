@@ -5,39 +5,12 @@
 namespace pt5{
 
 void SceneBuffer::upload(const Scene& scene, CUstream stream){
-	upload_meshes(scene.meshes, stream);
 	upload_images(scene.images);
 }
 
 void SceneBuffer::free(CUstream stream){
-	free_meshes(stream);
 	free_images();
 };
-
-
-void SceneBuffer::upload_meshes(const std::vector<TriangleMesh>& meshes, CUstream stream){
-	vertexBuffers.resize(meshes.size());
-	indexBuffers.resize(meshes.size());
-	uvBuffers.resize(meshes.size());
-
-	for(int i=0; i<meshes.size(); i++){
-		vertexBuffers[i].alloc_and_upload(meshes[i].vertices, stream);
-		indexBuffers[i].alloc_and_upload(meshes[i].indices, stream);
-		uvBuffers[i].alloc_and_upload(meshes[i].uv, stream);
-	}
-}
-
-void SceneBuffer::free_meshes(CUstream stream){
-	for(CUDABuffer& buffer : vertexBuffers)buffer.free(stream);
-	for(CUDABuffer& buffer : indexBuffers)buffer.free(stream);
-	for(CUDABuffer& buffer : uvBuffers)buffer.free(stream);
-
-	cudaStreamSynchronize(stream);
-	vertexBuffers.clear();
-	indexBuffers.clear();
-	uvBuffers.clear();
-}
-
 
 
 void SceneBuffer::upload_images(const std::unordered_map<std::string, Image>& s_images){

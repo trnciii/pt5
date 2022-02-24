@@ -28,7 +28,7 @@ private:
 	void createProgramGroups();
 	void createPipeline();
 
-	void buildAccel(const std::vector<TriangleMesh>& meshes);
+	void buildAccel(const std::vector<std::shared_ptr<TriangleMesh>>& meshes);
 	void buildSBT(const Scene& scene);
 
 	void destroyAccel();

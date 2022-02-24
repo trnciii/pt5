@@ -248,7 +248,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 	{
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for(int objectCount=0; objectCount<scene.meshes.size(); objectCount++){
-			const TriangleMesh& mesh = scene.meshes[objectCount];
+			const TriangleMesh& mesh = *scene.meshes[objectCount];
 			int rayTypeCount = 1;
 
 			std::vector<uint32_t> materialIndices = mesh.materialSlots;
@@ -258,9 +258,9 @@ void PathTracerState::buildSBT(const Scene& scene){
 				HitgroupRecord rec;
 
 				HitgroupSBTData data = {
-					(Vertex*)sceneBuffer.vertices(objectCount),
-					(Face*)sceneBuffer.indices(objectCount),
-					(float2*)sceneBuffer.uv(objectCount),
+					(Vertex*)mesh.vertexBuffer.d_pointer(),
+					(Face*)mesh.indexBuffer.d_pointer(),
+					(float2*)mesh.uvBuffer.d_pointer(),
 					offset_material[i]
 				};
 
@@ -331,16 +331,16 @@ void PathTracerState::destroySBT(){
 }
 
 
-void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
+void PathTracerState::buildAccel(const std::vector<std::shared_ptr<TriangleMesh>>& meshes){
 	std::vector<OptixBuildInput> triangleInput(meshes.size());
 	std::vector<std::vector<uint32_t>> triangleInputFlags(meshes.size());
 	std::vector<CUdeviceptr> d_vertices(meshes.size());
 
 	for(int i=0; i<meshes.size(); i++){
-		const TriangleMesh& mesh = meshes[i];
+		const TriangleMesh& mesh = *meshes[i];
 		const int materialSize = mesh.materialSlots.size()? mesh.materialSlots.size() : 1;
 
-		d_vertices[i] = sceneBuffer.vertices(i) + offsetof(Vertex, p);
+		d_vertices[i] = mesh.vertexBuffer.d_pointer() + offsetof(Vertex, p);
 		triangleInputFlags[i] = std::vector<uint32_t>(materialSize, OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT);
 
 		triangleInput[i] = {};
@@ -353,12 +353,12 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 
 			triangleInput[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
 			triangleInput[i].triangleArray.numIndexTriplets = (int)mesh.indices.size();
-			triangleInput[i].triangleArray.indexBuffer = sceneBuffer.indices(i) + offsetof(Face, vertices);
+			triangleInput[i].triangleArray.indexBuffer = mesh.indexBuffer.d_pointer() + offsetof(Face, vertices);
 			triangleInput[i].triangleArray.indexStrideInBytes = sizeof(Face);
 
 			triangleInput[i].triangleArray.flags = triangleInputFlags[i].data();
 			triangleInput[i].triangleArray.numSbtRecords = materialSize;
-			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = sceneBuffer.indices(i) + offsetof(Face, material);
+			triangleInput[i].triangleArray.sbtIndexOffsetBuffer = mesh.indexBuffer.d_pointer() + offsetof(Face, material);
 			triangleInput[i].triangleArray.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
 			triangleInput[i].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(Face);
 	}
@@ -401,8 +401,8 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 		&accelOptions,
 		triangleInput.data(),
 		(int)meshes.size(),
-		tempBuffer.d_pointer(), tempBuffer.sizeInBytes,
-		outputBuffer.d_pointer(), outputBuffer.sizeInBytes,
+		tempBuffer.d_pointer(), tempBuffer.size(),
+		outputBuffer.d_pointer(), outputBuffer.size(),
 		&asHandle,
 		&emitDesc, 1
 		));
@@ -419,7 +419,7 @@ void PathTracerState::buildAccel(const std::vector<TriangleMesh>& meshes){
 		context,
 		0,
 		asHandle,
-		asBuffer.d_pointer(), asBuffer.sizeInBytes,
+		asBuffer.d_pointer(), asBuffer.size(),
 		&asHandle
 		))
 
@@ -499,8 +499,7 @@ void PathTracerState::render(const View& view, uint spp, const Camera& camera){
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
 		stream,
-		buffer.d_pointer(),
-		buffer.sizeInBytes,
+		buffer.d_pointer(), buffer.size(),
 		&sbt,
 		params.image.size.x,
 		params.image.size.y,

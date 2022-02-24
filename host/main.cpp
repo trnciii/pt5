@@ -173,8 +173,8 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 			{1, 0}
 		};
 
-		scene.meshes.push_back({v_box, f_box, uv_box, mSlot_box});
-		scene.meshes.push_back({v_light, f_light, uv_light, {3}});
+		scene.meshes.emplace_back(std::make_shared<pt5::TriangleMesh>(v_box, f_box, uv_box, mSlot_box))->upload(0);
+		scene.meshes.emplace_back(std::make_shared<pt5::TriangleMesh>(v_light, f_light, uv_light, std::vector<uint32_t>{3}))->upload(0);
 	}
 }
 
