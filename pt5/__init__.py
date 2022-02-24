@@ -11,8 +11,8 @@ bl_info = {
   "category": "Render",
 }
 
-import importlib
-if importlib.util.find_spec("bpy"):
+from importlib import util
+if util.find_spec("bpy"):
 	print('import pt5.blender module')
 	from .blender import scene
 
@@ -31,5 +31,4 @@ if importlib.util.find_spec("bpy"):
 		panels.unregister()
 		props.unregister()
 
-
-del importlib
+del util
