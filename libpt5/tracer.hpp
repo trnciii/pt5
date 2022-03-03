@@ -61,6 +61,8 @@ private:
 
 	SceneBuffer sceneBuffer;
 
+	CUDABuffer launchParamsBuffer;
+
 	cudaEvent_t finishEvent;
 };
 

@@ -443,6 +443,8 @@ PathTracerState::PathTracerState(){
 	createProgramGroups();
 	createPipeline();
 
+	launchParamsBuffer.alloc(sizeof(LaunchParams), stream);
+
 	std::cout <<"initialized PathTracerState" <<std::endl;
 }
 
@@ -461,6 +463,8 @@ void PathTracerState::removeScene(){
 
 PathTracerState::~PathTracerState(){
 	removeScene();
+
+	launchParamsBuffer.free(stream);
 
 	OPTIX_CHECK( optixPipelineDestroy( pipeline ) );
 
@@ -490,22 +494,20 @@ void PathTracerState::render(const View& view, uint spp, const Camera& camera){
 	params.spp = spp;
 	params.camera = camera;
 
-	CUDABuffer buffer;
-	buffer.alloc_and_upload(params, stream);
-
+	launchParamsBuffer.upload(&params, 1, stream);
 
 	cudaEventCreate(&finishEvent);
 
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
 		stream,
-		buffer.d_pointer(), buffer.size(),
+		launchParamsBuffer.d_pointer(),
+		launchParamsBuffer.size(),
 		&sbt,
 		params.image.size.x,
 		params.image.size.y,
 		1));
 
-	buffer.free(stream);
 	cudaEventRecord(finishEvent, stream);
 }
 
