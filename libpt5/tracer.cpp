@@ -6,7 +6,6 @@
 #include "tracer.hpp"
 #include "optix.hpp"
 #include "view.hpp"
-#include "scene.hpp"
 #include "camera.hpp"
 #include "LaunchParams.hpp"
 #include "sbt.hpp"
@@ -287,7 +286,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 				for(int pg = 0; pg < node->nprograms(); pg++){
  					MaterialNodeRecord rec;
 					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
-					rec.data = node->sbtData(NodeIndexingInfo{offset_material[m], offset_nodes[m], sceneBuffer.get_images()});
+					rec.data = node->sbtData(NodeIndexingInfo{offset_material[m], offset_nodes[m]});
 					materialRecords.push_back(rec);
 				}
 			}
@@ -308,7 +307,7 @@ void PathTracerState::buildSBT(const Scene& scene){
 				for(int pg = 0; pg < node->nprograms(); pg++){
  					MaterialNodeRecord rec;
 					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
-					rec.data = node->sbtData(NodeIndexingInfo{offset_backgroud, offset_backgroud_nodes, sceneBuffer.get_images()});
+					rec.data = node->sbtData(NodeIndexingInfo{offset_backgroud, offset_backgroud_nodes});
 					materialRecords.push_back(rec);
 				}
 			}
@@ -449,13 +448,11 @@ PathTracerState::PathTracerState(){
 }
 
 void PathTracerState::setScene(const Scene& scene){
-	sceneBuffer.upload(scene, stream);
 	buildAccel(scene.meshes);
 	buildSBT(scene);
 }
 
 void PathTracerState::removeScene(){
-	sceneBuffer.free(stream);
 	destroyAccel();
 	destroySBT();
 }

@@ -1,14 +1,23 @@
 #pragma once
 
 #include <unordered_map>
+#include <memory>
+#include <vector>
+
 #include "CUDABuffer.hpp"
 #include "mesh.hpp"
-#include "scene.hpp"
+#include "material/type.hpp"
 
 namespace pt5{
 
 struct Camera;
 class View;
+
+struct Scene{
+	Material background;
+	std::vector<std::shared_ptr<TriangleMesh>> meshes;
+	std::vector<Material> materials;
+};
 
 class PathTracerState{
 public:
@@ -58,8 +67,6 @@ private:
 
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
-
-	SceneBuffer sceneBuffer;
 
 	CUDABuffer launchParamsBuffer;
 

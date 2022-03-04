@@ -2,13 +2,13 @@
 
 #include <memory>
 #include <vector>
-#include <functional>
 #include <algorithm>
 #include <string>
 
 #include "data.h"
 #include "type.hpp"
 #include "../sbt.hpp"
+#include "../image.hpp"
 
 
 namespace pt5{ namespace material{
@@ -117,16 +117,17 @@ struct TextureCreateInfo{
 		Environment,
 	};
 
-	std::string image;
+	std::shared_ptr<Image> image;
 	cudaTextureDesc desc;
 	Type type;
 
 	TextureCreateInfo(
-		std::string i,
+		std::shared_ptr<Image> i,
 		Type t = Type::ImageTexture,
 		cudaTextureFilterMode interpolation = cudaFilterModeLinear,
 		cudaTextureAddressMode extension = cudaAddressModeWrap)
-	:image(i), type(t){
+	:image(i), type(t)
+	{
 		desc.addressMode[0] = desc.addressMode[1] = extension;
 		desc.filterMode = interpolation;
 		desc.normalizedCoords = 1;
@@ -142,12 +143,14 @@ class Texture_base : public Node{
 	TextureCreateInfo info;
 	cudaTextureObject_t cudaTexture {};
 
-	cudaTextureObject_t createCudaTexture(const cudaArray_t& array){
+	cudaTextureObject_t createCudaTexture(){
 		assert(cudaTexture == 0);
+
+		if(info.image->array == 0) info.image->upload();
 
 		cudaResourceDesc resDesc = {};
 		resDesc.resType = cudaResourceTypeArray;
-		resDesc.res.array.array = array;
+		resDesc.res.array.array = info.image->array;
 		cudaCreateTextureObject(&cudaTexture, &resDesc, &info.desc, nullptr);
 		return cudaTexture;
 	}
@@ -163,7 +166,7 @@ public:
 	~Texture_base(){if(cudaTexture!=0)destroyCudaTexture();}
 
 	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
-		createCudaTexture(i.imageBuffers.at(info.image));
+		createCudaTexture();
 		return MaterialNodeSBTData{.texture = cudaTexture};
 	}
 };

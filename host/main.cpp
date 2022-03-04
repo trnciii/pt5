@@ -51,6 +51,7 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	}
 
 
+	std::shared_ptr<pt5::Image> circlesImage;
 	{
 		uint w = 128;
 		uint h = 128;
@@ -69,16 +70,13 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 				pixels[i] += make_float4(1, 1, 0, 1);
 		}
 
-		scene.images = {
-			{"circles", {{w, h}, pixels}}
-		};
-
+		circlesImage = std::make_shared<pt5::Image>(w, h, pixels);
 	}
 
 
 	scene.background = pt5::Material{{
 		pt5::make_node(pt5::Background({{{1,0.5,1}, 1}, {1,0}})),
-		pt5::make_node(pt5::Texture("circles", pt5::TexType::Environment))
+		pt5::make_node(pt5::Texture(circlesImage, pt5::TexType::Environment))
 	}};
 
 
@@ -86,14 +84,14 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	scene.materials = {
 		pt5::Material{{
 			pt5::make_node(pt5::Diffuse({{{0.8, 0.8, 0.8}, 1}})),
-			pt5::make_node(pt5::Texture("circles")),
+			pt5::make_node(pt5::Texture(circlesImage)),
 		}},
 
 		pt5::Material{{
 			pt5::make_node(pt5::Mix({1, 2, {0.5, 3}})),
 			pt5::make_node(pt5::Diffuse({{{0.8, 0.2, 0.2}, 0}})),
 			pt5::make_node(pt5::Diffuse({{{0.2, 0.6, 0.8}, 0}})),
-			pt5::make_node(pt5::Texture("circles")),
+			pt5::make_node(pt5::Texture(circlesImage)),
 		}},
 
 		pt5::Material{{
