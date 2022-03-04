@@ -51,7 +51,7 @@ class Graph:
 				'Strength': Prop(inputs['Strength'].default_value, find_socket_input(inputs['Strength'])),
 			}
 
-			self.create = lambda nodes: core.Emission(
+			self.create = lambda nodes, images: core.Emission(
 				self.props['Color'].nodeindex(nodes),
 				self.props['Strength'].nodeindex(nodes)
 			)
@@ -63,7 +63,7 @@ class Graph:
 				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
 			}
 
-			self.create = lambda nodes: core.Diffuse(self.props['Color'].nodeindex(nodes))
+			self.create = lambda nodes, images: core.Diffuse(self.props['Color'].nodeindex(nodes))
 
 
 		elif node.type == 'MIX_SHADER':
@@ -73,7 +73,7 @@ class Graph:
 				'shader 2': Prop(None, find_socket_input(inputs[2])),
 			}
 
-			self.create = lambda nodes: core.Mix(
+			self.create = lambda nodes, images: core.Mix(
 				self.props['shader 1'].nodeindex(nodes)[1],
 				self.props['shader 2'].nodeindex(nodes)[1],
 				self.props['Fac'].nodeindex(nodes),
@@ -82,8 +82,8 @@ class Graph:
 
 		elif node.type == 'TEX_IMAGE':
 			self.props = {}
-			self.create = lambda nodes: core.Texture(
-				node.image.name,
+			self.create = lambda nodes, images: core.Texture(
+				images[node.image.name],
 				interpolation = node.interpolation,
 				extension = node.extension,
 				type = node.type
@@ -95,7 +95,7 @@ class Graph:
 				'Base Color': Prop(inputs['Base Color'].default_value[:3], find_socket_input(inputs['Base Color'])),
 			}
 
-			self.create = lambda nodes: core.Diffuse(self.props['Base Color'].nodeindex(nodes))
+			self.create = lambda nodes, images: core.Diffuse(self.props['Base Color'].nodeindex(nodes))
 
 
 		elif node.type == 'BACKGROUND':
@@ -104,15 +104,15 @@ class Graph:
 				'Strength': Prop(inputs['Strength'].default_value, find_socket_input(inputs['Strength']))
 			}
 
-			self.create = lambda nodes: core.Background(
+			self.create = lambda nodes, images: core.Background(
 				self.props['Color'].nodeindex(nodes),
 				self.props['Strength'].nodeindex(nodes)
 			)
 
 		elif node.type == 'TEX_ENVIRONMENT':
 			self.props = {}
-			self.create = lambda nodes: core.Texture(
-				node.image.name,
+			self.create = lambda nodes, images: core.Texture(
+				images[node.image.name],
 				type = node.type
 			)
 
@@ -152,7 +152,7 @@ def make_material(nodes):
 	return core.Material([core.make_node(data) for data in nodes])
 
 
-def parseNodes(src):
+def parseNodes(src, images):
 
 	if isinstance(src, bpy.types.Material):
 		black = [core.Diffuse((0,0,0),0)]
@@ -194,4 +194,4 @@ def parseNodes(src):
 
 	# print('-'*40)
 
-	return [Graph(n, tree).create(nodes) for n in nodes]
+	return [Graph(n, tree).create(nodes, images) for n in nodes]

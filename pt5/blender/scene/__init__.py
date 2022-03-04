@@ -11,6 +11,11 @@ def make_image(src):
 	src.pixels.foreach_get(np.array(image, copy=False).ravel())
 	return image
 
+def is_used(img, candidates):
+	for mat in candidates:
+		if mat.user_of_id(img): return True
+	return False
+
 
 def create(scene, hide = []):
 	from ... import core
@@ -19,14 +24,16 @@ def create(scene, hide = []):
 
 	ret = core.Scene()
 
+	images = {img.name : make_image(img)
+		for img in bpy.data.images
+		if is_used(img, bpy.data.materials.values() + bpy.data.worlds.values())
+	}
 
 	# materials
-	images = set()
 	materials = []
 	for src in bpy.data.materials.values():
 		try:
-			nodes = parseNodes(src)
-			images.update({n.image for n in nodes if isinstance(n, core.Texture)})
+			nodes = parseNodes(src, images)
 			materials.append(make_material(nodes))
 		except:
 			materials.append(make_material([core.Emission( ([1,0,1],0), (1, 0) )]))
@@ -37,16 +44,13 @@ def create(scene, hide = []):
 
 	# background
 	try:
-		nodes = parseNodes(scene.world)
-		images.update({n.image for n in nodes if isinstance(n, core.Texture)})
-		ret.background = make_material(parseNodes(scene.world))
+		nodes = parseNodes(scene.world, images)
+		ret.background = make_material(parseNodes(scene.world, images))
 	except:
 		ret.background = make_material([core.Background( ([1,0,1],0), (1, 0) )])
+		traceback.print_exc()
 
 
 	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(scene, hide)] if m]
-
-	ret.images = {k : make_image(bpy.data.images[k]) for k in images}
-
 
 	return ret

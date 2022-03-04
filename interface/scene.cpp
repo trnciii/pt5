@@ -13,11 +13,10 @@ namespace py = pybind11;
 void init_scene(py::module_& m) {
 	using namespace pt5;
 
-	py::class_<Scene>(m, "Scene")
+	py::class_<Scene, std::shared_ptr<Scene>>(m, "Scene")
 		.def(py::init<>())
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("meshes", &Scene::meshes)
-		.def_readwrite("images", &Scene::images)
 		.def_readwrite("background", &Scene::background);
 
 
@@ -68,7 +67,7 @@ void init_scene(py::module_& m) {
 		}));
 
 
-	py::class_<Image>(m, "Image", py::buffer_protocol())
+	py::class_<Image, std::shared_ptr<Image>>(m, "Image", py::buffer_protocol())
 		.def(py::init([](const py::array_t<float>& data){
 			assert(data.ndim() == 3);
 			assert(data.shape(2) == 4);
