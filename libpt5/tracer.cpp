@@ -190,19 +190,19 @@ void PathTracerState::createPipeline(){
 }
 
 
-void PathTracerState::buildSBT(const Scene& scene){
+void PathTracerState::buildSBT(){
 
 	std::vector<int> offset_material;
-	offset_material.resize(scene.materials.size()+1);
+	offset_material.resize(scene->materials.size()+1);
 	offset_material[0] = 0;
 
-	for(int i=0; i<scene.materials.size(); i++)
-		offset_material[i+1] = offset_material[i] + scene.materials[i].nprograms();
+	for(int i=0; i<scene->materials.size(); i++)
+		offset_material[i+1] = offset_material[i] + scene->materials[i].nprograms();
 
 
-	std::vector<std::vector<int>> offset_nodes(scene.materials.size());
-	for(int m=0; m<scene.materials.size(); m++){
-		const Material& material = scene.materials[m];
+	std::vector<std::vector<int>> offset_nodes(scene->materials.size());
+	for(int m=0; m<scene->materials.size(); m++){
+		const Material& material = scene->materials[m];
 		std::vector<int>& offset = offset_nodes[m];
 
 		offset.resize(material.nodes.size());
@@ -211,10 +211,10 @@ void PathTracerState::buildSBT(const Scene& scene){
 	}
 
 	// offset of all materials and default diffuse (has 3 programs)
-	int offset_backgroud = offset_material[scene.materials.size()] + 3;
-	std::vector<int> offset_backgroud_nodes(scene.background.nodes.size());
-	for(int n=1; n<scene.background.nodes.size(); n++)
-		offset_backgroud_nodes[n] = offset_backgroud_nodes[n-1] + scene.background.nodes[n-1]->nprograms();
+	int offset_backgroud = offset_material[scene->materials.size()] + 3;
+	std::vector<int> offset_backgroud_nodes(scene->background.nodes.size());
+	for(int n=1; n<scene->background.nodes.size(); n++)
+		offset_backgroud_nodes[n] = offset_backgroud_nodes[n-1] + scene->background.nodes[n-1]->nprograms();
 
 
 
@@ -246,12 +246,12 @@ void PathTracerState::buildSBT(const Scene& scene){
 	// hitgroup
 	{
 		std::vector<HitgroupRecord> hitgroupRecords;
-		for(int objectCount=0; objectCount<scene.meshes.size(); objectCount++){
-			const TriangleMesh& mesh = *scene.meshes[objectCount];
+		for(int objectCount=0; objectCount<scene->meshes.size(); objectCount++){
+			const TriangleMesh& mesh = *scene->meshes[objectCount];
 			int rayTypeCount = 1;
 
 			std::vector<uint32_t> materialIndices = mesh.materialSlots;
-			if(materialIndices.size() == 0) materialIndices.push_back(scene.materials.size());
+			if(materialIndices.size() == 0) materialIndices.push_back(scene->materials.size());
 
 			for(const int i : materialIndices){
 				HitgroupRecord rec;
@@ -279,8 +279,8 @@ void PathTracerState::buildSBT(const Scene& scene){
 
 	{ // material
 		std::vector<MaterialNodeRecord> materialRecords;
-		for(int m=0; m<scene.materials.size(); m++){
-			const Material& material = scene.materials[m];
+		for(int m=0; m<scene->materials.size(); m++){
+			const Material& material = scene->materials[m];
 			for(int n=0; n<material.nodes.size(); n++){
 				const std::shared_ptr<MaterialNode>& node = material.nodes[n];
 				for(int pg = 0; pg < node->nprograms(); pg++){
@@ -302,8 +302,8 @@ void PathTracerState::buildSBT(const Scene& scene){
 		}
 
 		{
-			for(int n=0; n<scene.background.nodes.size(); n++){
-				const std::shared_ptr<MaterialNode>& node = scene.background.nodes[n];
+			for(int n=0; n<scene->background.nodes.size(); n++){
+				const std::shared_ptr<MaterialNode>& node = scene->background.nodes[n];
 				for(int pg = 0; pg < node->nprograms(); pg++){
  					MaterialNodeRecord rec;
 					OPTIX_CHECK(optixSbtRecordPackHeader(materialProgramGroups[node->program() + pg], &rec));
@@ -447,14 +447,16 @@ PathTracerState::PathTracerState(){
 	std::cout <<"initialized PathTracerState" <<std::endl;
 }
 
-void PathTracerState::setScene(const Scene& scene){
-	buildAccel(scene.meshes);
-	buildSBT(scene);
+void PathTracerState::setScene(const std::shared_ptr<Scene> s){
+	scene = s;
+	buildAccel(scene->meshes);
+	buildSBT();
 }
 
 void PathTracerState::removeScene(){
 	destroyAccel();
 	destroySBT();
+	scene = nullptr;
 }
 
 

@@ -24,7 +24,7 @@ public:
 	PathTracerState();
 	~PathTracerState();
 
-	void setScene(const Scene& scene);
+	void setScene(const std::shared_ptr<Scene>);
 	void removeScene();
 
 	void render(const View& view, uint spp, const Camera& camera);
@@ -38,7 +38,7 @@ private:
 	void createPipeline();
 
 	void buildAccel(const std::vector<std::shared_ptr<TriangleMesh>>& meshes);
-	void buildSBT(const Scene& scene);
+	void buildSBT();
 
 	void destroyAccel();
 	void destroySBT();
@@ -67,6 +67,8 @@ private:
 
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
+
+	std::shared_ptr<Scene> scene;
 
 	CUDABuffer launchParamsBuffer;
 

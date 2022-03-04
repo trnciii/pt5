@@ -41,15 +41,8 @@ void writeImage(const std::string& filename, int w, int h, const std::vector<flo
 }
 
 
-void createScene(pt5::Scene& scene, pt5::Camera& camera){
-	{
-		camera.position = {0, -5, 2};
-		camera.toWorld[0] = {1, 0, 0};
-		camera.toWorld[1] = {0, 0,-1};
-		camera.toWorld[2] = {0, 1, 0};
-		camera.focalLength = 2.3;
-	}
-
+std::shared_ptr<pt5::Scene> createScene(){
+	pt5::Scene scene;
 
 	std::shared_ptr<pt5::Image> circlesImage;
 	{
@@ -173,6 +166,8 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 
 		scene.meshes.emplace_back(std::make_shared<pt5::TriangleMesh>(v_box, f_box, uv_box, mSlot_box))->upload(0);
 		scene.meshes.emplace_back(std::make_shared<pt5::TriangleMesh>(v_light, f_light, uv_light, std::vector<uint32_t>{3}))->upload(0);
+
+		return std::make_shared<pt5::Scene>(scene);
 	}
 }
 
@@ -214,12 +209,16 @@ int main(int argc, char* _argv[]){
 	}
 
 
-	pt5::Scene scene;
-	pt5::Camera camera;
-
 	auto t0 = std::chrono::system_clock::now();
 
-	createScene(scene, camera);
+	auto scene = createScene();
+	pt5::Camera camera{
+		{0, -5, 2},
+		{	{1, 0, 0},
+			{0, 0,-1},
+			{0, 1, 0}},
+		2.3
+	};
 
 	auto t1 = std::chrono::system_clock::now();
 	std::cout <<"Time for scene creation: "
