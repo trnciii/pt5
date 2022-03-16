@@ -4,9 +4,11 @@ import bpy
 import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
+import blf
 
 import pt5
 import numpy as np
+import time
 
 
 class CustomRenderEngine(bpy.types.RenderEngine):
@@ -54,7 +56,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		camera = pt5.scene.camera.fromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
-		pt5.cuda_sync()
+		self.tracer.sync()
 
 		view.downloadImage()
 		rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
@@ -130,10 +132,13 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 			self.draw_data = CustomDrawData(dimensions)
 
 		camera = pt5.scene.camera.fromView(context, dimensions)
-		self.tracer.render(self.draw_data.view, scene.pt5.spp_viewport, camera)
-		pt5.cuda_sync()
 
-		self.draw_data.draw()
+		t0 = time.time()
+		self.tracer.render(self.draw_data.view, scene.pt5.spp_viewport, camera)
+		self.tracer.sync()
+		t1 = time.time()
+
+		self.draw_data.draw(str(t1-t0))
 
 
 class CustomDrawData:
@@ -153,7 +158,7 @@ class CustomDrawData:
 	def __del__(self):
 		self.view.destroyGLTexture()
 
-	def draw(self):
+	def draw(self, text):
 		self.view.updateGLTexture()
 
 		self.shader.bind()
@@ -161,6 +166,13 @@ class CustomDrawData:
 		bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.view.GLTexture)
 		self.shader.uniform_int('image', 0)
 		self.batch.draw(self.shader)
+
+
+		font_time = 0
+		blf.size(font_time, 40, 36)
+		blf.position(font_time, 20, 40, 0)
+		blf.color(font_time, 0, 0, 0, 1)
+		blf.draw(font_time, text)
 
 
 def register():
