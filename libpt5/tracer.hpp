@@ -28,8 +28,8 @@ public:
 	void removeScene();
 
 	void render(const View& view, uint spp, const Camera& camera);
-
 	bool running() const;
+	inline void sync()const{CUDA_CHECK(cudaStreamSynchronize(stream));}
 
 private:
 	void createContext();

@@ -53,6 +53,7 @@ PYBIND11_MODULE(core, m) {
 		.def("setScene", &PathTracerState::setScene)
 		.def("removeScene", &PathTracerState::removeScene)
 		.def("render", &PathTracerState::render)
+		.def("sync", &PathTracerState::sync)
 		.def_property_readonly("running",[](PathTracerState& self){return self.running();});
 
 

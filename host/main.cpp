@@ -204,7 +204,6 @@ int main(int argc, char* _argv[]){
 			glOrtho(0, (float)width, 0, (float)height, -1, 1);
 
 			view.createGLTexture();
-			view.clear(make_float4(0.4, 0.4, 0.4, 0.4));
 		}
 	}
 
@@ -269,12 +268,13 @@ int main(int argc, char* _argv[]){
     glfwPollEvents();
 	};
 
-	CUDA_SYNC_CHECK();
+	tracer.sync();
 	auto t3 = std::chrono::system_clock::now();
 	std::cout <<"Time for rendering: "
 		<<std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() <<"ms" <<std::endl;
 
 	view.downloadImage();
+	view.sync();
 
 	writeImage(out, view.size().x, view.size().y, view.pixels);
 
