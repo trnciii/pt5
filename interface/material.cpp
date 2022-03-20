@@ -82,7 +82,7 @@ void init_material(py::module_& m){
 
 
 	py::class_<Texture>(m, "Texture")
-		.def(py::init([](std::string image, const py::kwargs& kw){
+		.def(py::init([](std::shared_ptr<Image> image, const py::kwargs& kw){
 			cudaTextureFilterMode interpolation = cudaFilterModeLinear;
 			if(kw.contains("interpolation")){
 				const std::string s = kw["interpolation"].cast<std::string>();

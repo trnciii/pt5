@@ -1,26 +1,35 @@
 #pragma once
 
 #include <unordered_map>
+#include <memory>
+#include <vector>
+
 #include "CUDABuffer.hpp"
 #include "mesh.hpp"
-#include "scene.hpp"
+#include "material/type.hpp"
 
 namespace pt5{
 
 struct Camera;
 class View;
 
+struct Scene{
+	Material background;
+	std::vector<std::shared_ptr<TriangleMesh>> meshes;
+	std::vector<Material> materials;
+};
+
 class PathTracerState{
 public:
 	PathTracerState();
 	~PathTracerState();
 
-	void setScene(const Scene& scene);
+	void setScene(const std::shared_ptr<Scene>);
 	void removeScene();
 
 	void render(const View& view, uint spp, const Camera& camera);
-
 	bool running() const;
+	inline void sync()const{CUDA_CHECK(cudaStreamSynchronize(stream));}
 
 private:
 	void createContext();
@@ -28,8 +37,8 @@ private:
 	void createProgramGroups();
 	void createPipeline();
 
-	void buildAccel(const std::vector<TriangleMesh>& meshes);
-	void buildSBT(const Scene& scene);
+	void buildAccel(const std::vector<std::shared_ptr<TriangleMesh>>& meshes);
+	void buildSBT();
 
 	void destroyAccel();
 	void destroySBT();
@@ -59,7 +68,9 @@ private:
 	OptixTraversableHandle asHandle;
 	CUDABuffer asBuffer;
 
-	SceneBuffer sceneBuffer;
+	std::shared_ptr<Scene> scene;
+
+	CUDABuffer launchParamsBuffer;
 
 	cudaEvent_t finishEvent;
 };

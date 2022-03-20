@@ -67,6 +67,11 @@ struct CUDABuffer {
 		CUDA_CHECK(cudaMemcpyAsync((void *)t, d_ptr, count*sizeof(T), cudaMemcpyDeviceToHost, stream));
 	}
 
+	size_t size()const{return sizeInBytes;}
+
+	bool allocated()const{return d_ptr != nullptr;}
+
+private:
 	size_t sizeInBytes { 0 };
 	void  *d_ptr { nullptr };
 };

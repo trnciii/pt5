@@ -41,16 +41,10 @@ void writeImage(const std::string& filename, int w, int h, const std::vector<flo
 }
 
 
-void createScene(pt5::Scene& scene, pt5::Camera& camera){
-	{
-		camera.position = {0, -5, 2};
-		camera.toWorld[0] = {1, 0, 0};
-		camera.toWorld[1] = {0, 0,-1};
-		camera.toWorld[2] = {0, 1, 0};
-		camera.focalLength = 2.3;
-	}
+std::shared_ptr<pt5::Scene> createScene(){
+	pt5::Scene scene;
 
-
+	std::shared_ptr<pt5::Image> circlesImage;
 	{
 		uint w = 128;
 		uint h = 128;
@@ -69,16 +63,13 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 				pixels[i] += make_float4(1, 1, 0, 1);
 		}
 
-		scene.images = {
-			{"circles", {{w, h}, pixels}}
-		};
-
+		circlesImage = std::make_shared<pt5::Image>(w, h, pixels);
 	}
 
 
 	scene.background = pt5::Material{{
 		pt5::make_node(pt5::Background({{{1,0.5,1}, 1}, {1,0}})),
-		pt5::make_node(pt5::Texture("circles", pt5::TexType::Environment))
+		pt5::make_node(pt5::Texture(circlesImage, pt5::TexType::Environment))
 	}};
 
 
@@ -86,14 +77,14 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 	scene.materials = {
 		pt5::Material{{
 			pt5::make_node(pt5::Diffuse({{{0.8, 0.8, 0.8}, 1}})),
-			pt5::make_node(pt5::Texture("circles")),
+			pt5::make_node(pt5::Texture(circlesImage)),
 		}},
 
 		pt5::Material{{
 			pt5::make_node(pt5::Mix({1, 2, {0.5, 3}})),
 			pt5::make_node(pt5::Diffuse({{{0.8, 0.2, 0.2}, 0}})),
 			pt5::make_node(pt5::Diffuse({{{0.2, 0.6, 0.8}, 0}})),
-			pt5::make_node(pt5::Texture("circles")),
+			pt5::make_node(pt5::Texture(circlesImage)),
 		}},
 
 		pt5::Material{{
@@ -173,8 +164,10 @@ void createScene(pt5::Scene& scene, pt5::Camera& camera){
 			{1, 0}
 		};
 
-		scene.meshes.push_back({v_box, f_box, uv_box, mSlot_box});
-		scene.meshes.push_back({v_light, f_light, uv_light, {3}});
+		scene.meshes.emplace_back(std::make_shared<pt5::TriangleMesh>(v_box, f_box, uv_box, mSlot_box))->upload(0);
+		scene.meshes.emplace_back(std::make_shared<pt5::TriangleMesh>(v_light, f_light, uv_light, std::vector<uint32_t>{3}))->upload(0);
+
+		return std::make_shared<pt5::Scene>(scene);
 	}
 }
 
@@ -211,17 +204,20 @@ int main(int argc, char* _argv[]){
 			glOrtho(0, (float)width, 0, (float)height, -1, 1);
 
 			view.createGLTexture();
-			view.clear(make_float4(0.4, 0.4, 0.4, 0.4));
 		}
 	}
 
 
-	pt5::Scene scene;
-	pt5::Camera camera;
-
 	auto t0 = std::chrono::system_clock::now();
 
-	createScene(scene, camera);
+	auto scene = createScene();
+	pt5::Camera camera{
+		{0, -5, 2},
+		{	{1, 0, 0},
+			{0, 0,-1},
+			{0, 1, 0}},
+		2.3
+	};
 
 	auto t1 = std::chrono::system_clock::now();
 	std::cout <<"Time for scene creation: "
@@ -272,12 +268,13 @@ int main(int argc, char* _argv[]){
     glfwPollEvents();
 	};
 
-	CUDA_SYNC_CHECK();
+	tracer.sync();
 	auto t3 = std::chrono::system_clock::now();
 	std::cout <<"Time for rendering: "
 		<<std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() <<"ms" <<std::endl;
 
 	view.downloadImage();
+	view.sync();
 
 	writeImage(out, view.size().x, view.size().y, view.pixels);
 

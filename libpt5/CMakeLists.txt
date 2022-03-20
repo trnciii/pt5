@@ -40,12 +40,11 @@ add_library(pt5
 
 	camera.hpp
 	CUDABuffer.hpp
+	image.hpp
 	LaunchParams.hpp
 	mesh.hpp
 	optix.hpp
 	sbt.hpp
-	scene.cpp
-	scene.hpp
 	tracer.hpp
 	tracer.cpp
 	vector_math.h

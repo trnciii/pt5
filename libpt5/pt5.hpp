@@ -4,7 +4,6 @@
 #include "material/data.h"
 #include "material/node.hpp"
 #include "material/type.hpp"
-#include "scene.hpp"
 #include "view.hpp"
 #include "tracer.hpp"
 #include "util.hpp"

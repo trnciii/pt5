@@ -132,7 +132,7 @@ def main(out, background):
 	if not background:
 		window.draw(pt)
 
-	pt5.cuda_sync()
+	pt.sync()
 
 	view.downloadImage()
 

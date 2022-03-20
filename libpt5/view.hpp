@@ -26,6 +26,8 @@ public:
 	void downloadImage();
 	void clear(float4 c);
 
+	void sync()const{CUDA_CHECK(cudaStreamSynchronize(stream));}
+
 	std::vector<float> pixels;
 
 private:

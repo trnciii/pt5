@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <vector>
-#include <unordered_map>
 
 #include "../sbt.hpp"
 
@@ -13,7 +12,6 @@ namespace material{
 	struct NodeIndexingInfo{
 		const int offset_material;
 		const std::vector<int>& offset_nodes;
-		const std::unordered_map<std::string, cudaArray_t>& imageBuffers;
 
 		unsigned int index_node(const unsigned int i)const{
 			if(i>0) return offset_material + offset_nodes[i];
