@@ -3,25 +3,25 @@
 C++/OptiX7で書かれたパストレーサーであり、そのPython3のラッパ、またBlenderのアドオンです。
 リポジトリの構成はは次の通りです。
 
-* host	C++から利用するサンプル
-* interface python3 への公開
-* libpt5 関数等の本体
-* pt5 Blenderアドオン
-* pt5/blender Blnder用モジュール
-* pt5/core python3から利用できるモジュール
+* `host`	C++から利用するサンプル
+* `interface` python3 への公開
+* `libpt5` 関数等の本体
+* `pt5` Blenderアドオン
+* `pt5/blender` Blnder用モジュール
+* `pt5/core` python3から利用できるモジュール
 
 
 ## 要求 (tested on)
 
 * C++17
-* CUDA 11.4
-* OptiX 7.3 （`OptiX_INSTALL_DIR` を設定してください。）
+* CUDA (11.4)
+* OptiX (7.3, 環境変数 `OptiX_INSTALL_DIR` を設定してください。）
 * Python3.9 （Blender とバージョンを揃えてください。）
 
 
 ## libpt5の内容
 
-host/main.cpp はレンダリングの経過をウィンドウに表示するプログラムで、このライブラリの具体的な使われ方を見ることができます。
+host/main.cpp はレンダリングの経過を（可能であれば）ウィンドウに表示するプログラムで、このライブラリの具体的な使われ方を見ることができます。
 
 
 ### PathTracerState
@@ -40,4 +40,4 @@ host/main.cpp はレンダリングの経過をウィンドウに表示するプ
 ### View
 
 レンダリングされる画像の書き出し先を管理します。
-ウィンドウ等に出力を表示したい場合のために、画像をOpenGLのテクスチャにコピーする機能も持ちます。
+ウィンドウ等に出力を表示したい場合のために、画像をOpenGLのテクスチャにコピーする機能を持ちます。
