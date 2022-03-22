@@ -40,7 +40,6 @@ add_library(pt5
 
 	camera.hpp
 	CUDABuffer.hpp
-	image.hpp
 	LaunchParams.hpp
 	mesh.hpp
 	optix.hpp

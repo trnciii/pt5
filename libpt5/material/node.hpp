@@ -8,7 +8,7 @@
 #include "data.h"
 #include "type.hpp"
 #include "../sbt.hpp"
-#include "../image.hpp"
+#include "../CUDABuffer.hpp"
 
 
 namespace pt5{ namespace material{
