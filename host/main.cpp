@@ -44,7 +44,7 @@ void writeImage(const std::string& filename, int w, int h, const std::vector<flo
 std::shared_ptr<pt5::Scene> createScene(){
 	pt5::Scene scene;
 
-	std::shared_ptr<pt5::Image> circlesImage;
+	auto circlesImage = std::make_shared<pt5::Image>();
 	{
 		uint w = 128;
 		uint h = 128;
@@ -63,7 +63,7 @@ std::shared_ptr<pt5::Scene> createScene(){
 				pixels[i] += make_float4(1, 1, 0, 1);
 		}
 
-		circlesImage = std::make_shared<pt5::Image>(w, h, pixels);
+		circlesImage->alloc_and_upload(w, h, pixels, 0);
 	}
 
 

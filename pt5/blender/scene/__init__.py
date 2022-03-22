@@ -7,8 +7,11 @@ from . import camera
 from ...core import Image
 
 def make_image(src):
-	image = Image(*src.size)
-	src.pixels.foreach_get(np.array(image, copy=False).ravel())
+	image = Image()
+	w, h = src.size
+	ar = np.zeros(4*w*h, dtype=np.float32)
+	src.pixels.foreach_get(ar)
+	image.alloc_and_upload(w, h, ar)
 	return image
 
 def is_used(img, candidates):

@@ -145,8 +145,7 @@ class Texture_base : public Node{
 
 	cudaTextureObject_t createCudaTexture(){
 		assert(cudaTexture == 0);
-
-		if(info.image->array == 0) info.image->upload();
+		assert(info.image->array != nullptr);
 
 		cudaResourceDesc resDesc = {};
 		resDesc.resType = cudaResourceTypeArray;

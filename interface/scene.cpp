@@ -67,36 +67,16 @@ void init_scene(py::module_& m) {
 		}));
 
 
-	py::class_<Image, std::shared_ptr<Image>>(m, "Image", py::buffer_protocol())
-		.def(py::init([](const py::array_t<float>& data){
-			assert(data.ndim() == 3);
-			assert(data.shape(2) == 4);
-			return Image{
-				{static_cast<uint>(data.shape(1)), static_cast<uint>(data.shape(0))},
-				std::vector<float4>(
-					(float4*)data.data(),
-					(float4*)data.data() + (data.shape(0)*data.shape(1)))
-			};
-		}))
-		.def(py::init([](uint x, uint y, const py::array_t<float>& data){
-			assert(data.size() == x*y*4);
-			return Image{
-				{x, y},
-				std::vector<float4>((float4*)data.data(),	(float4*)data.data() + data.size()/4)
-			};
-		}))
-		.def(py::init([](uint x, uint y){
-			return Image{{x, y}, std::vector<float4>(x*y)};
-		}))
-		.def_buffer([](Image& self){
-			return py::buffer_info(
-				self.pixels.data(),
-				sizeof(float),
-				py::format_descriptor<float>::format(),
-				3,
-				{(int)self.size.y, (int)self.size.x, 4},
-				{self.size.x*sizeof(float4), sizeof(float4), sizeof(float)}
-			);
+	py::class_<Image, std::shared_ptr<Image>>(m, "Image")
+		.def(py::init<>())
+		.def("alloc_and_upload", [](Image& self, const py::array_t<float>& pixels){
+			assert(pixels.ndim() == 3);
+			assert(pixels.shape(2) == 4);
+			self.alloc_and_upload(pixels.shape(1), pixels.shape(0), (float4*)pixels.data(), 0);
+		})
+		.def("alloc_and_upload", [](Image& self, uint w, uint h, const py::array_t<float>& pixels){
+			assert(pixels.size() == 4*w*h);
+			self.alloc_and_upload(w, h, (float4*)pixels.data(), 0);
 		});
 
 }
