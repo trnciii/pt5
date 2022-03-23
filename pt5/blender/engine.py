@@ -16,6 +16,8 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 	bl_label = "pt5"
 	bl_use_preview = False
 	bl_use_shading_nodes_custom = False
+	bl_use_eevee_viewport = True
+	bl_use_gpu_context = True
 
 	# Init is called whenever a new render engine instance is created. Multiple
 	# instances may exist at the same time, for example for a viewport and final
