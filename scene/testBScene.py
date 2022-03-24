@@ -39,7 +39,7 @@ def main(out):
 
 
 	pt.render(view, 1000, camera)
-	pt.sync()
+	pt.waitForRendering()
 
 	view.downloadImage()
 

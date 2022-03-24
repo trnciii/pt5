@@ -28,8 +28,29 @@ public:
 	void removeScene();
 
 	void render(const View& view, uint spp, const Camera& camera);
-	bool running() const;
 	inline void sync()const{CUDA_CHECK(cudaStreamSynchronize(stream));}
+
+	inline void waitForRendering()const{
+		CUDA_CHECK(cudaEventSynchronize(finishEvent));
+	}
+
+	inline void resetEvent(){
+		CUDA_CHECK(cudaEventDestroy(finishEvent));
+		finishEvent = nullptr;
+	}
+
+	inline bool launched()const{
+		return finishEvent != nullptr;
+	}
+
+	inline bool running() const{
+		return cudaEventQuery(finishEvent) == cudaErrorNotReady;
+	}
+
+	inline bool finished()const{
+		return cudaEventQuery(finishEvent) == cudaSuccess;
+	}
+
 
 private:
 	void createContext();
@@ -72,7 +93,7 @@ private:
 
 	CUDABuffer launchParamsBuffer;
 
-	cudaEvent_t finishEvent;
+	cudaEvent_t finishEvent = nullptr;
 };
 
 }

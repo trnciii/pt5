@@ -132,7 +132,7 @@ def main(out, background):
 	if not background:
 		window.draw(pt)
 
-	pt.sync()
+	pt.waitForRendering()
 
 	view.downloadImage()
 

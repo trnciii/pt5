@@ -171,6 +171,13 @@ std::shared_ptr<pt5::Scene> createScene(){
 	}
 }
 
+void printEvents(const std::string& s, pt5::PathTracerState& pt){
+	std::cout <<s <<"\n"
+	<<"launched: " <<pt.launched() <<"\n"
+	<<"running : " <<pt.running() <<"\n"
+	<<"finished: " <<pt.finished() <<"\n" <<std::endl;
+}
+
 
 int main(int argc, char* _argv[]){
 	bool background = false;
@@ -268,7 +275,7 @@ int main(int argc, char* _argv[]){
     glfwPollEvents();
 	};
 
-	tracer.sync();
+	tracer.waitForRendering();
 	auto t3 = std::chrono::system_clock::now();
 	std::cout <<"Time for rendering: "
 		<<std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() <<"ms" <<std::endl;

@@ -18,6 +18,8 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 	bl_label = "pt5"
 	bl_use_preview = False
 	bl_use_shading_nodes_custom = False
+	bl_use_eevee_viewport = True
+	bl_use_gpu_context = True
 
 	# Init is called whenever a new render engine instance is created. Multiple
 	# instances may exist at the same time, for example for a viewport and final
@@ -56,7 +58,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		camera = pt5.scene.camera.fromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
-		self.tracer.sync()
+		self.tracer.waitForRendering()
 
 		view.downloadImage()
 		rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
@@ -135,7 +137,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		t0 = time.time()
 		self.tracer.render(self.draw_data.view, scene.pt5.spp_viewport, camera)
-		self.tracer.sync()
+		self.tracer.waitForRendering()
 		t1 = time.time()
 
 		self.draw_data.draw(str(t1-t0))

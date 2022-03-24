@@ -54,7 +54,11 @@ PYBIND11_MODULE(core, m) {
 		.def("removeScene", &PathTracerState::removeScene)
 		.def("render", &PathTracerState::render)
 		.def("sync", &PathTracerState::sync)
-		.def_property_readonly("running",[](PathTracerState& self){return self.running();});
+		.def("resetEvents", &PathTracerState::resetEvent)
+		.def("waitForRendering", &PathTracerState::waitForRendering)
+		.def_property_readonly("launched", &PathTracerState::launched)
+		.def_property_readonly("running", &PathTracerState::running)
+		.def_property_readonly("finished", &PathTracerState::finished);
 
 
 	m.def("cuda_sync", [](){CUDA_SYNC_CHECK();});

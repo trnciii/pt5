@@ -464,6 +464,7 @@ PathTracerState::~PathTracerState(){
 	removeScene();
 
 	launchParamsBuffer.free(stream);
+	cudaEventDestroy(finishEvent);
 
 	OPTIX_CHECK( optixPipelineDestroy( pipeline ) );
 
@@ -495,7 +496,7 @@ void PathTracerState::render(const View& view, uint spp, const Camera& camera){
 
 	launchParamsBuffer.upload(&params, 1, stream);
 
-	cudaEventCreate(&finishEvent);
+	CUDA_CHECK(cudaEventCreate(&finishEvent));
 
 	OPTIX_CHECK(optixLaunch(
 		pipeline,
@@ -507,12 +508,7 @@ void PathTracerState::render(const View& view, uint spp, const Camera& camera){
 		params.image.size.y,
 		1));
 
-	cudaEventRecord(finishEvent, stream);
-}
-
-
-bool PathTracerState::running() const{
-	return cudaEventQuery(finishEvent) == cudaErrorNotReady;
+	CUDA_CHECK(cudaEventRecord(finishEvent, stream));
 }
 
 
