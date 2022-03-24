@@ -56,7 +56,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		camera = pt5.scene.camera.fromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
-		pt5.cuda_sync()
+		self.tracer.waitForRendering()
 
 		view.downloadImage()
 		rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
@@ -133,7 +133,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		camera = pt5.scene.camera.fromView(context, dimensions)
 		self.tracer.render(self.draw_data.view, scene.pt5.spp_viewport, camera)
-		pt5.cuda_sync()
+		self.tracer.waitForRendering()
 
 		self.draw_data.draw()
 

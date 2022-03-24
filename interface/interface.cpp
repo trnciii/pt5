@@ -53,7 +53,8 @@ PYBIND11_MODULE(core, m) {
 		.def("setScene", &PathTracerState::setScene)
 		.def("removeScene", &PathTracerState::removeScene)
 		.def("render", &PathTracerState::render)
-		.def("resetEvents", &PathTracerState::resetEvents)
+		.def("resetEvents", &PathTracerState::resetEvent)
+		.def("waitForRendering", &PathTracerState::waitForRendering)
 		.def_property_readonly("launched", &PathTracerState::launched)
 		.def_property_readonly("running", &PathTracerState::running)
 		.def_property_readonly("finished", &PathTracerState::finished);

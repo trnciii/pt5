@@ -39,7 +39,7 @@ def main(out):
 
 
 	pt.render(view, 1000, camera)
-	pt5.cuda_sync()
+	pt.waitForRendering()
 
 	view.downloadImage()
 

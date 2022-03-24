@@ -243,12 +243,8 @@ int main(int argc, char* _argv[]){
 	std::cout <<"Time for tracer construction and scene uploading: "
 		<<std::chrono::duration_cast<std::chrono::microseconds>(t2-t1).count() <<"us" <<std::endl;
 
-	printEvents("nothing yet", tracer);
-
 
 	tracer.render(view, 100, camera);
-
-	printEvents("running", tracer);
 
 	while(window
 		&& !glfwWindowShouldClose(window)
@@ -282,11 +278,7 @@ int main(int argc, char* _argv[]){
     glfwPollEvents();
 	};
 
-	printEvents("finished", tracer);
-	tracer.resetEvents();
-	printEvents("reset", tracer);
-
-	CUDA_SYNC_CHECK();
+	tracer.waitForRendering();
 	auto t3 = std::chrono::system_clock::now();
 	std::cout <<"Time for rendering: "
 		<<std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() <<"ms" <<std::endl;

@@ -20,8 +20,12 @@ public:
 
 	void render(const View& view, uint spp, const Camera& camera);
 
-	inline void resetEvents(){
-		CUDA_CHECK(cudaEventCreate(&finishEvent));
+	inline void waitForRendering()const{
+		CUDA_CHECK(cudaEventSynchronize(finishEvent));
+	}
+
+	inline void resetEvent(){
+		CUDA_CHECK(cudaEventDestroy(finishEvent));
 		finishEvent = nullptr;
 	}
 
@@ -30,11 +34,11 @@ public:
 	}
 
 	inline bool running() const{
-		return launched() && (cudaEventQuery(finishEvent) == cudaErrorNotReady);
+		return cudaEventQuery(finishEvent) == cudaErrorNotReady;
 	}
 
 	inline bool finished()const{
-		return launched() && (cudaEventQuery(finishEvent) == cudaSuccess);
+		return cudaEventQuery(finishEvent) == cudaSuccess;
 	}
 
 
