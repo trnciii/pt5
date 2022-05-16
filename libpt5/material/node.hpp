@@ -118,8 +118,8 @@ struct TextureCreateInfo{
 	};
 
 	std::shared_ptr<Image> image;
-	cudaTextureDesc desc;
-	Type type;
+	cudaTextureDesc desc = {};
+	Type type = Type::ImageTexture;
 
 	TextureCreateInfo(
 		std::shared_ptr<Image> i,
@@ -151,13 +151,13 @@ class Texture_base : public Node{
 		cudaResourceDesc resDesc = {};
 		resDesc.resType = cudaResourceTypeArray;
 		resDesc.res.array.array = info.image->array;
-		cudaCreateTextureObject(&cudaTexture, &resDesc, &info.desc, nullptr);
+		CUDA_CHECK(cudaCreateTextureObject(&cudaTexture, &resDesc, &info.desc, nullptr));
 		return cudaTexture;
 	}
 
 	void destroyCudaTexture(){
 		assert(cudaTexture != 0);
-		cudaDestroyTextureObject(cudaTexture);
+		CUDA_CHECK(cudaDestroyTextureObject(cudaTexture));
 		cudaTexture = 0;
 	}
 
