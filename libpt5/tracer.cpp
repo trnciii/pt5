@@ -1,4 +1,4 @@
-#include <optix_function_table_definition.h>
+ #include <optix_function_table_definition.h>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -140,12 +140,11 @@ void PathTracerState::createProgramGroups(){
 
 		std::vector<OptixProgramGroupDesc> descs;
 		for(const std::string& name : names){
-			OptixProgramGroupDesc desc;
-				desc.kind  = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
-				desc.flags = OPTIX_PROGRAM_GROUP_FLAGS_NONE;
-				desc.callables.moduleDC            = modules["material"];
-				desc.callables.entryFunctionNameDC = name.c_str();
-			descs.push_back(desc);
+			auto& desc = descs.emplace_back(OptixProgramGroupDesc{});
+			desc.kind  = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
+			desc.flags = OPTIX_PROGRAM_GROUP_FLAGS_NONE;
+			desc.callables.moduleDC            = modules["material"];
+			desc.callables.entryFunctionNameDC = name.c_str();
 		}
 
 		materialProgramGroups.resize(descs.size());
