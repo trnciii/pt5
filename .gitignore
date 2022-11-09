@@ -2,3 +2,4 @@ build
 *.so
 *result/
 __pycache__
+venv
