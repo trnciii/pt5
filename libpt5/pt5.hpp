@@ -12,6 +12,7 @@ namespace pt5{
 	using material::make_node;
 
 	using Diffuse = material::DiffuseData;
+	using Glossy = material::GlossyData;
 	using Emission = material::EmissionData;
 	using Mix = material::MixData;
 	using Background = material::BackgroundData;

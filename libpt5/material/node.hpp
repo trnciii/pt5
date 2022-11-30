@@ -42,6 +42,33 @@ inline std::shared_ptr<Node> make_node(const DiffuseData& data){
 }
 
 
+class GlossyBSDF : public Node{
+	GlossyData data;
+
+public:
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__beckmann_albedo",
+		"__direct_callable__beckmann_emission",
+		"__direct_callable__beckmann_sample_direction",
+	});
+
+	GlossyBSDF(const GlossyData& d): data(d){}
+
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
+
+	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
+		GlossyData ret = data;
+		ret.color.input = i.index_node(data.color.input);
+		ret.alpha.input = i.index_node(data.alpha.input);
+		return MaterialNodeSBTData{.glossy = ret};
+	}
+};
+
+inline std::shared_ptr<Node> make_node(const GlossyData& data){
+	return std::make_shared<GlossyBSDF>(data);
+}
+
 
 class Emission : public Node{
 	EmissionData data;
@@ -241,6 +268,7 @@ inline std::shared_ptr<Node> make_node(const BackgroundData& data){
 inline std::vector<std::string> nodeProgramNames(){
 	const std::vector<std::reference_wrapper<material::NodeProgramManager>> nodePrograms{
 		material::DiffuseBSDF::pgManager,
+		material::GlossyBSDF::pgManager,
 		material::Emission::pgManager,
 		material::Mix::pgManager,
 		material::ImageTexture::pgManager,
@@ -259,6 +287,7 @@ inline std::vector<std::string> nodeProgramNames(){
 inline void setNodeIndices(){
 	const std::vector<std::reference_wrapper<material::NodeProgramManager>> nodePrograms{
 		material::DiffuseBSDF::pgManager,
+		material::GlossyBSDF::pgManager,
 		material::Emission::pgManager,
 		material::Mix::pgManager,
 		material::ImageTexture::pgManager,

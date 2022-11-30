@@ -12,6 +12,11 @@ namespace pt5{ namespace material{
 		Prop<float3> color {{0.6, 0.6, 0.6}, 0};
 	};
 
+	struct GlossyData{
+		Prop<float3> color {{0.6, 0.6, 0.6}, 0};
+		Prop<float> alpha {0.2, 0};
+	};
+
 
 	struct EmissionData{
 		Prop<float3> color {{1,1,1},0};

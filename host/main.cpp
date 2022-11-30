@@ -81,9 +81,7 @@ std::shared_ptr<pt5::Scene> createScene(){
 		}},
 
 		pt5::Material{{
-			pt5::make_node(pt5::Mix({1, 2, {0.5, 3}})),
-			pt5::make_node(pt5::Diffuse({{{0.8, 0.2, 0.2}, 0}})),
-			pt5::make_node(pt5::Diffuse({{{0.2, 0.6, 0.8}, 0}})),
+			pt5::make_node(pt5::Glossy({{{0.8, 0.8, 0.8}, 0}, {0, 1}})),
 			pt5::make_node(pt5::Texture(circlesImage)),
 		}},
 
