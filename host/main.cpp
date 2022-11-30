@@ -64,6 +64,7 @@ std::shared_ptr<pt5::Scene> createScene(){
 		}
 
 		circlesImage = std::make_shared<pt5::Image>(w, h, pixels);
+		circlesImage->upload();
 	}
 
 

@@ -88,6 +88,7 @@ void init_scene(py::module_& m) {
 		.def(py::init([](uint x, uint y){
 			return Image{{x, y}, std::vector<float4>(x*y)};
 		}))
+		.def("upload", &Image::upload)
 		.def_buffer([](Image& self){
 			return py::buffer_info(
 				self.pixels.data(),

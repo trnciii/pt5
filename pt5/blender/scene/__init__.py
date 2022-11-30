@@ -29,6 +29,9 @@ def create(scene, hide = []):
 		if is_used(img, bpy.data.materials.values() + bpy.data.worlds.values())
 	}
 
+	for v in images.value():
+		v.upload()
+
 	# materials
 	materials = []
 	for src in bpy.data.materials.values():
