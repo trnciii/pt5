@@ -166,8 +166,8 @@ def make_material(nodes):
 def parseNodes(src, images):
 
 	if isinstance(src, bpy.types.Material):
-		black = [core.Diffuse((0,0,0),0)]
-		default = [core.Diffuse( (src.diffuse_color[:3], 0) )]
+		black = [core.Diffuse(((0,0,0),0))]
+		default = [core.Diffuse((src.diffuse_color[:3], 0)) ]
 
 		if src.grease_pencil: return black
 

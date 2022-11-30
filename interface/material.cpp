@@ -43,12 +43,8 @@ void init_material(py::module_& m){
 
 	py::class_<MixData>(m, "Mix")
 		.def(py::init<>())
-		.def(py::init<unsigned int, unsigned int, Prop<float>>())
 		.def(py::init([](unsigned int b1, unsigned int b2, const py::tuple& t){
 			return MixData{b1, b2, propf1(t)};
-		}))
-		.def(py::init([](unsigned int b1, unsigned int b2, float fv, unsigned int ft){
-			return MixData({b1, b2, {fv, ft}});
 		}))
 		.def_readwrite("shader1", &MixData::shader1)
 		.def_readwrite("shader2", &MixData::shader2)
@@ -58,11 +54,7 @@ void init_material(py::module_& m){
 
 	py::class_<DiffuseData>(m, "Diffuse")
 		.def(py::init<>())
-		.def(py::init<Prop<float3>>())
 		.def(py::init([](const py::tuple& t){return DiffuseData{propf3(t)};}))
-		.def(py::init([](const py::array_t<float>& c, unsigned int t=0){
-			return DiffuseData{{make_float3(c), t}};
-		}))
 		.def_readwrite("color", &DiffuseData::color);
 
 
@@ -76,12 +68,8 @@ void init_material(py::module_& m){
 
 	py::class_<EmissionData>(m, "Emission")
 		.def(py::init<>())
-		.def(py::init<Prop<float3>, Prop<float>>())
 		.def(py::init([](const py::tuple& c, const py::tuple& s){
 			return EmissionData{propf3(c), propf1(s)};
-		}))
-		.def(py::init([](const py::array_t<float>& c, unsigned int tc=0, float s=1, unsigned int ts=0){
-			return EmissionData{{make_float3(c), tc}, {s, ts}};
 		}))
 		.def_readwrite("color", &EmissionData::color)
 		.def_readwrite("strength", &EmissionData::strength);
@@ -117,12 +105,8 @@ void init_material(py::module_& m){
 
 	py::class_<BackgroundData>(m, "Background")
 		.def(py::init<>())
-		.def(py::init<Prop<float3>, Prop<float>>())
 		.def(py::init([](const py::tuple& c, const py::tuple& s){
 			return BackgroundData{propf3(c), propf1(s)};
-		}))
-		.def(py::init([](const py::array_t<float>& c, unsigned int tc=0, float s=1, unsigned int ts=0){
-			return BackgroundData{{make_float3(c), tc}, {s, ts}};
 		}))
 		.def_readwrite("color", &BackgroundData::color)
 		.def_readwrite("strength", &BackgroundData::strength);
