@@ -66,6 +66,13 @@ void init_material(py::module_& m){
 		.def_readwrite("color", &DiffuseData::color);
 
 
+	py::class_<GlossyData>(m, "Glossy")
+		.def(py::init<>())
+		.def(py::init([](const py::tuple& c, const py::tuple& r){return GlossyData{propf3(c), propf1(r)};}))
+		.def_readwrite("color", &GlossyData::color)
+		.def_readwrite("alpha", &GlossyData::alpha);
+
+
 
 	py::class_<EmissionData>(m, "Emission")
 		.def(py::init<>())
@@ -124,6 +131,7 @@ void init_material(py::module_& m){
 
 	MAKE_NODE(MixData);
 	MAKE_NODE(DiffuseData);
+	MAKE_NODE(GlossyData);
 	MAKE_NODE(EmissionData);
 	MAKE_NODE(Texture);
 	MAKE_NODE(BackgroundData);

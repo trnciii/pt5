@@ -65,6 +65,17 @@ class Graph:
 
 			self.create = lambda nodes, images: core.Diffuse(self.props['Color'].nodeindex(nodes))
 
+		elif node.type == 'BSDF_GLOSSY':
+			self.props = {
+				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
+				'Roughness': Prop(inputs["Roughness"].default_value, find_socket_input(inputs['Roughness']))
+			}
+
+			self.create = lambda nodes, images: core.Glossy(
+				self.props['Color'].nodeindex(nodes),
+				self.props['Roughness'].nodeindex(nodes)
+			)
+
 
 		elif node.type == 'MIX_SHADER':
 			self.props = {
