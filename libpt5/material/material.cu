@@ -80,7 +80,7 @@ extern "C" __device__ float3 __direct_callable__beckmann_sample_direction(RNG& r
 
 	const auto [u1, u2] = rng.uniform2();
 	const float phi = 2*M_PI*u2;
-	const float y2 = - alpha * alpha * log(1-u2);
+	const float y2 = - alpha * alpha * log(1-u1);
 	const float r = sqrt(y2) / sqrt(1 + y2);
 
 	const auto m = make_float3(r*cos(phi), r*sin(phi), 1/sqrt(1 + y2));
