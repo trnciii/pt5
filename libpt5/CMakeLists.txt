@@ -34,6 +34,7 @@ add_library(pt5
 	${embedded_ptx_kernel}
 	${embedded_ptx_material}
 
+	material/bsdf.h
 	material/data.h
 	material/node.hpp
 	material/type.hpp
