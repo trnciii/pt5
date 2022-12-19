@@ -8,12 +8,17 @@
 
 namespace pt5{ namespace material{
 
+template <typename T>
+__device__ T get_prop(const Prop<T>& t, const Intersection& is){
+	return (t.input > 0)?
+		optixDirectCall<T, const Intersection&>(t.input, is)
+		: t.default_value;
+}
+
 
 extern "C" __device__ float3 __direct_callable__diffuse_albedo(const Intersection& is){
 	const DiffuseData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->diffuse;
-	return (material.color.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.color.input, is)
-		: material.color.default_value;
+	return get_prop(material.color, is);
 }
 
 extern "C" __device__ float3 __direct_callable__diffuse_emission(const Intersection& is){
@@ -29,16 +34,10 @@ extern "C" __device__ float3 __direct_callable__diffuse_sample_direction(RNG& rn
 extern "C" __device__ float3 __direct_callable__beckmann_albedo(const Intersection& is, float3 wi){
 	const GlossyData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->glossy;
 
-	const float alpha = (material.alpha.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.alpha.input, is).x
-		: material.alpha.default_value;
-
-	// float F = fresnel(is.wi.z, 1.5);
+	float alpha = get_prop(material.alpha, is);
+	// const float F = fresnel(is.wi.z, 1.5);
 	float G = beckmann_g1(is.wo.z, alpha) * beckmann_g1(is.wi.z, alpha);
-
-	return (material.color.input>0)?
-		G * optixDirectCall<float3, const Intersection&>(material.color.input, is)
-		: G * material.color.default_value;
+	return G * get_prop(material.color, is);
 }
 
 extern "C" __device__ float3 __direct_callable__beckmann_emission(const Intersection& is){
@@ -47,9 +46,7 @@ extern "C" __device__ float3 __direct_callable__beckmann_emission(const Intersec
 
 extern "C" __device__ float3 __direct_callable__beckmann_sample_direction(RNG& rng, const Intersection& is){
 	const GlossyData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->glossy;
-	const float alpha = (material.alpha.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.alpha.input, is).x
-		: material.alpha.default_value;
+	float alpha = get_prop(material.alpha, is);
 
 	const auto [u1, u2] = rng.uniform2();
 	const float phi = 2*M_PI*u2;
@@ -69,16 +66,7 @@ extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersecti
 
 extern "C" __device__ float3 __direct_callable__emission_emission(const Intersection& is){
 	const EmissionData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->emission;
-
-	float3 color = (material.color.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.color.input, is)
-		: material.color.default_value;
-
-	float strength = (material.strength.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.strength.input, is).x
-		: material.strength.default_value;
-
-	return color*strength;
+	return get_prop(material.color, is)*get_prop(material.strength, is);
 }
 
 extern "C" __device__ float3 __direct_callable__emission_sample_direction(RNG& rng, const Intersection& is){
@@ -90,31 +78,21 @@ extern "C" __device__ float3 __direct_callable__emission_sample_direction(RNG& r
 
 extern "C" __device__ float3 __direct_callable__mix_albedo(const Intersection& is){
 	const MixData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->mix;
-	const float f = (material.factor.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.factor.input, is).x
-		: material.factor.default_value;
-
+	float f = get_prop(material.factor, is);
 	return (1-f)*optixDirectCall<float3, const Intersection&>(material.shader1, is)
 		+ f*optixDirectCall<float3, const Intersection&>(material.shader2, is);
 }
 
 extern "C" __device__ float3 __direct_callable__mix_emission(const Intersection& is){
 	const MixData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->mix;
-	const float f = (material.factor.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.factor.input, is).x
-		: material.factor.default_value;
-
+	float f = get_prop(material.factor, is);
 	return (1-f)*optixDirectCall<float3, const Intersection&>(material.shader1+1, is)
 		+ f*optixDirectCall<float3, const Intersection&>(material.shader2+1, is);
 }
 
 extern "C" __device__ float3 __direct_callable__mix_sample_direction(RNG& rng, const Intersection& is){
 	const MixData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->mix;
-	const float f = (material.factor.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.factor.input, is).x
-		: material.factor.default_value;
-
-	if(rng.uniform() < f)
+	if(rng.uniform() < get_prop(material.factor, is))
 		return optixDirectCall<float3, RNG&, const Intersection&>(material.shader1+2, rng, is);
 	else
 		return optixDirectCall<float3, RNG&, const Intersection&>(material.shader2+2, rng, is);
