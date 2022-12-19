@@ -31,7 +31,7 @@ extern "C" __device__ float3 __direct_callable__diffuse_sample_direction(RNG& rn
 
 
 
-extern "C" __device__ float3 __direct_callable__beckmann_albedo(const Intersection& is, float3 wi){
+extern "C" __device__ float3 __direct_callable__beckmann_albedo(const Intersection& is){
 	const GlossyData& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->glossy;
 
 	float alpha = get_prop(material.alpha, is);
