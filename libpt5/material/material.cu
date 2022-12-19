@@ -33,12 +33,12 @@ extern "C" __device__ float3 __direct_callable__beckmann_albedo(const Intersecti
 		optixDirectCall<float3, const Intersection&>(material.alpha.input, is).x
 		: material.alpha.default_value;
 
-	const float F = fresnel(is.wi.z, 1.5);
-	const float G = beckmann_g1(is.wo.z, alpha) * beckmann_g1(is.wi.z, alpha);
+	// float F = fresnel(is.wi.z, 1.5);
+	float G = beckmann_g1(is.wo.z, alpha) * beckmann_g1(is.wi.z, alpha);
 
-	return F*G* (material.color.input>0)?
-		optixDirectCall<float3, const Intersection&>(material.color.input, is)
-		: material.color.default_value;
+	return (material.color.input>0)?
+		G * optixDirectCall<float3, const Intersection&>(material.color.input, is)
+		: G * material.color.default_value;
 }
 
 extern "C" __device__ float3 __direct_callable__beckmann_emission(const Intersection& is){
