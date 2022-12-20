@@ -31,4 +31,14 @@ __device__ float beckmann_g1(float vn, float alpha){
 		: 1;
 }
 
+
+__device__ float projected_angle(const float3& m, const float3& wi, const float3& z){
+	float3 y = normalize(cross(z, wi));
+	float3 x = cross(y, z);
+	float3 mp = m - dot(y, m) * y;
+	float s = dot(x, mp);
+	float c = dot(z, mp);
+	return atan2(s, c);
+}
+
 }}

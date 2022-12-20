@@ -1,4 +1,5 @@
 #include "pt5.hpp"
+#include "material/bsdf.h"
 
 #include <vector>
 #include <string>
@@ -67,6 +68,18 @@ std::shared_ptr<pt5::Scene> createScene(){
 		circlesImage->upload();
 	}
 
+	uint2 shape = {200, 1000};
+	std::vector<float> table(shape.x*shape.y);
+	float alpha = 0.2;
+	{
+		for(size_t m=0; m<shape.x; m++){
+			for(size_t i=0; i<shape.y; i++){
+				float th = 0.5*M_PI * (float)i/shape.y;
+				table[m*shape.y + i] = pt5::material::beckmann_g1(cos(th), alpha);
+			}
+		}
+	}
+
 
 	scene.background = pt5::Material{{
 		pt5::make_node(pt5::Background({{{1,0.5,1}, 1}, {1,0}})),
@@ -87,7 +100,11 @@ std::shared_ptr<pt5::Scene> createScene(){
 		}},
 
 		pt5::Material{{
-			pt5::make_node(pt5::Diffuse({{{0.2, 0.8, 0.2}, 0}}))
+			pt5::make_node(pt5::MeasuredG1({
+				{{0.2, 0.8, 0.2}, 0},
+				{alpha, 0},
+				table, shape
+			}))
 		}},
 
 		pt5::Material{{

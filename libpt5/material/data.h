@@ -17,6 +17,13 @@ namespace pt5{ namespace material{
 		Prop<float> alpha {0.2, 0};
 	};
 
+	struct MeasuredG1Data{
+		Prop<float3> color {{0.6, 0.6, 0.6}, 0};
+		Prop<float> alpha {0.2, 0};
+		float* table = nullptr;
+		uint2 shape {0,0};
+	};
+
 
 	struct EmissionData{
 		Prop<float3> color {{1,1,1},0};

@@ -13,6 +13,7 @@ namespace pt5{
 
 	using Diffuse = material::DiffuseData;
 	using Glossy = material::GlossyData;
+	using MeasuredG1 = material::MeasuredG1BSDFCreateInfo;
 	using Emission = material::EmissionData;
 	using Mix = material::MixData;
 	using Background = material::BackgroundData;

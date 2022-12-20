@@ -26,6 +26,7 @@ struct HitgroupSBTData{
 union MaterialNodeSBTData{
 	material::DiffuseData diffuse;
 	material::GlossyData glossy;
+	material::MeasuredG1Data measuredG1;
 	material::EmissionData emission;
 	material::MixData mix;
 	material::BackgroundData background;

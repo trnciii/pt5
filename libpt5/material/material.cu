@@ -60,6 +60,45 @@ extern "C" __device__ float3 __direct_callable__beckmann_sample_direction(RNG& r
 
 
 
+extern "C" __device__ float3 __direct_callable__measured_g1_albedo(const Intersection& is){
+	const MeasuredG1Data& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->measuredG1;
+
+	float3 m = normalize(is.wo + is.wi);
+
+	float tmi = projected_angle(m, is.wi, is.n);
+	size_t imi = tmi/M_PI * material.shape.x;
+	size_t iwi = acos(is.wi.z)/(0.5*M_PI) * material.shape.y;
+	float Gi = material.table[imi*material.shape.y + iwi];
+
+	float tmo = projected_angle(m, is.wo, is.n);
+	size_t imo = tmo/M_PI * material.shape.x;
+	size_t iwo = acos(is.wo.z)/(0.5*M_PI) * material.shape.y;
+	float Go = material.table[imo*material.shape.y + iwo];
+
+
+	return Gi*Go * get_prop(material.color, is);
+}
+
+extern "C" __device__ float3 __direct_callable__measured_g1_emission(const Intersection& is){
+	return make_float3(0);
+}
+
+extern "C" __device__ float3 __direct_callable__measured_g1_sample_direction(RNG& rng, const Intersection& is){
+	const MeasuredG1Data& material = ((MaterialNodeSBTData*)optixGetSbtDataPointer())->measuredG1;
+	float alpha = get_prop(material.alpha, is);
+
+	const auto [u1, u2] = rng.uniform2();
+	const float phi = 2*M_PI*u2;
+	const float y2 = - alpha * alpha * log(1-u1);
+	const float r = sqrt(y2) / sqrt(1 + y2);
+
+	const auto m = make_float3(r*cos(phi), r*sin(phi), 1/sqrt(1 + y2));
+
+	return -is.wo + 2*dot(is.wo, m)*m;
+}
+
+
+
 extern "C" __device__ float3 __direct_callable__emission_albedo(const Intersection& is){
 	return make_float3(0);
 }

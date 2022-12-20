@@ -70,6 +70,53 @@ inline std::shared_ptr<Node> make_node(const GlossyData& data){
 }
 
 
+struct MeasuredG1BSDFCreateInfo{
+	Prop<float3> color;
+	Prop<float> alpha;
+	std::vector<float> table;
+	uint2 shape;
+};
+
+class MeasuredG1BSDF : public Node{
+	MeasuredG1Data data;
+	CUDABuffer buffer;
+
+public:
+	inline static NodeProgramManager pgManager = NodeProgramManager({
+		"__direct_callable__measured_g1_albedo",
+		"__direct_callable__measured_g1_emission",
+		"__direct_callable__measured_g1_sample_direction"
+	});
+
+	MeasuredG1BSDF(const MeasuredG1BSDFCreateInfo& c){
+		buffer.alloc_and_upload(c.table.data(), c.shape.x*c.shape.y*sizeof(float), 0);
+
+		data.color = c.color;
+		data.alpha = c.alpha;
+		data.table = (float*)buffer.d_pointer();
+		data.shape = c.shape;
+	}
+
+	~MeasuredG1BSDF(){
+		buffer.free(0);
+	}
+
+	int program()const{return pgManager.id;}
+	int nprograms()const{return pgManager.names.size();}
+
+	MaterialNodeSBTData sbtData(const NodeIndexingInfo& i){
+		MeasuredG1Data ret = data;
+		ret.color.input = i.index_node(data.color.input);
+		ret.alpha.input = i.index_node(data.alpha.input);
+		return MaterialNodeSBTData{.measuredG1 = ret};
+	}
+};
+
+inline std::shared_ptr<Node> make_node(const MeasuredG1BSDFCreateInfo& c){
+	return std::make_shared<MeasuredG1BSDF>(c);
+}
+
+
 class Emission : public Node{
 	EmissionData data;
 
@@ -268,6 +315,7 @@ inline std::vector<std::string> nodeProgramNames(){
 	const std::vector<std::reference_wrapper<material::NodeProgramManager>> nodePrograms{
 		material::DiffuseBSDF::pgManager,
 		material::GlossyBSDF::pgManager,
+		material::MeasuredG1BSDF::pgManager,
 		material::Emission::pgManager,
 		material::Mix::pgManager,
 		material::ImageTexture::pgManager,
@@ -287,6 +335,7 @@ inline void setNodeIndices(){
 	const std::vector<std::reference_wrapper<material::NodeProgramManager>> nodePrograms{
 		material::DiffuseBSDF::pgManager,
 		material::GlossyBSDF::pgManager,
+		material::MeasuredG1BSDF::pgManager,
 		material::Emission::pgManager,
 		material::Mix::pgManager,
 		material::ImageTexture::pgManager,
