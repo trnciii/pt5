@@ -65,6 +65,34 @@ void init_material(py::module_& m){
 		.def_readwrite("alpha", &GlossyData::alpha);
 
 
+	py::class_<MeasuredG1>(m, "MeasuredG1")
+		.def(py::init<>())
+		.def(py::init([](const py::tuple& c, const py::tuple& a, const py::array_t<float>& t){
+			assert(t.ndim() == 2);
+			return MeasuredG1({
+				propf3(c), propf1(a),
+				std::vector<float>((float*)t.data(), (float*)t.data() + t.size()),
+				{t.shape(0), t.shape(1)}});
+		}))
+		.def_readwrite("color", &MeasuredG1::color)
+		.def_readwrite("alpha", &MeasuredG1::alpha)
+		.def_property("table",
+			[](const MeasuredG1& self){
+				return (py::array_t<float>)py::buffer_info(
+					(float*)self.table.data(),
+					sizeof(float),
+					py::format_descriptor<float>::format(),
+					2, {self.shape.x, self.shape.y}, {self.shape.y*sizeof(float), sizeof(float)}
+				);
+			},
+			[](MeasuredG1& self, py::array_t<float>& t){
+				assert(t.ndim() == 2);
+				self.table = std::vector<float>((float*)t.data(), (float*)t.data() + t.size());
+				self.shape = {t.shape(0), t.shape(1)};
+			}
+		);
+
+
 
 	py::class_<EmissionData>(m, "Emission")
 		.def(py::init<>())
@@ -116,6 +144,7 @@ void init_material(py::module_& m){
 	MAKE_NODE(MixData);
 	MAKE_NODE(DiffuseData);
 	MAKE_NODE(GlossyData);
+	MAKE_NODE(MeasuredG1);
 	MAKE_NODE(EmissionData);
 	MAKE_NODE(Texture);
 	MAKE_NODE(BackgroundData);
