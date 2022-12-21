@@ -1,8 +1,28 @@
 import bpy
 from bpy_extras.node_utils import find_node_input
 import numpy as np
+import os, json, argparse
 
 from ... import core
+
+
+def load_measuredG1():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--visibility')
+
+	args, unknown = parser.parse_known_args()
+
+	if args.visibility:
+		path = args.visibility
+	else:
+		path = '/home/shine/wk/extinction/test/wiener-khinchin/result/1671587115613601'
+
+
+	with open(os.path.join(path, 'meta.json')) as f:
+		meta = json.load(f)
+
+	table = np.load(os.path.join(path, 'visibility.npy'))
+	return meta, table
 
 
 class Prop:
@@ -66,14 +86,18 @@ class Graph:
 			self.create = lambda nodes, images: core.Diffuse(self.props['Color'].nodeindex(nodes))
 
 		elif node.type == 'BSDF_GLOSSY':
+			meta, table = load_measuredG1()
+			print(f'alpha={meta["alpha"]} type={meta["type"]}')
+
 			self.props = {
 				'Color': Prop(inputs['Color'].default_value[:3], find_socket_input(inputs['Color'])),
-				'Roughness': Prop(inputs["Roughness"].default_value, find_socket_input(inputs['Roughness']))
+				# 'Roughness': Prop(inputs["Roughness"].default_value, find_socket_input(inputs['Roughness'])),
 			}
 
-			self.create = lambda nodes, images: core.Glossy(
+			self.create = lambda nodes, images: core.MeasuredG1(
 				self.props['Color'].nodeindex(nodes),
-				self.props['Roughness'].nodeindex(nodes)
+				(meta['alpha'], 0),
+				table
 			)
 
 
