@@ -66,12 +66,16 @@ extern "C" __device__ float3 __direct_callable__measured_g1_albedo(const Interse
 	float3 m = normalize(is.wo + is.wi);
 
 	float tmi = projected_angle(m, is.wi);
-	size_t imi = (tmi/M_PI + 0.5) * material.shape.x;
+	float tmin = tmi/M_PI + 0.5;
+	tmin = (tmin<0)? 0 : (tmin>0.99)? 0.99 : tmin;
+	size_t imi = tmin * material.shape.x;
 	size_t iwi = acos(is.wi.z)/(0.5*M_PI) * material.shape.y;
 	float Gi = material.table[imi*material.shape.y + iwi];
 
 	float tmo = projected_angle(m, is.wo);
-	size_t imo = (tmo/M_PI + 0.5) * material.shape.x;
+	float tmon = tmo/M_PI + 0.5;
+	tmon = (tmon<0)? 0 : (tmon>1)? 0.99 : tmon;
+	size_t imo = (tmon) * material.shape.x;
 	size_t iwo = acos(is.wo.z)/(0.5*M_PI) * material.shape.y;
 	float Go = material.table[imo*material.shape.y + iwo];
 
