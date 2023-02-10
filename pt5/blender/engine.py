@@ -60,8 +60,6 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		self.tracer.render(view, scene.pt5.spp_final, camera)
 		self.tracer.waitForRendering()
 
-		self.tracer.removeScene()
-
 		view.downloadImage()
 		rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
 
