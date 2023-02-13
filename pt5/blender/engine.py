@@ -54,7 +54,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		exclude = [o for o in scene.objects if o.hide_render]
 
-		self.tracer.setScene(pt5.scene.create(scene, exclude))
+		self.tracer.setScene(pt5.scene.create(depsgraph, exclude))
 		camera = pt5.scene.camera.fromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
@@ -83,7 +83,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		exclude = [o for o in scene.objects if o.hide_get()]
 
 		self.tracer.removeScene()
-		self.tracer.setScene(pt5.scene.create(scene, exclude))
+		self.tracer.setScene(pt5.scene.create(depsgraph, exclude))
 
 
 		if not self.scene_data:
