@@ -45,7 +45,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 	def render(self, depsgraph):
 		print('final render')
 
-		scene = depsgraph.scene_eval
+		scene = depsgraph.scene
 		scale = scene.render.resolution_percentage / 100.0
 		width = int(scene.render.resolution_x * scale)
 		height = int(scene.render.resolution_y * scale)
