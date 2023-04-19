@@ -8,10 +8,7 @@ import traceback
 
 def getTriangles(obj):
 	try:
-		depsgraph = bpy.context.evaluated_depsgraph_get()
-		object_eval = obj.evaluated_get(depsgraph)
-
-		mesh = object_eval.to_mesh()
+		mesh = obj.to_mesh()
 
 		bm = bmesh.new()
 		bm.from_mesh(mesh)
@@ -30,7 +27,7 @@ def getTriangles(obj):
 		return None
 
 
-def drawable(scene, hide = []):
+def drawable(objects, hide = []):
 	types = [
 		'MESH',
 		'CURVE',
@@ -50,7 +47,7 @@ def drawable(scene, hide = []):
 		# 'SPEAKER'
 	]
 
-	return [o for o in scene.objects.values()
+	return [o for o in objects
 		if o.type in types
 		and (o not in hide)
 		and not (o.type=='META' and '.' in o.name)

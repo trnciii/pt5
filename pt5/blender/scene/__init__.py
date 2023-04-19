@@ -17,7 +17,7 @@ def is_used(img, candidates):
 	return False
 
 
-def create(scene, hide = []):
+def create(depsgraph, hide = []):
 	from ... import core
 	from .material import make_material, parseNodes
 	from .object import toTriangleMesh, drawable
@@ -47,13 +47,14 @@ def create(scene, hide = []):
 
 	# background
 	try:
-		nodes = parseNodes(scene.world, images)
-		ret.background = make_material(parseNodes(scene.world, images))
+		world = depsgraph.scene_eval.world
+		nodes = parseNodes(world, images)
+		ret.background = make_material(parseNodes(world, images))
 	except:
 		ret.background = make_material([core.Background( ([1,0,1],0), (1, 0) )])
 		traceback.print_exc()
 
 
-	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(scene, hide)] if m]
+	ret.meshes = [m for m in [toTriangleMesh(o) for o in drawable(depsgraph.objects, hide)] if m]
 
 	return ret

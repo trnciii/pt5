@@ -3,3 +3,5 @@ build
 *result/
 __pycache__
 venv
+.DS_Store
+
