@@ -45,7 +45,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 	def render(self, depsgraph):
 		print('final render')
 
-		scene = depsgraph.scene
+		scene = depsgraph.scene_eval
 		scale = scene.render.resolution_percentage / 100.0
 		width = int(scene.render.resolution_x * scale)
 		height = int(scene.render.resolution_y * scale)
@@ -54,11 +54,13 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 
 		exclude = [o for o in scene.objects if o.hide_render]
 
-		self.tracer.setScene(pt5.scene.create(scene, exclude))
+		self.tracer.setScene(pt5.scene.create(depsgraph, exclude))
 		camera = pt5.scene.camera.fromObject(scene.camera)
 
 		self.tracer.render(view, scene.pt5.spp_final, camera)
 		self.tracer.waitForRendering()
+
+		self.tracer.removeScene()
 
 		view.downloadImage()
 		rect = np.flipud(np.minimum(1, np.maximum(0, view.pixels))).reshape((-1, 4))
@@ -81,7 +83,7 @@ class CustomRenderEngine(bpy.types.RenderEngine):
 		exclude = [o for o in scene.objects if o.hide_get()]
 
 		self.tracer.removeScene()
-		self.tracer.setScene(pt5.scene.create(scene, exclude))
+		self.tracer.setScene(pt5.scene.create(depsgraph, exclude))
 
 
 		if not self.scene_data:
